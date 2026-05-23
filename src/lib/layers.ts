@@ -5,11 +5,13 @@ import { mode } from 'mode-watcher';
 import { toast } from 'svelte-sonner';
 
 import { map as m } from '$lib/stores/map';
-import { loading, opacity, preferences as p } from '$lib/stores/preferences';
+import { loading, opacity, opacity2, preferences as p } from '$lib/stores/preferences';
 import { vectorOptions as vO } from '$lib/stores/vector';
+import { variable2, layer2Enabled } from '$lib/stores/variables';
 
 import {
 	BEFORE_LAYER_RASTER,
+	BEFORE_LAYER_RASTER_SECONDARY,
 	BEFORE_LAYER_VECTOR,
 	BEFORE_LAYER_VECTOR_WATER_CLIP,
 	HILLSHADE_LAYER
@@ -18,7 +20,7 @@ import { type SlotLayer, SlotManager } from '$lib/slot-manager';
 
 import { refreshPopup } from './popup';
 import { currentOmUrl } from './stores/om-url';
-import { getOMUrl } from './url';
+import { getOMUrl, getOMUrlFor } from './url';
 
 // =============================================================================
 // Expression helpers
@@ -114,6 +116,31 @@ const rasterLayer = (): SlotLayer => ({
 	id: 'omRasterLayer',
 	opacityProp: 'raster-opacity',
 	commitOpacity: getRasterOpacity(),
+	add: (map, sourceId, layerId, beforeLayer) => {
+		map.addLayer(
+			{
+				id: layerId,
+				type: 'raster',
+				source: sourceId,
+				paint: {
+					'raster-opacity': 0.0,
+					'raster-opacity-transition': { duration: 2, delay: 0 }
+				}
+			},
+			beforeLayer
+		);
+	}
+});
+
+const getRasterOpacity2 = (): number => {
+	const opacityValue = get(opacity2) / 100;
+	return isDark() ? Math.max(0, (opacityValue * 100 - 10) / 100) : opacityValue;
+};
+
+const rasterLayer2 = (): SlotLayer => ({
+	id: 'omRasterLayer2',
+	opacityProp: 'raster-opacity',
+	commitOpacity: getRasterOpacity2(),
 	add: (map, sourceId, layerId, beforeLayer) => {
 		map.addLayer(
 			{
@@ -243,6 +270,7 @@ const vectorContourLabelsLayer = (): SlotLayer => ({
 // =============================================================================
 
 export let rasterManager: SlotManager | undefined;
+export let rasterManager2: SlotManager | undefined;
 export let vectorManager: SlotManager | undefined;
 
 export const createManagers = (): void => {
@@ -271,6 +299,22 @@ export const createManagers = (): void => {
 			toast.warning('Loading raster data might be limited by bandwidth or upstream server speed.')
 	});
 
+	rasterManager2 = new SlotManager(map, {
+		sourceIdPrefix: 'omRasterSource2',
+		beforeLayer: BEFORE_LAYER_RASTER_SECONDARY,
+		layerFactory: () => [rasterLayer2()],
+		sourceSpec: (sourceUrl) => ({
+			url: sourceUrl,
+			type: 'raster',
+			maxzoom: 14
+		}),
+		removeDelayMs: 300,
+		onCommit: () => refreshPopup(),
+		onError: () => {},
+		slowLoadWarningMs: 10000,
+		onSlowLoad: () => {}
+	});
+
 	vectorManager = new SlotManager(map, {
 		sourceIdPrefix: 'omVectorSource',
 		beforeLayer: preferences.clipWater ? BEFORE_LAYER_VECTOR_WATER_CLIP : BEFORE_LAYER_VECTOR,
@@ -294,8 +338,12 @@ export const addOmFileLayers = (): void => {
 	if (!map) return;
 	const omUrl = getOMUrl();
 	createManagers();
-	rasterManager?.update('om://' + omUrl);
-	vectorManager?.update('om://' + omUrl);
+	if (omUrl) rasterManager?.update('om://' + omUrl);
+	if (omUrl) vectorManager?.update('om://' + omUrl);
+	if (get(layer2Enabled)) {
+		const omUrl2 = getOMUrlFor(get(variable2));
+		if (omUrl2) rasterManager2?.update('om://' + omUrl2);
+	}
 };
 
 export const changeOMfileURL = (vectorOnly = false, rasterOnly = false): void => {
@@ -316,4 +364,13 @@ export const changeOMfileURL = (vectorOnly = false, rasterOnly = false): void =>
 
 	if (!vectorOnly) rasterManager?.update('om://' + omUrl);
 	if (!rasterOnly) vectorManager?.update('om://' + omUrl);
+
+	if (!vectorOnly) {
+		if (get(layer2Enabled)) {
+			const omUrl2 = getOMUrlFor(get(variable2));
+			if (omUrl2) rasterManager2?.update('om://' + omUrl2);
+		} else {
+			rasterManager2?.destroy();
+		}
+	}
 };

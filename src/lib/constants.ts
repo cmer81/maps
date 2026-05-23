@@ -25,6 +25,9 @@ export const HILLSHADE_LAYER = 'hillshadeLayer';
 export const BEFORE_LAYER_RASTER = 'waterway-tunnel';
 export const BEFORE_LAYER_VECTOR = 'place_label_other';
 export const BEFORE_LAYER_VECTOR_WATER_CLIP = 'water-clip';
+// 2nd raster scalar layer — placed above the 1st raster (BEFORE_LAYER_RASTER) but
+// below the vector layer (BEFORE_LAYER_VECTOR), so wind arrows stay on top.
+export const BEFORE_LAYER_RASTER_SECONDARY = BEFORE_LAYER_VECTOR;
 
 // Default tile size and opacity
 export const DEFAULT_TILE_SIZE = 512;
