@@ -50,7 +50,9 @@ export const COMPLETE_DEFAULT_VALUES: { [key: string]: boolean | string | number
 	...DEFAULT_VECTOR_OPTIONS,
 	variable2: 'precipitation',
 	opacity2: 70,
-	layer2: 'false'
+	layer2: 'false',
+	wind_overlay: 'false',
+	wind_overlay_level: '10m'
 };
 
 // Time constants

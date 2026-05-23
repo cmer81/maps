@@ -13,3 +13,6 @@ export interface VectorOptions {
 }
 
 export const vectorOptions = persisted('vector-options', defaultVectorOptions);
+
+export const windOverlayEnabled = persisted('windOverlayEnabled', false);
+export const windOverlayLevel = persisted('windOverlayLevel', '10m');
