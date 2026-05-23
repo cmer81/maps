@@ -152,6 +152,23 @@ export const urlParamsToPreferences = () => {
 	p.set(preferences);
 };
 
+/**
+ * Builds the path prefix expected by infoclimat-om-worker so omProtocol can
+ * fetch and aggregate without query-string params (which are stripped before
+ * the actual HTTP fetch). The structure mirrors Open-Meteo S3 with three extra
+ * path segments (base variable + window) prepended after `/v1/sum/`.
+ */
+const buildWorkerBase = (domain: string, baseVariable: string, hours: number): string => {
+	const workerUrl = import.meta.env.VITE_OM_WORKER_URL;
+	if (!workerUrl) {
+		throw new Error(
+			'Cumul variable requested but VITE_OM_WORKER_URL is not set. ' +
+				'Configure it in .env to enable the precipitation_sum_*h variables.'
+		);
+	}
+	return `${String(workerUrl).replace(/\/$/, '')}/v1/sum/${domain}/${baseVariable}/${hours}h`;
+};
+
 let cachedClippingJson = '';
 let cachedClippingHash = '';
 let cachedColorJson = '';
@@ -162,15 +179,23 @@ const memorisedHash = (json: string, cachedJson: string, cachedHash: string) => 
 	return { json, hash: hashValue(json) };
 };
 
+/** Matches cumul-style variable names like `precipitation_sum_24h`. */
+const CUMUL_VARIABLE_REGEX = /^(?<base>.+)_sum_(?<hours>\d+)h$/;
+
 export const getOMUrl = () => {
 	const domain = get(d);
-	const base = `${getBaseUri(domain)}/data_spatial/${domain}`;
 	const modelRun = get(mR);
 	if (!modelRun) return undefined;
 	const selectedTime = get(time);
+	const variable = get(v);
+
+	const cumulMatch = variable.match(CUMUL_VARIABLE_REGEX);
+	const base = cumulMatch
+		? buildWorkerBase(domain, cumulMatch.groups!.base, Number(cumulMatch.groups!.hours))
+		: `${getBaseUri(domain)}/data_spatial/${domain}`;
 
 	let result = `${base}/${fmtModelRun(modelRun)}/${fmtSelectedTime(selectedTime)}.om`;
-	result += `?variable=${get(v)}`;
+	result += `?variable=${variable}`;
 
 	if (mode.current === 'dark') result += '&dark=true';
 	const vectorOptions = get(vO);
