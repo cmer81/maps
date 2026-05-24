@@ -16,7 +16,7 @@
 </script>
 
 <div>
-	<h2 class="text-lg font-bold">Popup settings</h2>
+	<h2 class="text-lg font-bold">Infobulle</h2>
 	<div class="mt-3 flex gap-3">
 		<Switch
 			id="popup_on"
@@ -40,12 +40,12 @@
 				}
 
 				popupModeDrag = !!$popupMode && $popupMode === 'drag';
-				toast.info('Popup: ' + (popupOn ? 'On' : 'Off'));
+				toast.info('Infobulle : ' + (popupOn ? 'activée' : 'désactivée'));
 
 				renderPopup(lastLngLat ?? $map.getCenter());
 			}}
 		/>
-		<Label class="cursor-pointer" for="popup_mode">Popup</Label>
+		<Label class="cursor-pointer" for="popup_mode">Infobulle</Label>
 	</div>
 	<div class="mt-3 flex gap-3">
 		<Switch
@@ -61,17 +61,17 @@
 				}
 				popupModeDrag = !!$popupMode && $popupMode === 'drag';
 				toast.info(
-					'Popup mode: ' +
-						($popupMode ? ($popupMode === 'follow' ? 'Follows mouse' : 'Draggable') : 'Off')
+					'Mode infobulle : ' +
+						($popupMode ? ($popupMode === 'follow' ? 'Suit la souris' : 'Déplaçable') : 'Désactivé')
 				);
 			}}
 		/>
 		<Label class="cursor-pointer" for="popup_mode"
-			>Popup mode: {$popupMode
+			>Mode infobulle : {$popupMode
 				? $popupMode === 'follow'
-					? 'Follows mouse'
-					: 'Draggable'
-				: 'Off'}</Label
+					? 'Suit la souris'
+					: 'Déplaçable'
+				: 'Désactivé'}</Label
 		>
 	</div>
 </div>

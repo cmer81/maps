@@ -160,7 +160,7 @@
 		ontouchstart={(e) => handleDragStart('satBright', e)}
 		role="slider"
 		aria-valuenow={Math.round(saturation)}
-		aria-label="Saturation and brightness"
+		aria-label="Saturation et luminosité"
 		tabindex="0"
 	>
 		<div
@@ -181,7 +181,7 @@
 
 	<!-- Hue Slider -->
 	<div class="mb-3">
-		<label class="text-xs text-muted-foreground mb-1 block" for="hue-slider">Hue</label>
+		<label class="text-xs text-muted-foreground mb-1 block" for="hue-slider">Teinte</label>
 		<div
 			bind:this={hueRef}
 			id="hue-slider"
@@ -210,7 +210,7 @@
 	<!-- Alpha/Opacity Slider -->
 	<div class="mb-3">
 		<label class="text-xs text-muted-foreground mb-1 block" for="alpha-slider">
-			Opacity: {alphaPercent}%
+			Opacité : {alphaPercent} %
 		</label>
 		<div
 			bind:this={alphaRef}
@@ -247,7 +247,7 @@
 		<div
 			class="w-10 h-10 rounded border border-border shadow-inner relative overflow-hidden"
 			style="background: repeating-conic-gradient(#808080 0% 25%, #fff 0% 50%) 50% / 8px 8px;"
-			aria-label="Color preview"
+			aria-label="Aperçu de la couleur"
 		>
 			<div class="absolute inset-0" style="background: {currentHex}; opacity: {alpha};"></div>
 		</div>
@@ -259,7 +259,7 @@
 				class="w-full px-2 py-1 text-sm font-mono bg-background border border-input rounded focus:outline-none focus:ring-2 focus:ring-ring"
 				placeholder="#000000"
 				maxlength="7"
-				aria-label="Hex color value"
+				aria-label="Valeur hexadécimale de la couleur"
 			/>
 			<div class="flex items-center gap-1">
 				<input
@@ -269,7 +269,7 @@
 					min="0"
 					max="100"
 					class="w-16 px-2 py-1 text-sm bg-background border border-input rounded focus:outline-none focus:ring-2 focus:ring-ring"
-					aria-label="Opacity percentage"
+					aria-label="Pourcentage d'opacité"
 				/>
 				<span class="text-xs text-muted-foreground">%</span>
 			</div>
@@ -290,14 +290,14 @@
 			onclick={onclose}
 			class="flex-1 px-3 py-1.5 text-sm bg-muted hover:bg-muted/80 rounded transition-colors"
 		>
-			Cancel
+			Annuler
 		</button>
 		<button
 			type="button"
 			onclick={handleApply}
 			class="flex-1 px-3 py-1.5 text-sm bg-primary text-primary-foreground hover:bg-primary/90 rounded transition-colors"
 		>
-			Apply
+			Appliquer
 		</button>
 	</div>
 </div>

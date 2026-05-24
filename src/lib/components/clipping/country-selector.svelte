@@ -119,11 +119,11 @@
 			>
 				<div class="truncate">
 					{#if $clippingCountryCodes.length === 0}
-						Clip: Select countries...
+						Découpe : choisir des pays…
 					{:else if totalCountriesCount === 1}
-						Clip: {selectedCountryObjs[0]?.name}
+						Découpe : {selectedCountryObjs[0]?.name}
 					{:else}
-						Clip: {totalCountriesCount} countries
+						Découpe : {totalCountriesCount} pays
 					{/if}
 				</div>
 				<ChevronsUpDownIcon class="-ml-2 size-4 shrink-0 opacity-50" />
@@ -136,7 +136,7 @@
 				<div class="flex items-center gap-2">
 					<Command.Input
 						class="flex-1 border-none ring-0"
-						placeholder="Search countries..."
+						placeholder="Rechercher un pays…"
 						bind:value={searchValue}
 					/>
 					{#if searchValue.length > 0}
@@ -145,24 +145,24 @@
 							onclick={() => (searchValue = '')}
 							class="px-2 py-1 bg-none absolute right-2 top-1 cursor-pointer text-sm rounded text-muted-foreground hover:text-foreground transition-colors"
 						>
-							Clear
+							Effacer
 						</button>
 					{/if}
 				</div>
 				{#if $clippingCountryCodes.length > 0}
 					<div class="flex items-center justify-between px-3 py-1 text-xs border-t border-muted/50">
-						<span class="text-muted-foreground">{totalCountriesCount} selected</span>
+						<span class="text-muted-foreground">{totalCountriesCount} sélectionné{totalCountriesCount > 1 ? 's' : ''}</span>
 						<button
 							onclick={clearAll}
 							class="px-2 py-0.5 cursor-pointer hover:bg-muted/80 rounded text-muted-foreground hover:text-foreground transition-colors"
 						>
-							Clear All
+							Tout effacer
 						</button>
 					</div>
 				{/if}
 			</div>
 			<Command.List>
-				<Command.Empty>No country found.</Command.Empty>
+				<Command.Empty>Aucun pays trouvé.</Command.Empty>
 				<Command.Group>
 					{#each filteredCountries as country (country.code)}
 						<Command.Item

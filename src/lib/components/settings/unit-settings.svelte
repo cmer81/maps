@@ -23,20 +23,20 @@
 	];
 
 	const precipitationOptions: { value: PrecipitationUnit; label: string }[] = [
-		{ value: 'mm', label: 'Millimeter (mm)' },
-		{ value: 'inch', label: 'Inch (inch)' }
+		{ value: 'mm', label: 'Millimètre (mm)' },
+		{ value: 'inch', label: 'Pouce (in)' }
 	];
 
 	const windSpeedOptions: { value: WindSpeedUnit; label: string }[] = [
-		{ value: 'm/s', label: 'Meter/s (m/s)' },
-		{ value: 'km/h', label: 'Kilometer/h (km/h)' },
+		{ value: 'm/s', label: 'Mètre/s (m/s)' },
+		{ value: 'km/h', label: 'Kilomètre/h (km/h)' },
 		{ value: 'mph', label: 'Miles/h (mph)' },
-		{ value: 'knots', label: 'Knots (kn)' }
+		{ value: 'knots', label: 'Nœuds (kn)' }
 	];
 
 	export const distanceOptions: { value: DistanceUnit; label: string }[] = [
-		{ value: 'm', label: 'Meters (m)' },
-		{ value: 'ft', label: 'Feet (ft)' }
+		{ value: 'm', label: 'Mètres (m)' },
+		{ value: 'ft', label: 'Pieds (ft)' }
 	];
 
 	function getLabel<T extends string>(options: { value: T; label: string }[], value: T): string {
@@ -45,10 +45,10 @@
 </script>
 
 <div>
-	<h2 class="text-lg font-bold">Units</h2>
+	<h2 class="text-lg font-bold">Unités</h2>
 	<div class="mt-3 flex flex-col gap-3">
 		<div class="flex items-center gap-3">
-			<Label class="w-28 shrink-0">Temperature</Label>
+			<Label class="w-28 shrink-0">Température</Label>
 			<Select.Root
 				type="single"
 				value={$temperatureUnit}
@@ -56,13 +56,13 @@
 					if (v) {
 						temperatureUnit.set(v as TemperatureUnit);
 						refreshPopup();
-						toast.info(`Temperature unit set to ${v}`);
+						toast.info(`Unité de température : ${v}`);
 					}
 				}}
 			>
 				<Select.Trigger
 					class="h-8 text-sm flex-1 cursor-pointer bg-background/60"
-					aria-label="Temperature unit"
+					aria-label="Unité de température"
 				>
 					{getLabel(temperatureOptions, $temperatureUnit)}
 				</Select.Trigger>
@@ -84,13 +84,13 @@
 					if (v) {
 						distanceUnit.set(v as DistanceUnit);
 						refreshPopup();
-						toast.info(`Distance unit set to ${v}`);
+						toast.info(`Unité de distance : ${v}`);
 					}
 				}}
 			>
 				<Select.Trigger
 					class="h-8 text-sm flex-1 cursor-pointer bg-background/60"
-					aria-label="Distance unit"
+					aria-label="Unité de distance"
 				>
 					{getLabel(distanceOptions, $distanceUnit)}
 				</Select.Trigger>
@@ -103,7 +103,7 @@
 		</div>
 
 		<div class="flex items-center gap-3">
-			<Label class="w-28 shrink-0">Precipitation</Label>
+			<Label class="w-28 shrink-0">Précipitations</Label>
 			<Select.Root
 				type="single"
 				value={$precipitationUnit}
@@ -111,13 +111,13 @@
 					if (v) {
 						precipitationUnit.set(v as PrecipitationUnit);
 						refreshPopup();
-						toast.info(`Precipitation unit set to ${v}`);
+						toast.info(`Unité de précipitations : ${v}`);
 					}
 				}}
 			>
 				<Select.Trigger
 					class="h-8 text-sm flex-1 cursor-pointer bg-background/60"
-					aria-label="Precipitation unit"
+					aria-label="Unité de précipitations"
 				>
 					{getLabel(precipitationOptions, $precipitationUnit)}
 				</Select.Trigger>
@@ -130,7 +130,7 @@
 		</div>
 
 		<div class="flex items-center gap-3">
-			<Label class="w-28 shrink-0">Wind speed</Label>
+			<Label class="w-28 shrink-0">Vitesse du vent</Label>
 			<Select.Root
 				type="single"
 				value={$windSpeedUnit}
@@ -138,13 +138,13 @@
 					if (v) {
 						windSpeedUnit.set(v as WindSpeedUnit);
 						refreshPopup();
-						toast.info(`Wind speed unit set to ${v}`);
+						toast.info(`Unité de vitesse du vent : ${v}`);
 					}
 				}}
 			>
 				<Select.Trigger
 					class="h-8 text-sm flex-1 cursor-pointer bg-background/60"
-					aria-label="Wind speed unit"
+					aria-label="Unité de vitesse du vent"
 				>
 					{getLabel(windSpeedOptions, $windSpeedUnit)}
 				</Select.Trigger>

@@ -15,13 +15,13 @@
 	let abortController: AbortController | null = null;
 
 	const prefetchModes = new Map<PrefetchMode, string>([
-		['today', 'Today'],
-		['next24h', 'Next 24h'],
-		['prev24h', 'Prev 24h'],
-		['completeModelRun', 'Full run']
+		['today', 'Aujourd\'hui'],
+		['next24h', '24 h suivantes'],
+		['prev24h', '24 h précédentes'],
+		['completeModelRun', 'Run complet']
 	]);
 
-	let prefetchModeLabel: string = $derived(prefetchModes.get(selectedPrefetchMode) ?? 'Today');
+	let prefetchModeLabel: string = $derived(prefetchModes.get(selectedPrefetchMode) ?? 'Aujourd\'hui');
 
 	const handlePrefetch = async () => {
 		if (isPrefetching) {
@@ -30,7 +30,7 @@
 		}
 
 		if (!$metaJson || !$modelRun) {
-			toast.warning('No metadata available for prefetching');
+			toast.warning('Aucune métadonnée disponible pour le préchargement');
 			return;
 		}
 
@@ -38,7 +38,7 @@
 		prefetchProgress = { current: 0, total: 0 };
 		abortController = new AbortController();
 
-		toast.info(`Prefetching ${prefetchModeLabel}...`);
+		toast.info(`Préchargement « ${prefetchModeLabel} »…`);
 
 		const { startDate, endDate } = getDateRangeForMode(selectedPrefetchMode, $time, $metaJson);
 
@@ -61,11 +61,11 @@
 		abortController = null;
 
 		if (result.success) {
-			toast.success(`Prefetched ${result.successCount}/${result.totalCount} time steps`);
+			toast.success(`${result.successCount}/${result.totalCount} pas de temps préchargés`);
 		} else if (result.aborted) {
-			toast.info(`Prefetch cancelled (${result.successCount}/${result.totalCount} completed)`);
+			toast.info(`Préchargement annulé (${result.successCount}/${result.totalCount} terminés)`);
 		} else {
-			toast.error(result.error || 'Prefetch failed');
+			toast.error(result.error || 'Échec du préchargement');
 		}
 	};
 </script>
@@ -82,10 +82,10 @@
 >
 	<Select.Trigger
 		class="h-4.5! text-xs pl-1.5 pr-0.75 py-0 gap-1 border-none bg-transparent shadow-none hover:bg-accent/50 focus-visible:ring-0 focus-visible:ring-offset-0 cursor-pointer"
-		aria-label="Select prefetch mode"
+		aria-label="Choisir le mode de préchargement"
 		disabled={isPrefetching}
 	>
-		{prefetchModes.get(selectedPrefetchMode) ?? 'Today'}
+		{prefetchModes.get(selectedPrefetchMode) ?? 'Aujourd\'hui'}
 	</Select.Trigger>
 	<Select.Content
 		class="left-5 border-none max-h-60 bg-glass/65 backdrop-blur-sm"
@@ -109,10 +109,10 @@
 		e.stopPropagation();
 		handlePrefetch();
 	}}
-	aria-label={isPrefetching ? 'Cancel prefetch' : 'Prefetch data'}
+	aria-label={isPrefetching ? 'Annuler le préchargement' : 'Précharger les données'}
 	title={isPrefetching
-		? `Prefetching ${prefetchProgress.current}/${prefetchProgress.total}. Click to cancel.`
-		: `Prefetch ${prefetchModeLabel}`}
+		? `Préchargement ${prefetchProgress.current}/${prefetchProgress.total}. Cliquer pour annuler.`
+		: `Précharger « ${prefetchModeLabel} »`}
 >
 	<svg
 		xmlns="http://www.w3.org/2000/svg"

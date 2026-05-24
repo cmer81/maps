@@ -11,7 +11,7 @@
 </script>
 
 <div>
-	<h2 class="text-lg font-bold">Clip Water</h2>
+	<h2 class="text-lg font-bold">Masquer les océans</h2>
 	<div class="mt-3 flex gap-3 cursor-pointer">
 		<Switch
 			id="arrows"
@@ -22,6 +22,6 @@
 				reloadStyles();
 			}}
 		/>
-		<Label for="arrows">Clip Water {clipWater ? 'on' : 'off'}</Label>
+		<Label for="arrows">Masquer les océans {clipWater ? 'activé' : 'désactivé'}</Label>
 	</div>
 </div>

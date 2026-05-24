@@ -90,7 +90,7 @@ const updatePopupContent = async (coordinates: maplibregl.LngLat): Promise<void>
 			if (cachedClippingTester && !cachedClippingTester(coordinates.lng, coordinates.lat)) {
 				contentDiv.style.backgroundColor = '';
 				contentDiv.style.color = '';
-				valueSpan.innerText = 'Outside clip';
+				valueSpan.innerText = 'Hors zone';
 				unitSpan.innerText = '';
 				elevationSpan.innerText = hasElevation ? `${Math.round(elevation)}m` : '';
 				return;
@@ -124,7 +124,7 @@ const updatePopupContent = async (coordinates: maplibregl.LngLat): Promise<void>
 			coordinates.lng >= minLon &&
 			coordinates.lng <= maxLon;
 
-		valueSpan.innerText = insideDomain ? 'No data' : 'Outside domain';
+		valueSpan.innerText = insideDomain ? 'Pas de données' : 'Hors domaine';
 		unitSpan.innerText = '';
 		elevationSpan.innerText = hasElevation ? `${Math.round(elevation)}m` : '';
 		elevationSpan.style.color = '';

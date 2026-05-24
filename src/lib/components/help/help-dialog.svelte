@@ -14,7 +14,7 @@
 		class="z-90 bg-glass/80 backdrop-blur-sm shaded-md min-h-1/4 max-h-[90vh] overflow-y-scroll pb-18 border-none"
 	>
 		<Dialog.Header>
-			<Dialog.Title class="text-2xl">Help</Dialog.Title>
+			<Dialog.Title class="text-2xl">Aide</Dialog.Title>
 		</Dialog.Header>
 		{#if smallerDesktop.current}
 			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -37,37 +37,37 @@
 							></path><path d="M3 10h5"></path><path d="M8 2v4"></path><circle cx="16" cy="16" r="6"
 							></circle></svg
 						>
-						<h2 class="text-lg font-bold">Time Selector</h2>
+						<h2 class="text-lg font-bold">Sélecteur de temps</h2>
 					</div>
 					<div class="flex flex-col gap-1">
 						<div class="flex items-center gap-2">
-							<Kbd.Root>↓</Kbd.Root> Previous Day
+							<Kbd.Root>↓</Kbd.Root> Jour précédent
 						</div>
 						<div class="flex items-center gap-2">
-							<Kbd.Root>↑</Kbd.Root> Next Day
+							<Kbd.Root>↑</Kbd.Root> Jour suivant
 						</div>
 						<div class="flex items-center gap-2">
-							<Kbd.Root>←</Kbd.Root> Previous Hour
+							<Kbd.Root>←</Kbd.Root> Heure précédente
 						</div>
 						<div class="flex items-center gap-2">
-							<Kbd.Root>→</Kbd.Root> Next Hour
+							<Kbd.Root>→</Kbd.Root> Heure suivante
 						</div>
 						<div class="flex items-center gap-2">
-							<Kbd.Root>c</Kbd.Root> Jump to Current Time
+							<Kbd.Root>c</Kbd.Root> Aller à l'heure actuelle
 						</div>
 						<div class="flex items-center gap-2">
-							<Kbd.Root>m</Kbd.Root> Lock Model Run
+							<Kbd.Root>m</Kbd.Root> Verrouiller le run
 						</div>
 						<div class="flex items-center gap-2">
-							<Kbd.Root>n</Kbd.Root> Latest Model Run
+							<Kbd.Root>n</Kbd.Root> Dernier run
 						</div>
 						<div class="mt-3 flex items-center gap-2">
 							<Kbd.Root>ctrl</Kbd.Root> +
-							<Kbd.Root>←</Kbd.Root> Previous Model Run
+							<Kbd.Root>←</Kbd.Root> Run précédent
 						</div>
 						<div class="flex items-center gap-2">
 							<Kbd.Root>ctrl</Kbd.Root> +
-							<Kbd.Root>→</Kbd.Root> Next Model Run
+							<Kbd.Root>→</Kbd.Root> Run suivant
 						</div>
 					</div>
 				</div>
@@ -97,22 +97,22 @@
 					</div>
 					<div class="flex flex-col gap-1">
 						<div class="flex items-center gap-2">
-							<Kbd.Root>d</Kbd.Root> Domain Selection
+							<Kbd.Root>d</Kbd.Root> Sélection du domaine
 						</div>
 						<div class="flex items-center gap-2">
-							<Kbd.Root>v</Kbd.Root> Variable Selection
+							<Kbd.Root>v</Kbd.Root> Sélection de la variable
 						</div>
 						<div class="flex items-center gap-2">
-							<Kbd.Root>l</Kbd.Root> Level Selection
+							<Kbd.Root>l</Kbd.Root> Sélection du niveau
 						</div>
 					</div>
 
 					<div class="flex items-center mb-2 gap-1.25 mt-6">
-						<h2 class="text-lg font-bold">Popup</h2>
+						<h2 class="text-lg font-bold">Infobulle</h2>
 					</div>
 					<div class="flex flex-col gap-1">
 						<div class="flex items-center gap-2">
-							<Kbd.Root>p</Kbd.Root> Popup mode: Follows mouse / Draggable / Off
+							<Kbd.Root>p</Kbd.Root> Mode infobulle : suit la souris / déplaçable / désactivée
 						</div>
 					</div>
 				</div>
@@ -134,7 +134,7 @@
 					class="lucide lucide-toggle-left-icon lucide-toggle-left"
 					><circle cx="9" cy="12" r="3" /><rect width="20" height="14" x="2" y="5" rx="7" /></svg
 				>
-				<h2 class="text-lg font-bold">Buttons</h2>
+				<h2 class="text-lg font-bold">Boutons</h2>
 			</div>
 			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 				<div class="flex flex-col gap-3">
@@ -143,22 +143,22 @@
 							<button
 								class="maplibregl-ctrl-zoom-in"
 								type="button"
-								title="Zoom in"
-								aria-label="Explanation Zoom in"
+								title="Zoomer"
+								aria-label="Explication : zoomer"
 								aria-disabled="false"
 								><span class="maplibregl-ctrl-icon" aria-hidden="true"></span></button
 							><button
 								class="maplibregl-ctrl-zoom-out"
 								type="button"
-								title="Zoom out"
-								aria-label="Explanation Zoom out"
+								title="Dézoomer"
+								aria-label="Explication : dézoomer"
 								aria-disabled="false"
 								><span class="maplibregl-ctrl-icon" aria-hidden="true"></span></button
 							><button
 								class="maplibregl-ctrl-compass"
 								type="button"
-								title="Reset bearing to north"
-								aria-label="Explanation Reset bearing to north"
+								title="Réorienter vers le nord"
+								aria-label="Explication : réorienter vers le nord"
 								><span
 									class="maplibregl-ctrl-icon"
 									aria-hidden="true"
@@ -167,9 +167,9 @@
 							>
 						</div>
 						<div class="flex flex-col gap-1.75">
-							<div class="truncate">Zoom in</div>
-							<div class="truncate">Zoom out</div>
-							<div class="truncate">Reset tilt / rotation</div>
+							<div class="truncate">Zoomer</div>
+							<div class="truncate">Dézoomer</div>
+							<div class="truncate">Réinitialiser inclinaison / rotation</div>
 						</div>
 					</div>
 
@@ -178,31 +178,31 @@
 							<button
 								class="maplibregl-ctrl-geolocate"
 								type="button"
-								title="Find my location"
-								aria-label="Explanation Find my location"
+								title="Me localiser"
+								aria-label="Explication : me localiser"
 								aria-pressed="false"
 								><span class="maplibregl-ctrl-icon" aria-hidden="true"></span></button
 							>
 						</div>
-						<div class="truncate">Locate User</div>
+						<div class="truncate">Localiser l'utilisateur</div>
 					</div>
 
 					<div class="flex items-center gap-2">
 						<div class="maplibregl-ctrl maplibregl-ctrl-group">
 							<button
 								class="maplibregl-ctrl-globe"
-								aria-label="Explanation Globe Button"
+								aria-label="Explication : bouton globe"
 								type="button"
-								title="Enable globe"
+								title="Activer le globe"
 								><span class="maplibregl-ctrl-icon" aria-hidden="true"></span></button
 							>
 						</div>
-						<div class="truncate">Globe Projection</div>
+						<div class="truncate">Projection globe</div>
 					</div>
 					<div class="flex items-center gap-2">
-						<div title="Darkmode" class="maplibregl-ctrl maplibregl-ctrl-group">
+						<div title="Mode sombre" class="maplibregl-ctrl maplibregl-ctrl-group">
 							<button
-								aria-label="Explanation Darkmode Button"
+								aria-label="Explication : bouton mode sombre"
 								style="display:flex;justify-content:center;align-items:center;"
 							>
 								<svg
@@ -221,15 +221,15 @@
 								>
 							</button>
 						</div>
-						<div class="truncate">Darkmode / Brightmode</div>
+						<div class="truncate">Mode sombre / clair</div>
 					</div>
 				</div>
 				<div class="flex flex-col gap-3">
 					<div class="flex items-center gap-2">
-						<div title="Settings" class="maplibregl-ctrl maplibregl-ctrl-group">
+						<div title="Paramètres" class="maplibregl-ctrl maplibregl-ctrl-group">
 							<button
 								style="display:flex;justify-content:center;align-items:center;"
-								aria-label="Explanation Settings Button"
+								aria-label="Explication : bouton paramètres"
 							>
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
@@ -249,13 +249,13 @@
 								>
 							</button>
 						</div>
-						<div class="truncate">Additional Settings</div>
+						<div class="truncate">Paramètres avancés</div>
 					</div>
 					<div class="flex items-center gap-2">
-						<div class="maplibregl-ctrl maplibregl-ctrl-group" title="Time selector">
+						<div class="maplibregl-ctrl maplibregl-ctrl-group" title="Sélecteur de temps">
 							<button
 								style="display:flex;justify-content:center;align-items:center;"
-								aria-label="Explanation Time Selector Button"
+								aria-label="Explication : sélecteur de temps"
 							>
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
@@ -279,14 +279,14 @@
 								>
 							</button>
 						</div>
-						<div class="truncate">Enable / Disable Time Selector</div>
+						<div class="truncate">Activer / désactiver le sélecteur de temps</div>
 					</div>
 
 					<div class="flex items-center gap-2">
-						<div class="maplibregl-ctrl maplibregl-ctrl-group" title="Clipping">
+						<div class="maplibregl-ctrl maplibregl-ctrl-group" title="Découpage">
 							<button
 								style="display:flex;justify-content:center;align-items:center;"
-								aria-label="Explanation Clipping Button"
+								aria-label="Explication : bouton découpage"
 							>
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
@@ -306,14 +306,14 @@
 								>
 							</button>
 						</div>
-						<div class="truncate">Clipping Panel</div>
+						<div class="truncate">Panneau de découpage</div>
 					</div>
 
 					<div class="flex items-center gap-2">
-						<div class="maplibregl-ctrl maplibregl-ctrl-group" title="Hillshade">
+						<div class="maplibregl-ctrl maplibregl-ctrl-group" title="Relief ombré">
 							<button
 								style="display:flex;justify-content:center;align-items:center;"
-								aria-label="Explanation Hillshade Button"
+								aria-label="Explication : bouton relief ombré"
 							>
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
@@ -333,26 +333,26 @@
 								>
 							</button>
 						</div>
-						<div class="truncate">Hillshade</div>
+						<div class="truncate">Relief ombré</div>
 					</div>
 
 					<div class="flex items-center gap-2">
 						<div class="maplibregl-ctrl maplibregl-ctrl-group">
 							<button
 								class="maplibregl-ctrl-terrain"
-								aria-label="Explanation 3D Terrain Button"
+								aria-label="Explication : bouton terrain 3D"
 								type="button"
-								title="Enable terrain"
+								title="Activer le terrain"
 								><span class="maplibregl-ctrl-icon opacity-75" aria-hidden="true"></span></button
 							>
 						</div>
-						<div class="truncate">3D Terrain</div>
+						<div class="truncate">Terrain 3D</div>
 					</div>
 
 					<div class="flex items-center gap-2">
 						<button
 							class="bg-glass/80 hover:bg-glass flex h-7.25 w-7.25 cursor-pointer items-center rounded p-0"
-							aria-label="Hide Variable Selection"
+							aria-label="Masquer la sélection de variable"
 							><svg
 								opacity="0.75"
 								xmlns="http://www.w3.org/2000/svg"
@@ -388,7 +388,7 @@
 								></line></svg
 							></button
 						>
-						<div class="truncate">Show / Hide Variable Selection</div>
+						<div class="truncate">Afficher / masquer la sélection de variable</div>
 					</div>
 				</div>
 			</div>
@@ -411,36 +411,33 @@
 						d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
 					></path><circle cx="12" cy="12" r="3"></circle></svg
 				>
-				<h2 class=" text-lg font-bold">Additional Settings</h2>
+				<h2 class=" text-lg font-bold">Paramètres avancés</h2>
 			</div>
 			<div class="grid grid-cols-1 sm:gap-3 sm:grid-cols-2">
 				<div>
 					<div>
-						<b>Units</b> - Adjust the units of measurement for various variables, like distance, temperature,
-						precipitation, and wind speed.
+						<b>Unités</b> — Régler les unités de mesure pour les différentes variables (distance, température,
+						précipitations, vitesse du vent).
 					</div>
-					<b>Grid</b> - Show individual model grid points as orange dots on map
+					<b>Grille</b> — Afficher les points de grille du modèle sous forme de points orange sur la carte
 					<div>
-						<b>Arrows</b> - Show directional arrows on maps with speed and direction (wind / wave)
+						<b>Flèches</b> — Afficher des flèches directionnelles sur les cartes avec vitesse et direction (vent / houle)
 					</div>
-					<div><b>Contours</b> - Show contour lines between certain thresholds</div>
+					<div><b>Isocontours</b> — Afficher des isolignes entre certains seuils</div>
 					<div>
-						<b>Partial Requests</b> - Only request the data of the current viewport. Will update on zoom
-						/ pan
+						<b>Requêtes partielles</b> — Ne charger que les données du viewport courant. Mise à jour au zoom / déplacement
 					</div>
 					<div>
-						<b>Clip Water</b> - Overlay the oceans over the generated tiles. Makes sense for certain variables
-						like 'Soil Temperature' where values in the oceans don't represent anything
+						<b>Masquer les océans</b> — Superposer les océans aux tuiles générées. Utile pour certaines variables
+						(p. ex. température du sol) où les valeurs en mer n'ont pas de sens
 					</div>
 				</div>
 				<div>
 					<div>
-						<b>Tile Size</b> - Size in pixels of the generated tiles, <b><i>512px</i></b> default. Since
-						the default source tile size is always 512px, using smaller tile sizes will reduce the number
-						of pixels that need to be computed for each tile, which can speed up rendering. On the other
-						hand, increasing the tile size will increase the resolution of the data and can make it look
-						smoother, but it will also increase the number of pixels that need to be computed, which can
-						slow down rendering.
+						<b>Taille des tuiles</b> — Taille en pixels des tuiles générées, <b><i>512 px</i></b> par défaut. Comme
+						la tuile source fait toujours 512 px, des tailles plus petites réduisent le nombre de pixels
+						à calculer par tuile, ce qui accélère le rendu. À l'inverse, augmenter la taille améliore
+						la résolution et le rendu visuel, au prix d'un calcul plus lourd.
 					</div>
 				</div>
 			</div>

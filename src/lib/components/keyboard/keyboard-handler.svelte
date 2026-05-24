@@ -38,7 +38,8 @@
 			switchPopupMode();
 			const mode = get(popupMode);
 			toast.info(
-				'Popup mode: ' + (mode ? (mode === 'follow' ? 'Follows mouse' : 'Draggable') : 'Off')
+				'Mode infobulle : ' +
+					(mode ? (mode === 'follow' ? 'Suit la souris' : 'Déplaçable') : 'Désactivé')
 			);
 			return;
 		}

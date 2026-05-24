@@ -7,9 +7,9 @@
 </script>
 
 <div>
-	<h2 class="text-lg font-bold">Raster Opacity</h2>
+	<h2 class="text-lg font-bold">Opacité raster</h2>
 	<div class="mt-3 flex gap-3">
-		<Label for="interval">Opacity:</Label>
+		<Label for="interval">Opacité :</Label>
 		<input
 			id="interval_slider"
 			class="w-[100px] delay-75 duration-200"

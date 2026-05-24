@@ -13,7 +13,7 @@
 </script>
 
 <div>
-	<h2 class="text-lg font-bold">Grid settings</h2>
+	<h2 class="text-lg font-bold">Grille</h2>
 	<div class="mt-3 flex gap-3">
 		<Switch
 			id="grid"
@@ -23,9 +23,9 @@
 				updateUrl('grid', String(grid));
 
 				changeOMfileURL();
-				toast.info('Grid turned ' + (grid ? 'on' : 'off'));
+				toast.info('Grille ' + (grid ? 'activée' : 'désactivée'));
 			}}
 		/>
-		<Label for="grid" class="cursor-pointer">Gridpoints {grid ? 'on' : 'off'}</Label>
+		<Label for="grid" class="cursor-pointer">Points de grille {grid ? 'activés' : 'désactivés'}</Label>
 	</div>
 </div>

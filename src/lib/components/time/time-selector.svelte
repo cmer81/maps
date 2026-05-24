@@ -115,7 +115,7 @@
 					date.setTime(date.getTime() + metaLastResolution);
 					onDateChange(date);
 				} else {
-					toast.warning('Already on latest timestep');
+					toast.warning('Déjà sur le dernier pas de temps');
 				}
 			}
 		}
@@ -135,7 +135,7 @@
 				) {
 					onModelRunChange(inProgressReferenceTime);
 				} else {
-					toast.warning('Already on latest model');
+					toast.warning('Déjà sur le run le plus récent');
 				}
 			} else {
 				onModelRunChange(previousModelSteps[currentIndex - 1]);
@@ -146,7 +146,7 @@
 				inProgressReferenceTime &&
 				inProgressReferenceTime.getTime() === $modelRun.getTime()
 			) {
-				toast.warning('Already on in-progress model');
+				toast.warning('Déjà sur le run en cours');
 			}
 		}
 	};
@@ -174,7 +174,7 @@
 			if ($modelRun && $modelRun.getTime() < latestReferenceTime.getTime()) {
 				onDateChange(date);
 			} else {
-				toast.warning('Already on latest timestep');
+				toast.warning('Déjà sur le dernier pas de temps');
 			}
 		}
 	};
@@ -192,7 +192,7 @@
 			// check that requested timeStep is not older than 7 days
 			const date7DaysAgo = Date.now() - MILLISECONDS_PER_WEEK;
 			if (timeStep.getTime() < date7DaysAgo) {
-				toast.warning('Date selected too old, using 7 days ago time');
+				toast.warning('Date trop ancienne, recalée à 7 jours en arrière');
 				const nowTimeStep = domainStep(
 					new Date(date7DaysAgo),
 					$selectedDomain.time_interval,
@@ -208,7 +208,7 @@
 			if (timeStep.getTime() > metaLastTime.getTime()) {
 				// latest is last model available
 				if (metaReferenceTime.getTime() >= latestReferenceTime.getTime()) {
-					toast.warning('Date selected too new, using latest available time');
+					toast.warning('Date trop récente, recalée sur la dernière disponible');
 					time.set(new Date(metaLastTime));
 					timeStep = new Date(metaLastTime);
 				}
@@ -266,13 +266,13 @@
 	const onDateChange = async (date: Date) => {
 		if ($modelRunLocked) {
 			if (date.getTime() < metaFirstTime.getTime()) {
-				toast.warning("Model run locked, can't go before first time");
+				toast.warning('Run verrouillé : impossible d\'aller avant le premier instant');
 				currentDate = new SvelteDate($time);
 				centerDateButton(currentDate);
 				return;
 			}
 			if (date.getTime() > metaLastTime.getTime()) {
-				toast.warning("Model run locked, can't go after last time");
+				toast.warning('Run verrouillé : impossible d\'aller après le dernier instant');
 				currentDate = new SvelteDate($time);
 				centerDateButton(currentDate);
 				return;
@@ -328,12 +328,12 @@
 
 	const toggleModelRunLock = () => {
 		$modelRunLocked = !$modelRunLocked;
-		toast.info($modelRunLocked ? 'Model run locked' : 'Model run unlocked');
+		toast.info($modelRunLocked ? 'Run verrouillé' : 'Run déverrouillé');
 	};
 
 	const setLatestModelRun = () => {
 		if ($modelRun && $modelRun.getTime() === latestReferenceTime.getTime()) {
-			toast.warning('Already on latest model run');
+			toast.warning('Déjà sur le dernier run disponible');
 		} else {
 			onModelRunChange(latestReferenceTime);
 		}
@@ -815,7 +815,7 @@
 			>
 				<Select.Trigger
 					class="h-4.5! text-xs pl-1.5 pr-0.75 py-0 gap-1 border-none bg-transparent shadow-none hover:bg-accent/50 focus-visible:ring-0 focus-visible:ring-offset-0 cursor-pointer"
-					aria-label="Select model run"
+					aria-label="Choisir un run"
 				>
 					{#if !$metaJson}
 						<!-- Loading skeleton -->
@@ -827,7 +827,7 @@
 						{formatUTCDate($modelRun)}
 						{formatUTCTime($modelRun)}Z
 					{:else}
-						Select model run
+						Choisir un run
 					{/if}
 				</Select.Trigger>
 				<Select.Content
@@ -874,7 +874,7 @@
 					e.stopPropagation();
 					toggleModelRunLock();
 				}}
-				aria-label="Model Run Lock"
+				aria-label="Verrouiller le run"
 			>
 				{#if $modelRunLocked}
 					<svg
@@ -926,7 +926,7 @@
 					? 'cursor-not-allowed'
 					: 'cursor-pointer'} "
 				onclick={previousHour}
-				aria-label="Previous Hour"
+				aria-label="Heure précédente"
 			>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
@@ -958,7 +958,7 @@
 					? '-right-7 h-12.5'
 					: 'right-0 w-12 h-full'} {disabled ? 'cursor-not-allowed' : 'cursor-pointer'} "
 				onclick={nextHour}
-				aria-label="Next Hour"
+				aria-label="Heure suivante"
 			>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"

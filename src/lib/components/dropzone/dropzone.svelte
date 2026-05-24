@@ -91,18 +91,18 @@
 		try {
 			parsed = JSON.parse(text);
 		} catch {
-			toast.error(`Invalid JSON: ${file.name}`);
+			toast.error(`JSON invalide : ${file.name}`);
 			return;
 		}
 
 		const features = extractFeatures(parsed);
 		if (features.length === 0) {
-			toast.warning(`No polygon geometries found in ${file.name}`);
+			toast.warning(`Aucun polygone trouvé dans ${file.name}`);
 			return;
 		}
 
 		toast.success(
-			`Loaded ${features.length} polygon${features.length > 1 ? 's' : ''} from ${file.name}`
+			`${features.length} polygone${features.length > 1 ? 's' : ''} chargé${features.length > 1 ? 's' : ''} depuis ${file.name}`
 		);
 		$clippingPanelOpen = true;
 		ondrop?.(features);
@@ -139,7 +139,7 @@
 			if (isAcceptedFile(file)) {
 				await processFile(file);
 			} else {
-				toast.warning(`Unsupported file type: ${file.name}`);
+				toast.warning(`Type de fichier non pris en charge : ${file.name}`);
 			}
 		}
 	};
@@ -160,8 +160,8 @@
 			class="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-primary bg-background/80 px-12 py-10 shadow-lg"
 		>
 			<UploadIcon class="h-10 w-10 text-primary" />
-			<p class="text-lg font-semibold text-foreground">Drop file to process</p>
-			<p class="text-sm text-muted-foreground">'.geojson' or '.json' files supported</p>
+			<p class="text-lg font-semibold text-foreground">Déposez le fichier à traiter</p>
+			<p class="text-sm text-muted-foreground">Fichiers '.geojson' ou '.json' pris en charge</p>
 		</div>
 	</div>
 {/if}

@@ -44,7 +44,7 @@
 	<h2 class="text-lg font-bold">Cache</h2>
 	<div class="mt-3 flex flex-col gap-3">
 		<div class="flex items-center gap-3">
-			<Label class="w-28 shrink-0">Block Size</Label>
+			<Label class="w-28 shrink-0">Taille des blocs</Label>
 			<Select.Root
 				type="single"
 				value={String($cacheBlockSizeKb)}
@@ -52,7 +52,7 @@
 					if (v) $cacheBlockSizeKb = Number(v);
 				}}
 			>
-				<Select.Trigger class="w-24 bg-background/60" aria-label="Select cache block size">
+				<Select.Trigger class="w-24 bg-background/60" aria-label="Choisir la taille des blocs du cache">
 					{blockSizeOptions.find((o) => o.value === String($cacheBlockSizeKb))?.label ??
 						`${$cacheBlockSizeKb} KiB`}
 				</Select.Trigger>
@@ -64,7 +64,7 @@
 			</Select.Root>
 		</div>
 		<div class="flex items-center gap-3">
-			<Label for="cache-max-bytes" class="w-28 shrink-0">Max Cache (MB)</Label>
+			<Label for="cache-max-bytes" class="w-28 shrink-0">Cache max (Mo)</Label>
 			<Input
 				id="cache-max-bytes"
 				type="number"
@@ -75,7 +75,7 @@
 		</div>
 		{#if $cacheBlockSizeKb !== appliedBlockSize || $cacheMaxBytesMb !== appliedMaxBytes}
 			<div transition:slide>
-				<Button class="cursor-pointer self-start" onclick={reload}>Reload to apply</Button>
+				<Button class="cursor-pointer self-start" onclick={reload}>Recharger pour appliquer</Button>
 			</div>
 		{/if}
 	</div>

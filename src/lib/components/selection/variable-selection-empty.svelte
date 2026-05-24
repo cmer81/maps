@@ -10,6 +10,8 @@
 	} from '$lib/stores/variables';
 
 	import { Button } from '$lib/components/ui/button';
+
+	import { translateVariableLabel } from '$lib/i18n/variables-fr';
 </script>
 
 <div class="flex flex-col gap-2.5">
@@ -19,7 +21,7 @@
 		role="combobox"
 	>
 		<div class="truncate">
-			{$selectedDomain?.label || 'Select a domain...'}
+			{$selectedDomain?.label || 'Choisir un domaine…'}
 		</div>
 		<ChevronsUpDownIcon class="-ml-2 size-4 shrink-0 opacity-50" />
 	</Button>
@@ -31,8 +33,10 @@
 	>
 		<div class="truncate">
 			{$levelGroupSelected
-				? $levelGroupSelected.label
-				: ($selectedVariable?.label ?? 'Select a domain...')}
+				? translateVariableLabel($levelGroupSelected.label)
+				: ($selectedVariable?.label
+						? translateVariableLabel($selectedVariable.label)
+						: 'Choisir un domaine…')}
 		</div>
 		<ChevronsUpDownIcon class="-ml-2 size-4 shrink-0 opacity-50" />
 	</Button>
@@ -43,7 +47,7 @@
 			class="bg-glass/75 dark:bg-glass/75 backdrop-blur-sm shadow-md hover:bg-background! h-7.25 w-45 cursor-pointer justify-between rounded border-none p-1.5!"
 			role="combobox"
 		>
-			<div class="truncate">{$level + ' ' + $unit || 'Select a domain...'}</div>
+			<div class="truncate">{$level + ' ' + $unit || 'Choisir un domaine…'}</div>
 			<ChevronsUpDownIcon class="-ml-2 size-4 shrink-0 opacity-50" />
 		</Button>
 	{/if}

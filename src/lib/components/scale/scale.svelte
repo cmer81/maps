@@ -87,7 +87,7 @@
 		$omProtocolSettings.colorScales[$variable] = newScale;
 		await tick();
 		await changeOMfileURL();
-		toast('Changed color scale');
+		toast('Échelle de couleurs modifiée');
 	};
 
 	const closePicker = () => {
@@ -127,7 +127,7 @@
 							? 'cursor-pointer hover:brightness-110 hover:z-10 hover:ring-3 hover:ring-white/65'
 							: 'cursor-default'} {editingIndex === i ? 'ring-2 ring-white/40  z-20' : ''}"
 						title={editable
-							? `Click to change color (opacity: ${Math.round(alphaValue * 100)}%)`
+							? `Cliquer pour changer la couleur (opacité : ${Math.round(alphaValue * 100)} %)`
 							: undefined}
 					>
 						<div
@@ -180,7 +180,7 @@
 						>
 							<Select.Trigger
 								class="h-6! cursor-pointer w-full p-0 text-xs flex items-center justify-center px-1 py-0 gap-0.5 border-none bg-transparent shadow-none focus-visible:ring-0"
-								aria-label="Change unit"
+								aria-label="Changer d'unité"
 								icon={false}
 							>
 								{displayUnit}

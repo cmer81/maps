@@ -13,7 +13,7 @@
 </script>
 
 <div>
-	<h2 class="text-lg font-bold">Arrows settings</h2>
+	<h2 class="text-lg font-bold">Flèches</h2>
 	<div class="mt-3 flex gap-3">
 		<Switch
 			id="arrows"
@@ -22,9 +22,9 @@
 			onCheckedChange={() => {
 				updateUrl('arrows', String(arrows));
 				changeOMfileURL();
-				toast.info('Arrows turned ' + (arrows ? 'on' : 'off'));
+				toast.info('Flèches ' + (arrows ? 'activées' : 'désactivées'));
 			}}
 		/>
-		<Label class="cursor-pointer" for="arrows">Arrows {arrows ? 'on' : 'off'}</Label>
+		<Label class="cursor-pointer" for="arrows">Flèches {arrows ? 'activées' : 'désactivées'}</Label>
 	</div>
 </div>

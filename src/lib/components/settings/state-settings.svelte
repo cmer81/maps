@@ -19,13 +19,13 @@
 		$domain = $domain; // reload domainData
 		await changeOMfileURL();
 		updateUrl();
-		toast.info('All default states reset');
+		toast.info('Tous les réglages réinitialisés');
 	};
 </script>
 
 <div class="mt-auto justify-self-end">
-	<h2 class="text-lg font-bold">States</h2>
+	<h2 class="text-lg font-bold">Réinitialisation</h2>
 	<div class="mt-3">
-		<Button class="cursor-pointer" onclick={reset}>Reset all states</Button>
+		<Button class="cursor-pointer" onclick={reset}>Réinitialiser tous les réglages</Button>
 	</div>
 </div>

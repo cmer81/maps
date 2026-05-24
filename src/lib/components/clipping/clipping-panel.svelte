@@ -409,7 +409,7 @@
 	<div
 		class="fixed top-2.5 right-12.5 z-10 flex flex-col gap-2 rounded-sm bg-glass/80 p-3 shadow-lg backdrop-blur-sm"
 	>
-		<p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Clipping</p>
+		<p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Découpage</p>
 
 		<div class="mt-1 flex flex-col gap-1.5">
 			<div class="flex gap-1">
@@ -418,7 +418,7 @@
 						{activeMode === 'polygon'
 						? 'bg-primary text-primary-foreground border-primary'
 						: 'bg-secondary text-secondary-foreground hover:bg-accent'}"
-					title="Draw polygon"
+					title="Dessiner un polygone"
 					onclick={() => setMode('polygon')}
 				>
 					<PentagonIcon class="h-4 w-4" />
@@ -428,7 +428,7 @@
 						{activeMode === 'rectangle'
 						? 'bg-primary text-primary-foreground border-primary'
 						: 'bg-secondary text-secondary-foreground hover:bg-accent'}"
-					title="Draw rectangle"
+					title="Dessiner un rectangle"
 					onclick={() => setMode('rectangle')}
 				>
 					<SquareIcon class="h-4 w-4" />
@@ -438,7 +438,7 @@
 						{activeMode === 'freehand'
 						? 'bg-primary text-primary-foreground border-primary'
 						: 'bg-secondary text-secondary-foreground  hover:bg-accent'}"
-					title="Draw freehand"
+					title="Dessiner à main levée"
 					onclick={() => setMode('freehand')}
 				>
 					<SplineIcon class="h-4 w-4" />
@@ -448,7 +448,7 @@
 						{activeMode === 'select'
 						? 'bg-primary text-primary-foreground border-primary'
 						: 'bg-secondary text-secondary-foreground  hover:bg-accent'}"
-					title="Select & edit"
+					title="Sélectionner et éditer"
 					onclick={() => setMode('select')}
 				>
 					<MousePointerIcon class="h-4 w-4" />
@@ -459,8 +459,8 @@
 						? 'bg-primary text-primary-foreground border-primary'
 						: 'bg-secondary text-secondary-foreground border-primary/50 hover:bg-accent'}"
 					title={fillRule === 'evenodd'
-						? 'Fill rule: even-odd (holes excluded)'
-						: 'Fill rule: non-zero (all rings filled)'}
+						? 'Règle de remplissage : even-odd (trous exclus)'
+						: 'Règle de remplissage : non-zero (toutes les boucles remplies)'}
 					onclick={toggleFillRule}
 				>
 					<PaintbrushIcon class="h-4 w-4" />
@@ -470,7 +470,7 @@
 					$clippingCountryCodes.length > 0
 						? 'bg-destructive/10 text-destructive-foreground border-destructive'
 						: 'bg-secondary/10 text-secondary-foreground border-secondary hover:bg-accent'} cursor-pointer h-8 w-8 items-center justify-center rounded-md text-destructive transition-colors hover:bg-destructive/10"
-					title="Clear drawings"
+					title="Effacer les tracés"
 					onclick={clearDrawings}
 				>
 					<Trash2Icon class="h-4 w-4" />

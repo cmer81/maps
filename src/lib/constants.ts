@@ -70,11 +70,11 @@ export const PLAYBACK_FRAME_MS = 250;
 
 // Calendar display constants
 export const DAY_NAMES = [
-	'Sunday',
-	'Monday',
-	'Tuesday',
-	'Wednesday',
-	'Thursday',
-	'Friday',
-	'Saturday'
+	'Dimanche',
+	'Lundi',
+	'Mardi',
+	'Mercredi',
+	'Jeudi',
+	'Vendredi',
+	'Samedi'
 ];

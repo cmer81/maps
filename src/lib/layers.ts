@@ -309,7 +309,7 @@ export const createManagers = (): void => {
 		onError: () => loading.set(false),
 		slowLoadWarningMs: 10000,
 		onSlowLoad: () =>
-			toast.warning('Loading raster data might be limited by bandwidth or upstream server speed.')
+			toast.warning('Le chargement des données raster peut être limité par votre bande passante ou la vitesse du serveur amont.')
 	});
 
 	rasterManager2 = buildRasterManager2(map);

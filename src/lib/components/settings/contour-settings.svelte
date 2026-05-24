@@ -26,7 +26,7 @@
 </script>
 
 <div>
-	<h2 class="text-lg font-bold">Contour settings</h2>
+	<h2 class="text-lg font-bold">Isocontours</h2>
 	<div class="mt-3 flex gap-3">
 		<Switch
 			id="contouring"
@@ -36,10 +36,10 @@
 				updateUrl('contours', String(contours));
 
 				changeOMfileURL();
-				toast.info('Contours turned ' + (contours ? 'on' : 'off'));
+				toast.info('Isocontours ' + (contours ? 'activés' : 'désactivés'));
 			}}
 		/>
-		<Label class="cursor-pointer" for="contouring">Contouring {contours ? 'on' : 'off'}</Label>
+		<Label class="cursor-pointer" for="contouring">Isocontours {contours ? 'activés' : 'désactivés'}</Label>
 	</div>
 	<div class="mt-3 flex gap-3">
 		<Switch
@@ -55,12 +55,12 @@
 
 				if (contours) {
 					changeOMfileURL();
-					toast.info('Contour interval on colorscale turned ' + (breakpoints ? 'on' : 'off'));
+					toast.info('Intervalle sur paliers d\'échelle ' + (breakpoints ? 'activé' : 'désactivé'));
 				}
 			}}
 		/>
 		<Label class="cursor-pointer" for="contouring"
-			>Interval on breakpoints {breakpoints ? 'on' : 'off'}</Label
+			>Intervalle sur paliers {breakpoints ? 'activé' : 'désactivé'}</Label
 		>
 	</div>
 	<div class="mt-3 flex gap-3 duration-300 {breakpoints ? 'opacity-50' : ''}">
@@ -74,7 +74,7 @@
 			bind:value={$vectorOptions.contourInterval}
 			onchange={handleContourIntervalChange}
 		/>
-		<Label for="interval">Contouring interval:</Label>
+		<Label for="interval">Intervalle des isolignes :</Label>
 		<Input
 			id="interval"
 			class="w-20 bg-background/60"

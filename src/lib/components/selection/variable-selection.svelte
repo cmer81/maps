@@ -34,6 +34,8 @@
 	import * as Command from '$lib/components/ui/command';
 	import * as Popover from '$lib/components/ui/popover';
 
+	import { localizeVariableOption, translateVariableLabel } from '$lib/i18n/variables-fr';
+
 	import VariableSelectionEmpty from './variable-selection-empty.svelte';
 
 	// list of variables, with the level groups filtered out, and adding a prefix for the group
@@ -157,7 +159,7 @@
 							aria-expanded={domainSelectionOpen}
 						>
 							<div class="truncate">
-								{$selectedDomain?.label || 'Select a domain...'}
+								{$selectedDomain?.label || 'Choisir un domaine…'}
 							</div>
 							<ChevronsUpDownIcon class="-ml-2 size-4 shrink-0 opacity-50" />
 						</Button>
@@ -202,9 +204,9 @@
 						></Popover.Close
 					>
 					<Command.Root class="bg-glass/85! backdrop-blur-sm rounded">
-						<Command.Input class="border-none ring-0" placeholder="Search domains..." />
+						<Command.Input class="border-none ring-0" placeholder="Rechercher un domaine…" />
 						<Command.List>
-							<Command.Empty>No domains found.</Command.Empty>
+							<Command.Empty>Aucun domaine trouvé.</Command.Empty>
 							{#each domainGroups as { value: group, label: groupLabel } (group)}
 								<Command.Group heading={groupLabel}>
 									{#each domainOptions as { value, label } (value)}
@@ -256,8 +258,10 @@
 						>
 							<div class="truncate">
 								{$levelGroupSelected
-									? $levelGroupSelected?.label
-									: $selectedVariable?.label || 'Select a variable...'}
+									? translateVariableLabel($levelGroupSelected.label)
+									: $selectedVariable?.label
+										? translateVariableLabel($selectedVariable.label)
+										: 'Choisir une variable…'}
 							</div>
 							<ChevronsUpDownIcon class="-ml-2 size-4 shrink-0 opacity-50" />
 						</Button>
@@ -302,9 +306,9 @@
 						></Popover.Close
 					>
 					<Command.Root class="bg-glass/85! backdrop-blur-sm rounded">
-						<Command.Input class="border-none ring-0" placeholder="Search variables..." />
+						<Command.Input class="border-none ring-0" placeholder="Rechercher une variable…" />
 						<Command.List>
-							<Command.Empty>No variables found.</Command.Empty>
+							<Command.Empty>Aucune variable trouvée.</Command.Empty>
 							<Command.Group>
 								{#each variableList as vr, i (i)}
 									{@const v = variableOptions.find(({ value }) => value === vr)
@@ -318,13 +322,13 @@
 												? 'bg-primary/10'
 												: ''}"
 											onSelect={() => {
-												$levelGroupSelected = v;
+												$levelGroupSelected = localizeVariableOption(v);
 												$variable = checkDefaultLevel(v?.value as string);
 												vSO.set(false);
 											}}
 										>
 											<div class="flex w-full items-center justify-between">
-												{v?.label}
+												{v?.label ? translateVariableLabel(v.label) : ''}
 												<CheckIcon
 													class="size-4 {!$levelGroupSelected ||
 													$levelGroupSelected?.value !== v?.value
@@ -351,7 +355,7 @@
 											}}
 										>
 											<div class="flex w-full items-center justify-between">
-												{v?.label}
+												{v?.label ? translateVariableLabel(v.label) : ''}
 												<CheckIcon
 													class="size-4 {$selectedVariable.value !== v?.value
 														? 'text-transparent'
@@ -385,7 +389,7 @@
 								aria-expanded={pressureLevelSelectionOpen}
 							>
 								<div class="truncate">
-									{$level + ' ' + $unit || 'Select a level...'}
+									{$level + ' ' + $unit || 'Choisir un niveau…'}
 								</div>
 								<ChevronsUpDownIcon class="-ml-2 size-4 shrink-0 opacity-50" />
 							</Button>
@@ -397,7 +401,7 @@
 					>
 						<Popover.Close
 							class="absolute right-0.5 top-0.5 flex h-5 w-5 cursor-pointer items-center justify-center"
-							><button aria-label="Close popover"
+							><button aria-label="Fermer la fenêtre"
 								><svg
 									xmlns="http://www.w3.org/2000/svg"
 									width="12"
@@ -415,9 +419,9 @@
 							></Popover.Close
 						>
 						<Command.Root class="bg-glass/85! backdrop-blur-sm rounded">
-							<Command.Input class="border-none ring-0" placeholder="Search levels..." />
+							<Command.Input class="border-none ring-0" placeholder="Rechercher un niveau…" />
 							<Command.List>
-								<Command.Empty>No levels found.</Command.Empty>
+								<Command.Empty>Aucun niveau trouvé.</Command.Empty>
 								<Command.Group>
 									{#each levelGroupsList[$levelGroupSelected.value] as { value, label } (value)}
 										{@const lvl = value.match(LEVEL_UNIT_REGEX)?.groups?.level}
@@ -435,7 +439,7 @@
 												}}
 											>
 												<div class="flex w-full items-center justify-between">
-													{label}
+													{translateVariableLabel(label)}
 													<CheckIcon
 														class="size-4 {lvl !== $level || u !== $unit ? 'text-transparent' : ''}"
 													/>
@@ -457,7 +461,7 @@
 		onclick={() => {
 			vSE.set(!get(vSE));
 		}}
-		aria-label="Hide Variable Selection"
+		aria-label="Masquer la sélection de variable"
 	>
 		{#if variableSelectionExtended}
 			<svg
