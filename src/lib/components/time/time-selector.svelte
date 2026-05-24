@@ -14,6 +14,7 @@
 	import { selectedDomain } from '$lib/stores/variables';
 
 	import PrefetchButton from '$lib/components/time/prefetch-button.svelte';
+	import PlaybackPanel from '$lib/components/time/playback-panel.svelte';
 	import * as Select from '$lib/components/ui/select';
 
 	import {
@@ -799,6 +800,7 @@
 			class="-top-4.5 h-4.5 z-10 right-0 absolute flex rounded-t-lg items-center px-2 gap-0.5 bg-glass/65 backdrop-blur-sm"
 		>
 			<PrefetchButton />
+			<PlaybackPanel />
 
 			<Select.Root
 				type="single"

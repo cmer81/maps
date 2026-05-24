@@ -65,6 +65,9 @@ export const MILLISECONDS_PER_WEEK = 7 * MILLISECONDS_PER_DAY; // 7 days in mill
 // Metadata refresh interval
 export const METADATA_REFRESH_INTERVAL = 5 * MILLISECONDS_PER_MINUTE; // 5 minutes in milliseconds
 
+// Playback (animation) frame interval in milliseconds (4 fps).
+export const PLAYBACK_FRAME_MS = 250;
+
 // Calendar display constants
 export const DAY_NAMES = [
 	'Sunday',
