@@ -1,5 +1,5 @@
 // Domain and variable defaults
-export const DEFAULT_DOMAIN = 'dwd_icon';
+export const DEFAULT_DOMAIN = 'meteofrance_arome_france0025';
 export const DEFAULT_VARIABLE = 'temperature_2m';
 
 // Vector options defaults
