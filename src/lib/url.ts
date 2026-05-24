@@ -118,6 +118,21 @@ export const urlParamsToPreferences = () => {
 		url.searchParams.set('variable', get(v));
 	}
 
+	// If cumul is disabled but the active variable (from URL or localStorage)
+	// is a cumul, downgrade to its base variable so the rest of the app sees a
+	// renderable value.
+	if (!isCumulEnabled()) {
+		const current = get(v);
+		const m = current.match(CUMUL_VARIABLE_REGEX);
+		if (m?.groups) {
+			v.set(m.groups.base);
+			url.searchParams.delete('variable');
+			if (m.groups.base !== 'temperature_2m') {
+				url.searchParams.set('variable', m.groups.base);
+			}
+		}
+	}
+
 	const variable2Param = params.get('variable2');
 	if (variable2Param) {
 		variable2.set(variable2Param);
@@ -197,20 +212,29 @@ export const urlParamsToPreferences = () => {
 	p.set(preferences);
 };
 
+/** Cumul variables (`*_sum_Nh`) are an opt-in feature on top of the worker.
+ * Disabled when `VITE_CUMUL_ENABLED=false` *or* when the worker URL isn't
+ * configured. Labels are gated separately on the worker URL alone. */
+export const isCumulEnabled = (): boolean =>
+	Boolean(import.meta.env.VITE_OM_WORKER_URL) &&
+	import.meta.env.VITE_CUMUL_ENABLED !== 'false';
+
 /**
  * Builds the path prefix expected by infoclimat-om-worker so omProtocol can
  * fetch and aggregate without query-string params (which are stripped before
  * the actual HTTP fetch). The structure mirrors Open-Meteo S3 with three extra
  * path segments (base variable + window) prepended after `/v1/sum/`.
+ *
+ * Returns undefined when cumul is disabled — callers fall back to the upstream
+ * Open-Meteo path with the base variable.
  */
-const buildWorkerBase = (domain: string, baseVariable: string, hours: number): string => {
+const buildWorkerBase = (
+	domain: string,
+	baseVariable: string,
+	hours: number
+): string | undefined => {
+	if (!isCumulEnabled()) return undefined;
 	const workerUrl = import.meta.env.VITE_OM_WORKER_URL;
-	if (!workerUrl) {
-		throw new Error(
-			'Cumul variable requested but VITE_OM_WORKER_URL is not set. ' +
-				'Configure it in .env to enable the precipitation_sum_*h variables.'
-		);
-	}
 	return `${String(workerUrl).replace(/\/$/, '')}/v1/sum/${domain}/${baseVariable}/${hours}h`;
 };
 
@@ -225,7 +249,32 @@ const memorisedHash = (json: string, cachedJson: string, cachedHash: string) => 
 };
 
 /** Matches cumul-style variable names like `precipitation_sum_24h`. */
-const CUMUL_VARIABLE_REGEX = /^(?<base>.+)_sum_(?<hours>\d+)h$/;
+export const CUMUL_VARIABLE_REGEX = /^(?<base>.+)_sum_(?<hours>\d+)h$/;
+
+/**
+ * For an N-hour cumul ending at `selectedTime`, the worker needs source hourly
+ * OMfiles covering `[selectedTime - (hours-1)h, selectedTime]`. Open-Meteo's
+ * spatial bucket only contains a run's *forecast* hours (H+0 onwards), so when
+ * the user-selected `modelRun` is later than the start of that window, every
+ * pre-run hour 404s and the worker returns 400 (post-fix) or 502 (pre-fix).
+ *
+ * Snap the run to 00Z of the window-start day in that case — it's the same
+ * anchor `/v1/sum_since_0h` already enforces, guarantees `windowStart >= run`,
+ * and maximizes cache reuse across users hitting the same cumul.
+ *
+ * When the user's run is already compatible (e.g. they picked an earlier run
+ * than 00Z, or the window falls fully after the run), we leave it untouched.
+ */
+export const resolveCumulModelRun = (
+	modelRun: Date,
+	selectedTime: Date,
+	hours: number
+): Date => {
+	const windowStartMs = selectedTime.getTime() - (hours - 1) * 3600_000;
+	if (windowStartMs >= modelRun.getTime()) return modelRun;
+	const ws = new Date(windowStartMs);
+	return new Date(Date.UTC(ws.getUTCFullYear(), ws.getUTCMonth(), ws.getUTCDate(), 0, 0, 0, 0));
+};
 
 export const getOMUrlFor = (variable: string): string | undefined => {
 	const domain = get(d);
@@ -234,12 +283,24 @@ export const getOMUrlFor = (variable: string): string | undefined => {
 	const selectedTime = get(time);
 
 	const cumulMatch = variable.match(CUMUL_VARIABLE_REGEX);
-	const base = cumulMatch
+	const workerBase = cumulMatch
 		? buildWorkerBase(domain, cumulMatch.groups!.base, Number(cumulMatch.groups!.hours))
-		: `${getBaseUri(domain)}/data_spatial/${domain}`;
+		: undefined;
 
-	let result = `${base}/${fmtModelRun(modelRun)}/${fmtSelectedTime(selectedTime)}.om`;
-	result += `?variable=${variable}`;
+	// When the worker is disabled but the user (or a stale URL) still asks for
+	// a cumul variable, degrade to the base variable on upstream Open-Meteo so
+	// the page renders *something* instead of a crash.
+	const effectiveVariable = cumulMatch && !workerBase ? cumulMatch.groups!.base : variable;
+
+	const base = workerBase ?? `${getBaseUri(domain)}/data_spatial/${domain}`;
+
+	const effectiveModelRun =
+		cumulMatch && workerBase
+			? resolveCumulModelRun(modelRun, selectedTime, Number(cumulMatch.groups!.hours))
+			: modelRun;
+
+	let result = `${base}/${fmtModelRun(effectiveModelRun)}/${fmtSelectedTime(selectedTime)}.om`;
+	result += `?variable=${effectiveVariable}`;
 
 	if (mode.current === 'dark') result += '&dark=true';
 	const vectorOptions = get(vO);

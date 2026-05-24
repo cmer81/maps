@@ -17,6 +17,7 @@ import { domain as domainStore, variable as variableStore } from '$lib/stores/va
 
 import { BEFORE_LAYER_VECTOR } from './constants';
 import { type LabelsFeatureCollection, fetchLabelsForBounds } from './labels';
+import { CUMUL_VARIABLE_REGEX, resolveCumulModelRun } from './url';
 
 const SOURCE_ID = 'omLabelsSource';
 const LAYER_ID = 'omLabelsLayer';
@@ -105,12 +106,22 @@ export const refreshLabels = async (_deps?: unknown): Promise<void> => {
 	inflight = ctrl;
 
 	try {
+		const variable = get(variableStore);
+		const t = get(timeStore);
+		// Mirror getOMUrlFor's run-snapping so the labels endpoint and the raster
+		// endpoint hit the *same* aggregate cache key — and so a 15Z run on a 24h
+		// cumul doesn't try to fetch hours that don't exist in its bucket.
+		const cumulMatch = variable.match(CUMUL_VARIABLE_REGEX);
+		const effectiveRun = cumulMatch
+			? resolveCumulModelRun(run, t, Number(cumulMatch.groups!.hours))
+			: run;
+
 		const result = await fetchLabelsForBounds({
 			workerBase: String(workerBase),
 			domain: get(domainStore),
-			variable: get(variableStore),
-			modelRun: run,
-			time: get(timeStore),
+			variable,
+			modelRun: effectiveRun,
+			time: t,
 			bounds: map.getBounds(),
 			mapZoom: map.getZoom(),
 			signal: ctrl.signal

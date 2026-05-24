@@ -14,9 +14,12 @@
 		variableOptions
 	} from '@openmeteo/weather-map-layer';
 
+	import { CUMUL_BASE_VARIABLES, CUMUL_GROUP_PREFIX, CUMUL_HOURS } from '$lib/constants';
 	import { desktop, loading } from '$lib/stores/preferences';
 	import { metaJson } from '$lib/stores/time';
 	import {
+		cumulGroupSelected,
+		cumulSelectionOpen as cSO,
 		domainSelectionOpen as dSO,
 		domain,
 		level,
@@ -34,11 +37,22 @@
 	import * as Command from '$lib/components/ui/command';
 	import * as Popover from '$lib/components/ui/popover';
 
-	import { localizeVariableOption, translateVariableLabel } from '$lib/i18n/variables-fr';
+	import {
+		cumulDurationLabelFr,
+		cumulGroupLabelFr,
+		localizeVariableOption,
+		translateVariableLabel
+	} from '$lib/i18n/variables-fr';
+
+	const cumulWorkerEnabled =
+		Boolean(import.meta.env.VITE_OM_WORKER_URL) &&
+		import.meta.env.VITE_CUMUL_ENABLED !== 'false';
 
 	import VariableSelectionEmpty from './variable-selection-empty.svelte';
 
-	// list of variables, with the level groups filtered out, and adding a prefix for the group
+	// list of variables, with the level groups filtered out, and adding a prefix for the group.
+	// When the cumul worker is configured, also insert a sentinel `__cumul:<base>` entry right
+	// after each cumul-eligible base variable that the current model exposes.
 	let variableList = $derived.by(() => {
 		if ($metaJson) {
 			const variables: string[] = [];
@@ -54,9 +68,30 @@
 				}
 
 				variables.push(mjVariable);
+
+				if (
+					cumulWorkerEnabled &&
+					(CUMUL_BASE_VARIABLES as readonly string[]).includes(mjVariable)
+				) {
+					variables.push(CUMUL_GROUP_PREFIX + mjVariable);
+				}
 			}
 			return variables;
 		}
+	});
+
+	// Cumul variants exposed per base variable, keyed by sentinel (`__cumul:precipitation`).
+	const cumulGroupsList = $derived.by(() => {
+		if (!cumulWorkerEnabled || !$metaJson) return {} as Record<string, { value: string; label: string }[]>;
+		const groups: Record<string, { value: string; label: string }[]> = {};
+		for (const mjVariable of $metaJson.variables) {
+			if (!(CUMUL_BASE_VARIABLES as readonly string[]).includes(mjVariable)) continue;
+			groups[CUMUL_GROUP_PREFIX + mjVariable] = CUMUL_HOURS.map((h) => ({
+				value: `${mjVariable}_sum_${h}h`,
+				label: cumulDurationLabelFr(h)
+			}));
+		}
+		return groups;
 	});
 
 	const levelGroupsList = $derived.by(() => {
@@ -98,6 +133,11 @@
 	let pressureLevelSelectionOpen = $state(get(pLSO));
 	pLSO.subscribe((plO) => {
 		pressureLevelSelectionOpen = plO;
+	});
+
+	let cumulSelectionOpen = $state(get(cSO));
+	cSO.subscribe((cO) => {
+		cumulSelectionOpen = cO;
 	});
 
 	let variableSelectionExtended = $state(get(vSE));
@@ -259,11 +299,15 @@
 							aria-expanded={variableSelectionOpen}
 						>
 							<div class="truncate">
-								{$levelGroupSelected
-									? translateVariableLabel($levelGroupSelected.label)
-									: $selectedVariable?.label
-										? translateVariableLabel($selectedVariable.label)
-										: 'Choisir une variable…'}
+								{#if $cumulGroupSelected}
+									{cumulGroupLabelFr($cumulGroupSelected.label)}
+								{:else if $levelGroupSelected}
+									{translateVariableLabel($levelGroupSelected.label)}
+								{:else if $selectedVariable?.label}
+									{translateVariableLabel($selectedVariable.label)}
+								{:else}
+									Choisir une variable…
+								{/if}
 							</div>
 							<ChevronsUpDownIcon class="-ml-2 size-4 shrink-0 opacity-50" />
 						</Button>
@@ -316,7 +360,30 @@
 									{@const v = variableOptions.find(({ value }) => value === vr)
 										? variableOptions.find(({ value }) => value === vr)
 										: { value: vr, label: vr }}
-									{#if levelGroupVariables.includes(vr)}
+									{#if vr.startsWith(CUMUL_GROUP_PREFIX)}
+										{@const base = vr.slice(CUMUL_GROUP_PREFIX.length)}
+										<Command.Item
+											value={vr}
+											class="hover:bg-primary/15 cursor-pointer {$cumulGroupSelected?.value === vr
+												? 'bg-primary/10'
+												: ''}"
+											onSelect={() => {
+												$levelGroupSelected = undefined;
+												$cumulGroupSelected = { value: vr, label: base };
+												$variable = `${base}_sum_${CUMUL_HOURS[0]}h`;
+												vSO.set(false);
+											}}
+										>
+											<div class="flex w-full items-center justify-between">
+												{cumulGroupLabelFr(base)}
+												<CheckIcon
+													class="size-4 {$cumulGroupSelected?.value !== vr
+														? 'text-transparent'
+														: ''}"
+												/>
+											</div>
+										</Command.Item>
+									{:else if levelGroupVariables.includes(vr)}
 										<Command.Item
 											value={v?.value}
 											class="hover:bg-primary/15 cursor-pointer {$levelGroupSelected &&
@@ -451,6 +518,92 @@
 												</div>
 											</Command.Item>
 										{/if}
+									{/each}
+								</Command.Group>
+							</Command.List>
+						</Command.Root>
+					</Popover.Content>
+				</Popover.Root>
+			{/if}
+			{#if $cumulGroupSelected && cumulGroupsList[$cumulGroupSelected.value]}
+				<Popover.Root
+					bind:open={cumulSelectionOpen}
+					onOpenChange={(e) => {
+						cSO.set(e);
+					}}
+				>
+					<Popover.Trigger class={domainSelectionOpen || variableSelectionOpen ? 'hidden' : ''}>
+						{#snippet child({ props })}
+							<Button
+								{...props}
+								variant="outline"
+								class="bg-glass/75 dark:bg-glass/75 backdrop-blur-sm shadow-md {cumulSelectionOpen
+									? 'bg-glass/95!'
+									: ''} hover:bg-glass/95! h-7.25 w-45 cursor-pointer justify-between rounded border-none p-1.5! {domainSelectionOpen ||
+								variableSelectionOpen
+									? 'hidden'
+									: ''}"
+								role="combobox"
+								aria-expanded={cumulSelectionOpen}
+							>
+								<div class="truncate">
+									{($cumulGroupSelected
+										? cumulGroupsList[$cumulGroupSelected.value]
+										: undefined
+									)?.find(({ value }) => value === $selectedVariable.value)?.label ??
+										'Choisir une durée…'}
+								</div>
+								<ChevronsUpDownIcon class="-ml-2 size-4 shrink-0 opacity-50" />
+							</Button>
+						{/snippet}
+					</Popover.Trigger>
+					<Popover.Content
+						tabindex={0}
+						class="ml-2.5 z-80 w-62.5 rounded border-none bg-transparent! p-0"
+					>
+						<Popover.Close
+							class="absolute right-0.5 top-0.5 flex h-5 w-5 cursor-pointer items-center justify-center"
+							><button aria-label="Fermer la fenêtre"
+								><svg
+									xmlns="http://www.w3.org/2000/svg"
+									width="12"
+									height="12"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="1.5"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									class="cursor-pointer"
+									><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"
+									></line></svg
+								></button
+							></Popover.Close
+						>
+						<Command.Root class="bg-glass/85! backdrop-blur-sm rounded">
+							<Command.List>
+								<Command.Group>
+									{#each cumulGroupsList[$cumulGroupSelected.value] as { value, label } (value)}
+										<Command.Item
+											{value}
+											class="hover:bg-primary/20! cursor-pointer {$selectedVariable.value ===
+											value
+												? 'bg-primary/10!'
+												: ''}"
+											onSelect={() => {
+												$variable = value;
+												cSO.set(false);
+											}}
+										>
+											<div class="flex w-full items-center justify-between">
+												{label}
+												<CheckIcon
+													class="size-4 {$selectedVariable.value !== value
+														? 'text-transparent'
+														: ''}"
+												/>
+											</div>
+										</Command.Item>
 									{/each}
 								</Command.Group>
 							</Command.List>

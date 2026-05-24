@@ -9,7 +9,9 @@ import {
 } from '@openmeteo/weather-map-layer';
 import { type Persisted, persisted } from 'svelte-persisted-store';
 
-import { DEFAULT_DOMAIN, DEFAULT_VARIABLE } from '$lib/constants';
+import { CUMUL_GROUP_PREFIX, DEFAULT_DOMAIN, DEFAULT_VARIABLE } from '$lib/constants';
+
+const CUMUL_VARIABLE_REGEX = /^(?<base>.+)_sum_(?<hours>\d+)h$/;
 
 export const defaultDomain = DEFAULT_DOMAIN;
 export const domain = persisted('domain', defaultDomain);
@@ -73,9 +75,24 @@ export const unit = derived(selectedVariable, (sV) => {
 	}
 });
 
+const deriveCumulGroup = (value: string) => {
+	const match = value.match(CUMUL_VARIABLE_REGEX);
+	if (!match?.groups) return undefined;
+	const base = match.groups.base;
+	return { value: CUMUL_GROUP_PREFIX + base, label: base };
+};
+
+export const cumulGroupSelected: Writable<{ value: string; label: string } | undefined> = writable(
+	deriveCumulGroup(get(selectedVariable).value)
+);
+selectedVariable.subscribe((newVariable) => {
+	cumulGroupSelected.set(deriveCumulGroup(newVariable.value));
+});
+
 export const domainSelectionOpen = writable(false);
 export const variableSelectionOpen = writable(false);
 export const pressureLevelsSelectionOpen = writable(false);
+export const cumulSelectionOpen = writable(false);
 export const variableSelectionExtended: Persisted<boolean | undefined> = persisted(
 	'variables_open',
 	undefined

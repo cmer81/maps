@@ -261,6 +261,24 @@ function translateByComposition(label: string): string | null {
 	return `${capitalize(baseEntry.fr)}${frLevel} (${suffix})`;
 }
 
+const CUMUL_BASE_LABELS_FR: Record<string, string> = {
+	precipitation: 'précipitations',
+	snowfall: 'neige',
+	rain: 'pluie',
+	showers: 'averses'
+};
+
+/** Libellé du bouton/groupe pour une base cumul ("Cumul des précipitations"). */
+export function cumulGroupLabelFr(base: string): string {
+	const fr = CUMUL_BASE_LABELS_FR[base] ?? base;
+	return `Cumul ${base === 'snowfall' ? 'de ' : 'des '}${fr}`;
+}
+
+/** Libellé d'une durée de cumul ("Cumul 3 h"). */
+export function cumulDurationLabelFr(hours: number): string {
+	return `Cumul ${hours} h`;
+}
+
 /** API publique : renvoie le libellé FR ou le libellé EN si non traduit. */
 export function translateVariableLabel(label: string): string {
 	if (label in EXPLICIT) return EXPLICIT[label];
