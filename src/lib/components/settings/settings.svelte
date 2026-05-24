@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { sheet } from '$lib/stores/preferences';
 
+	import SecondaryLayerPanel from '$lib/components/secondary-layer/secondary-layer-panel.svelte';
 	import * as Sheet from '$lib/components/ui/sheet';
+	import WindOverlayPanel from '$lib/components/wind-overlay/wind-overlay-panel.svelte';
 
 	import ArrowsSettings from './arrows-settings.svelte';
 	import CacheSettings from './cache-settings.svelte';
@@ -13,8 +15,6 @@
 	import TileSizeSettings from './tile-size-settings.svelte';
 	import UnitSettings from './unit-settings.svelte';
 	import WaterClipSetting from './water-clip-setting.svelte';
-	import SecondaryLayerPanel from '$lib/components/secondary-layer/secondary-layer-panel.svelte';
-	import WindOverlayPanel from '$lib/components/wind-overlay/wind-overlay-panel.svelte';
 </script>
 
 <Sheet.Root bind:open={$sheet}>

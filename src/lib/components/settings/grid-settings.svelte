@@ -26,6 +26,8 @@
 				toast.info('Grille ' + (grid ? 'activée' : 'désactivée'));
 			}}
 		/>
-		<Label for="grid" class="cursor-pointer">Points de grille {grid ? 'activés' : 'désactivés'}</Label>
+		<Label for="grid" class="cursor-pointer"
+			>Points de grille {grid ? 'activés' : 'désactivés'}</Label
+		>
 	</div>
 </div>

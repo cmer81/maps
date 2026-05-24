@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { vectorOptions, windOverlayEnabled, windOverlayLevel } from '$lib/stores/vector';
+
 	import { changeOMfileURL } from '$lib/layers';
 	import { updateUrl } from '$lib/url';
 

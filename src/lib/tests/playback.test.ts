@@ -60,11 +60,7 @@ describe('nextPlaybackFrame', () => {
 describe('timeStepsBetween', () => {
 	it('returns inclusive count of steps between start and end', () => {
 		expect(
-			timeStepsBetween(
-				new Date('2026-05-24T01:00:00Z'),
-				new Date('2026-05-24T03:00:00Z'),
-				steps
-			)
+			timeStepsBetween(new Date('2026-05-24T01:00:00Z'), new Date('2026-05-24T03:00:00Z'), steps)
 		).toBe(3);
 	});
 

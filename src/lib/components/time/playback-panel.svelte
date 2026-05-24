@@ -1,15 +1,8 @@
 <script lang="ts">
-	import { get } from 'svelte/store';
 	import { onDestroy } from 'svelte';
+	import { get } from 'svelte/store';
 
 	import { toast } from 'svelte-sonner';
-
-	import { PLAYBACK_FRAME_MS } from '$lib/constants';
-	import { changeOMfileURL } from '$lib/layers';
-	import { nextPlaybackFrame, timeStepsBetween } from '$lib/playback';
-	import { type PrefetchMode, getDateRangeForMode, prefetchData } from '$lib/prefetch';
-
-	import * as Select from '$lib/components/ui/select';
 
 	import {
 		playbackEnd,
@@ -26,11 +19,18 @@
 		variable as variableStore
 	} from '$lib/stores/variables';
 
+	import * as Select from '$lib/components/ui/select';
+
+	import { PLAYBACK_FRAME_MS } from '$lib/constants';
+	import { changeOMfileURL } from '$lib/layers';
+	import { nextPlaybackFrame, timeStepsBetween } from '$lib/playback';
+	import { type PrefetchMode, getDateRangeForMode, prefetchData } from '$lib/prefetch';
+
 	let timeoutId: ReturnType<typeof setTimeout> | undefined;
 	let abortController: AbortController | null = null;
 
 	const playbackModeLabels = new Map<PrefetchMode, string>([
-		['today', 'Aujourd\'hui'],
+		['today', "Aujourd'hui"],
 		['next24h', '24 h suivantes'],
 		['prev24h', '24 h précédentes'],
 		['completeModelRun', 'Run complet']
@@ -267,8 +267,8 @@
 			type="button"
 			class="cursor-pointer text-foreground/70 hover:text-foreground w-4 h-4.5 flex items-center justify-center"
 			onclick={play}
-			aria-label={$playbackStatus === 'paused' ? 'Reprendre la lecture' : 'Lancer l\'animation'}
-			title={$playbackStatus === 'paused' ? 'Reprendre la lecture' : 'Lancer l\'animation'}
+			aria-label={$playbackStatus === 'paused' ? 'Reprendre la lecture' : "Lancer l'animation"}
+			title={$playbackStatus === 'paused' ? 'Reprendre la lecture' : "Lancer l'animation"}
 		>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"

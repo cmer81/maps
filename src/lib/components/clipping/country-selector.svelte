@@ -151,7 +151,9 @@
 				</div>
 				{#if $clippingCountryCodes.length > 0}
 					<div class="flex items-center justify-between px-3 py-1 text-xs border-t border-muted/50">
-						<span class="text-muted-foreground">{totalCountriesCount} sélectionné{totalCountriesCount > 1 ? 's' : ''}</span>
+						<span class="text-muted-foreground"
+							>{totalCountriesCount} sélectionné{totalCountriesCount > 1 ? 's' : ''}</span
+						>
 						<button
 							onclick={clearAll}
 							class="px-2 py-0.5 cursor-pointer hover:bg-muted/80 rounded text-muted-foreground hover:text-foreground transition-colors"

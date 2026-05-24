@@ -6,8 +6,8 @@ import { toast } from 'svelte-sonner';
 
 import { map as m } from '$lib/stores/map';
 import { loading, opacity, opacity2, preferences as p } from '$lib/stores/preferences';
+import { layer2Enabled, variable2 } from '$lib/stores/variables';
 import { vectorOptions as vO } from '$lib/stores/vector';
-import { variable2, layer2Enabled } from '$lib/stores/variables';
 
 import {
 	BEFORE_LAYER_RASTER,
@@ -309,7 +309,9 @@ export const createManagers = (): void => {
 		onError: () => loading.set(false),
 		slowLoadWarningMs: 10000,
 		onSlowLoad: () =>
-			toast.warning('Le chargement des données raster peut être limité par votre bande passante ou la vitesse du serveur amont.')
+			toast.warning(
+				'Le chargement des données raster peut être limité par votre bande passante ou la vitesse du serveur amont.'
+			)
 	});
 
 	rasterManager2 = buildRasterManager2(map);

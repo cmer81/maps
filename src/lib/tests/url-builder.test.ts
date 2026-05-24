@@ -1,8 +1,11 @@
-import { describe, expect, it, beforeEach } from 'vitest';
 import { get } from 'svelte/store';
-import { domain as d, variable as v } from '$lib/stores/variables';
+
+import { beforeEach, describe, expect, it } from 'vitest';
+
 import { modelRun as mR, time } from '$lib/stores/time';
-import { getOMUrlFor, getOMUrl } from '$lib/url';
+import { domain as d, variable as v } from '$lib/stores/variables';
+
+import { getOMUrl, getOMUrlFor } from '$lib/url';
 
 describe('getOMUrlFor', () => {
 	beforeEach(() => {

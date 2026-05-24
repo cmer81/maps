@@ -39,7 +39,9 @@
 				toast.info('Isocontours ' + (contours ? 'activés' : 'désactivés'));
 			}}
 		/>
-		<Label class="cursor-pointer" for="contouring">Isocontours {contours ? 'activés' : 'désactivés'}</Label>
+		<Label class="cursor-pointer" for="contouring"
+			>Isocontours {contours ? 'activés' : 'désactivés'}</Label
+		>
 	</div>
 	<div class="mt-3 flex gap-3">
 		<Switch
@@ -55,7 +57,7 @@
 
 				if (contours) {
 					changeOMfileURL();
-					toast.info('Intervalle sur paliers d\'échelle ' + (breakpoints ? 'activé' : 'désactivé'));
+					toast.info("Intervalle sur paliers d'échelle " + (breakpoints ? 'activé' : 'désactivé'));
 				}
 			}}
 		/>

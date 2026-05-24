@@ -52,7 +52,10 @@
 					if (v) $cacheBlockSizeKb = Number(v);
 				}}
 			>
-				<Select.Trigger class="w-24 bg-background/60" aria-label="Choisir la taille des blocs du cache">
+				<Select.Trigger
+					class="w-24 bg-background/60"
+					aria-label="Choisir la taille des blocs du cache"
+				>
 					{blockSizeOptions.find((o) => o.value === String($cacheBlockSizeKb))?.label ??
 						`${$cacheBlockSizeKb} KiB`}
 				</Select.Trigger>

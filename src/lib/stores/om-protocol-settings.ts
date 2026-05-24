@@ -71,10 +71,7 @@ const cumulAwareResolveRequest: typeof defaultResolveRequest = (urlComponents, s
 	// the default resolver against a synthetic baseUrl that the regex accepts.
 	const synthetic = {
 		...urlComponents,
-		baseUrl: urlComponents.baseUrl.replace(
-			WORKER_DOMAIN_REGEX,
-			`/data_spatial/${domainValue}/`
-		)
+		baseUrl: urlComponents.baseUrl.replace(WORKER_DOMAIN_REGEX, `/data_spatial/${domainValue}/`)
 	};
 	const { renderOptions } = defaultResolveRequest(synthetic, settings);
 	return { dataOptions: { domain, variable, bounds: undefined }, renderOptions };

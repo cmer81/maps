@@ -15,13 +15,15 @@
 	let abortController: AbortController | null = null;
 
 	const prefetchModes = new Map<PrefetchMode, string>([
-		['today', 'Aujourd\'hui'],
+		['today', "Aujourd'hui"],
 		['next24h', '24 h suivantes'],
 		['prev24h', '24 h précédentes'],
 		['completeModelRun', 'Run complet']
 	]);
 
-	let prefetchModeLabel: string = $derived(prefetchModes.get(selectedPrefetchMode) ?? 'Aujourd\'hui');
+	let prefetchModeLabel: string = $derived(
+		prefetchModes.get(selectedPrefetchMode) ?? "Aujourd'hui"
+	);
 
 	const handlePrefetch = async () => {
 		if (isPrefetching) {
@@ -85,7 +87,7 @@
 		aria-label="Choisir le mode de préchargement"
 		disabled={isPrefetching}
 	>
-		{prefetchModes.get(selectedPrefetchMode) ?? 'Aujourd\'hui'}
+		{prefetchModes.get(selectedPrefetchMode) ?? "Aujourd'hui"}
 	</Select.Trigger>
 	<Select.Content
 		class="left-5 border-none max-h-60 bg-glass/65 backdrop-blur-sm"

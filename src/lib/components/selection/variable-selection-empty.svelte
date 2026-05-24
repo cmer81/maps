@@ -34,9 +34,9 @@
 		<div class="truncate">
 			{$levelGroupSelected
 				? translateVariableLabel($levelGroupSelected.label)
-				: ($selectedVariable?.label
-						? translateVariableLabel($selectedVariable.label)
-						: 'Choisir un domaine…')}
+				: $selectedVariable?.label
+					? translateVariableLabel($selectedVariable.label)
+					: 'Choisir un domaine…'}
 		</div>
 		<ChevronsUpDownIcon class="-ml-2 size-4 shrink-0 opacity-50" />
 	</Button>

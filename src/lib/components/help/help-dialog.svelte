@@ -419,25 +419,28 @@
 						<b>Unités</b> — Régler les unités de mesure pour les différentes variables (distance, température,
 						précipitations, vitesse du vent).
 					</div>
-					<b>Grille</b> — Afficher les points de grille du modèle sous forme de points orange sur la carte
+					<b>Grille</b> — Afficher les points de grille du modèle sous forme de points orange sur la
+					carte
 					<div>
-						<b>Flèches</b> — Afficher des flèches directionnelles sur les cartes avec vitesse et direction (vent / houle)
+						<b>Flèches</b> — Afficher des flèches directionnelles sur les cartes avec vitesse et direction
+						(vent / houle)
 					</div>
 					<div><b>Isocontours</b> — Afficher des isolignes entre certains seuils</div>
 					<div>
-						<b>Requêtes partielles</b> — Ne charger que les données du viewport courant. Mise à jour au zoom / déplacement
+						<b>Requêtes partielles</b> — Ne charger que les données du viewport courant. Mise à jour au
+						zoom / déplacement
 					</div>
 					<div>
-						<b>Masquer les océans</b> — Superposer les océans aux tuiles générées. Utile pour certaines variables
-						(p. ex. température du sol) où les valeurs en mer n'ont pas de sens
+						<b>Masquer les océans</b> — Superposer les océans aux tuiles générées. Utile pour certaines
+						variables (p. ex. température du sol) où les valeurs en mer n'ont pas de sens
 					</div>
 				</div>
 				<div>
 					<div>
-						<b>Taille des tuiles</b> — Taille en pixels des tuiles générées, <b><i>512 px</i></b> par défaut. Comme
-						la tuile source fait toujours 512 px, des tailles plus petites réduisent le nombre de pixels
-						à calculer par tuile, ce qui accélère le rendu. À l'inverse, augmenter la taille améliore
-						la résolution et le rendu visuel, au prix d'un calcul plus lourd.
+						<b>Taille des tuiles</b> — Taille en pixels des tuiles générées, <b><i>512 px</i></b> par
+						défaut. Comme la tuile source fait toujours 512 px, des tailles plus petites réduisent le
+						nombre de pixels à calculer par tuile, ce qui accélère le rendu. À l'inverse, augmenter la
+						taille améliore la résolution et le rendu visuel, au prix d'un calcul plus lourd.
 					</div>
 				</div>
 			</div>

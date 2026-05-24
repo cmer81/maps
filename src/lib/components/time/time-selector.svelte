@@ -13,8 +13,8 @@
 	import { inProgress, latest, modelRun, now, time } from '$lib/stores/time';
 	import { selectedDomain } from '$lib/stores/variables';
 
-	import PrefetchButton from '$lib/components/time/prefetch-button.svelte';
 	import PlaybackPanel from '$lib/components/time/playback-panel.svelte';
+	import PrefetchButton from '$lib/components/time/prefetch-button.svelte';
 	import * as Select from '$lib/components/ui/select';
 
 	import {
@@ -266,13 +266,13 @@
 	const onDateChange = async (date: Date) => {
 		if ($modelRunLocked) {
 			if (date.getTime() < metaFirstTime.getTime()) {
-				toast.warning('Run verrouillé : impossible d\'aller avant le premier instant');
+				toast.warning("Run verrouillé : impossible d'aller avant le premier instant");
 				currentDate = new SvelteDate($time);
 				centerDateButton(currentDate);
 				return;
 			}
 			if (date.getTime() > metaLastTime.getTime()) {
-				toast.warning('Run verrouillé : impossible d\'aller après le dernier instant');
+				toast.warning("Run verrouillé : impossible d'aller après le dernier instant");
 				currentDate = new SvelteDate($time);
 				centerDateButton(currentDate);
 				return;

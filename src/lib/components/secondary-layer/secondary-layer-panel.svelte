@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { variable2, layer2Enabled } from '$lib/stores/variables';
-	import { opacity2 } from '$lib/stores/preferences';
-	import { changeOMfileURL } from '$lib/layers';
 	import { currentOmUrl, currentOmUrl2 } from '$lib/stores/om-url';
+	import { opacity2 } from '$lib/stores/preferences';
+	import { layer2Enabled, variable2 } from '$lib/stores/variables';
+
+	import { changeOMfileURL } from '$lib/layers';
 	import { updateUrl } from '$lib/url';
 
 	function onToggle(e: Event) {
@@ -51,14 +52,7 @@
 		</select>
 		<label class="block">
 			<span class="text-xs">Opacité {$opacity2}%</span>
-			<input
-				type="range"
-				min="0"
-				max="100"
-				value={$opacity2}
-				oninput={onOpacity}
-				class="w-full"
-			/>
+			<input type="range" min="0" max="100" value={$opacity2} oninput={onOpacity} class="w-full" />
 		</label>
 	{/if}
 </div>

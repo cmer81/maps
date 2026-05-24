@@ -11,8 +11,7 @@ export const nextPlaybackFrame = (
 	if (steps.length === 0) return undefined;
 	const idx = steps.findIndex((s) => s.getTime() === current.getTime());
 	const nextIdx = idx + 1;
-	const overrun =
-		idx === -1 || nextIdx >= steps.length || steps[nextIdx].getTime() > end.getTime();
+	const overrun = idx === -1 || nextIdx >= steps.length || steps[nextIdx].getTime() > end.getTime();
 	if (overrun) {
 		return steps.find((s) => s.getTime() >= start.getTime());
 	}
