@@ -3,7 +3,8 @@ import { type Writable, get, writable } from 'svelte/store';
 import { BrowserBlockCache } from '@openmeteo/file-reader';
 import {
 	type WeatherMapLayerFileReader,
-	defaultOmProtocolSettings
+	defaultOmProtocolSettings,
+	defaultResolveRequest
 } from '@openmeteo/weather-map-layer';
 import { persisted } from 'svelte-persisted-store';
 
@@ -46,6 +47,39 @@ function createBlockCache() {
 	});
 }
 
+/**
+ * Custom resolver that recognises infoclimat-om-worker URLs (which embed the
+ * domain in a `/v1/sum/<domain>/...` path) and falls back to the default
+ * resolver for upstream Open-Meteo URLs.
+ */
+const WORKER_DOMAIN_REGEX = /\/v1\/sum\/(?<domain>[^/]+)\//;
+const cumulAwareResolveRequest: typeof defaultResolveRequest = (urlComponents, settings) => {
+	const match = urlComponents.baseUrl.match(WORKER_DOMAIN_REGEX);
+	if (!match?.groups?.domain) {
+		return defaultResolveRequest(urlComponents, settings);
+	}
+	const domainValue = match.groups.domain;
+	const domain = settings.domainOptions.find((d) => d.value === domainValue);
+	if (!domain) {
+		throw new Error(`Invalid domain in worker URL: ${domainValue}`);
+	}
+	const variable = urlComponents.params.get('variable');
+	if (!variable) {
+		throw new Error('Variable is required but not defined');
+	}
+	// Reuse default render options (color scale, tile size, etc.) by re-running
+	// the default resolver against a synthetic baseUrl that the regex accepts.
+	const synthetic = {
+		...urlComponents,
+		baseUrl: urlComponents.baseUrl.replace(
+			WORKER_DOMAIN_REGEX,
+			`/data_spatial/${domainValue}/`
+		)
+	};
+	const { renderOptions } = defaultResolveRequest(synthetic, settings);
+	return { dataOptions: { domain, variable, bounds: undefined }, renderOptions };
+};
+
 export const omProtocolSettings: Writable<OmProtocolSettings> = writable({
 	...defaultOmProtocolSettings,
 	// static
@@ -53,6 +87,7 @@ export const omProtocolSettings: Writable<OmProtocolSettings> = writable({
 		useSAB: true,
 		cache: createBlockCache()
 	},
+	resolveRequest: cumulAwareResolveRequest,
 
 	// dynamic (can be changed during runtime)
 	colorScales: { ...defaultOmProtocolSettings.colorScales, ...initialCustomColorScales },

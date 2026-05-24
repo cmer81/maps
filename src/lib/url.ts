@@ -16,13 +16,14 @@ import { map as m } from '$lib/stores/map';
 import {
 	type Preferences,
 	completeDefaultValues,
+	opacity2,
 	preferences as p,
 	tileSize as tS,
 	url as u
 } from '$lib/stores/preferences';
 import { modelRun as mR, modelRunLocked as mRL, time } from '$lib/stores/time';
-import { domain as d, variable as v } from '$lib/stores/variables';
-import { vectorOptions as vO } from '$lib/stores/vector';
+import { domain as d, layer2Enabled, variable as v, variable2 } from '$lib/stores/variables';
+import { vectorOptions as vO, windOverlayEnabled, windOverlayLevel } from '$lib/stores/vector';
 
 import {
 	CLIP_COUNTRIES_PARAM,
@@ -116,6 +117,28 @@ export const urlParamsToPreferences = () => {
 		url.searchParams.set('variable', get(v));
 	}
 
+	const variable2Param = params.get('variable2');
+	if (variable2Param) {
+		variable2.set(variable2Param);
+	} else if (get(variable2) !== 'precipitation') {
+		url.searchParams.set('variable2', get(variable2));
+	}
+
+	const layer2Param = params.get('layer2');
+	if (layer2Param !== null) {
+		layer2Enabled.set(layer2Param === 'true');
+	} else if (get(layer2Enabled)) {
+		url.searchParams.set('layer2', 'true');
+	}
+
+	const opacity2Param = params.get('opacity2');
+	if (opacity2Param !== null) {
+		const n = Number(opacity2Param);
+		if (Number.isFinite(n)) opacity2.set(n);
+	} else if (get(opacity2) !== 70) {
+		url.searchParams.set('opacity2', String(get(opacity2)));
+	}
+
 	const arrowsRaw = params.get('arrows');
 	if (arrowsRaw !== null) {
 		vectorOptions.arrows = arrowsRaw === 'true';
@@ -137,6 +160,20 @@ export const urlParamsToPreferences = () => {
 		url.searchParams.set('interval', String(vectorOptions.contourInterval));
 	}
 
+	const windOverlayRaw = params.get('wind_overlay');
+	if (windOverlayRaw !== null) {
+		windOverlayEnabled.set(windOverlayRaw === 'true');
+	} else if (get(windOverlayEnabled)) {
+		url.searchParams.set('wind_overlay', 'true');
+	}
+
+	const windOverlayLevelRaw = params.get('wind_overlay_level');
+	if (windOverlayLevelRaw !== null) {
+		windOverlayLevel.set(windOverlayLevelRaw);
+	} else if (get(windOverlayLevel) !== '10m') {
+		url.searchParams.set('wind_overlay_level', get(windOverlayLevel));
+	}
+
 	const clipCountries = parseClipCountriesParam(params.get(CLIP_COUNTRIES_PARAM));
 	if (clipCountries.length > 0) {
 		clippingCountryCodes.set(clipCountries);
@@ -152,6 +189,23 @@ export const urlParamsToPreferences = () => {
 	p.set(preferences);
 };
 
+/**
+ * Builds the path prefix expected by infoclimat-om-worker so omProtocol can
+ * fetch and aggregate without query-string params (which are stripped before
+ * the actual HTTP fetch). The structure mirrors Open-Meteo S3 with three extra
+ * path segments (base variable + window) prepended after `/v1/sum/`.
+ */
+const buildWorkerBase = (domain: string, baseVariable: string, hours: number): string => {
+	const workerUrl = import.meta.env.VITE_OM_WORKER_URL;
+	if (!workerUrl) {
+		throw new Error(
+			'Cumul variable requested but VITE_OM_WORKER_URL is not set. ' +
+				'Configure it in .env to enable the precipitation_sum_*h variables.'
+		);
+	}
+	return `${String(workerUrl).replace(/\/$/, '')}/v1/sum/${domain}/${baseVariable}/${hours}h`;
+};
+
 let cachedClippingJson = '';
 let cachedClippingHash = '';
 let cachedColorJson = '';
@@ -162,15 +216,22 @@ const memorisedHash = (json: string, cachedJson: string, cachedHash: string) => 
 	return { json, hash: hashValue(json) };
 };
 
-export const getOMUrl = () => {
+/** Matches cumul-style variable names like `precipitation_sum_24h`. */
+const CUMUL_VARIABLE_REGEX = /^(?<base>.+)_sum_(?<hours>\d+)h$/;
+
+export const getOMUrlFor = (variable: string): string | undefined => {
 	const domain = get(d);
-	const base = `${getBaseUri(domain)}/data_spatial/${domain}`;
 	const modelRun = get(mR);
 	if (!modelRun) return undefined;
 	const selectedTime = get(time);
 
+	const cumulMatch = variable.match(CUMUL_VARIABLE_REGEX);
+	const base = cumulMatch
+		? buildWorkerBase(domain, cumulMatch.groups!.base, Number(cumulMatch.groups!.hours))
+		: `${getBaseUri(domain)}/data_spatial/${domain}`;
+
 	let result = `${base}/${fmtModelRun(modelRun)}/${fmtSelectedTime(selectedTime)}.om`;
-	result += `?variable=${get(v)}`;
+	result += `?variable=${variable}`;
 
 	if (mode.current === 'dark') result += '&dark=true';
 	const vectorOptions = get(vO);
@@ -207,6 +268,19 @@ export const getOMUrl = () => {
 	}
 
 	return result;
+};
+
+export const getOMUrl = (): string | undefined => getOMUrlFor(get(v));
+
+/**
+ * Builds the om:// URL for the wind-overlay vector layer at the configured level.
+ * Returns undefined when wind overlay is disabled or model run is unknown.
+ */
+export const getWindOverlayUrl = (): string | undefined => {
+	if (!get(windOverlayEnabled)) return undefined;
+	const level = get(windOverlayLevel);
+	// weather-map-layer reads U/V components and renders arrows when arrows=true.
+	return getOMUrlFor(`wind_u_component_${level}`);
 };
 
 export const getNextOmUrls = (

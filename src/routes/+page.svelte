@@ -17,6 +17,7 @@
 
 	import { map } from '$lib/stores/map';
 	import { omProtocolSettings } from '$lib/stores/om-protocol-settings';
+	import { currentOmUrl } from '$lib/stores/om-url';
 	import {
 		loading,
 		localStorageVersion,
@@ -26,6 +27,7 @@
 		url
 	} from '$lib/stores/preferences';
 	import { metaJson, modelRun, time } from '$lib/stores/time';
+	import { windOverlayEnabled, windOverlayLevel } from '$lib/stores/vector';
 	import { domain, selectedDomain, selectedVariable, variable } from '$lib/stores/variables';
 
 	import {
@@ -171,6 +173,15 @@
 			toast('Variable set to: ' + $selectedVariable.label);
 		}
 
+		changeOMfileURL();
+	});
+
+	$effect(() => {
+		// Subscribe to wind overlay state changes
+		$windOverlayEnabled;
+		$windOverlayLevel;
+		// Invalidate cached URL so changeOMfileURL recomputes
+		currentOmUrl.set('');
 		changeOMfileURL();
 	});
 

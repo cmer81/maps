@@ -80,3 +80,6 @@ export const variableSelectionExtended: Persisted<boolean | undefined> = persist
 	'variables_open',
 	undefined
 ); // undefined so it can be set to true on desktop on first load
+
+export const variable2 = persisted('variable2', 'precipitation');
+export const layer2Enabled = persisted('layer2Enabled', false);

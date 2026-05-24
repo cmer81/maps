@@ -61,6 +61,7 @@ export const tileSize: Persisted<64 | 128 | 256 | 512 | 1024 | 2048> = persisted
 export const tileSizeSet = persisted('tile-size-set', false);
 
 export const opacity = persisted('opacity', DEFAULT_OPACITY);
+export const opacity2 = persisted('opacity2', 70);
 
 export { cacheBlockSizeKb, cacheMaxBytesMb } from './om-protocol-settings';
 
