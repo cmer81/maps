@@ -216,21 +216,29 @@
 	{:else}
 		<button
 			type="button"
-			class="cursor-pointer text-foreground/70 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+			class="cursor-pointer hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed {$playbackStart
+				? 'text-blue-500'
+				: 'text-foreground/70'}"
 			onclick={setStartHere}
 			disabled={$playbackStatus === 'playing'}
 			aria-label="Set playback start at current time"
-			title="Set playback start at current time"
+			title={$playbackStart
+				? `Playback start: ${$playbackStart.toISOString().slice(11, 16)} UTC (click to update)`
+				: 'Set playback start at current time'}
 		>
 			[
 		</button>
 		<button
 			type="button"
-			class="cursor-pointer text-foreground/70 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+			class="cursor-pointer hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed {$playbackEnd
+				? 'text-blue-500'
+				: 'text-foreground/70'}"
 			onclick={setEndHere}
 			disabled={$playbackStatus === 'playing'}
 			aria-label="Set playback end at current time"
-			title="Set playback end at current time"
+			title={$playbackEnd
+				? `Playback end: ${$playbackEnd.toISOString().slice(11, 16)} UTC (click to update)`
+				: 'Set playback end at current time'}
 		>
 			]
 		</button>
