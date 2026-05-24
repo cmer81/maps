@@ -2,7 +2,7 @@
 	import { variable2, layer2Enabled } from '$lib/stores/variables';
 	import { opacity2 } from '$lib/stores/preferences';
 	import { changeOMfileURL } from '$lib/layers';
-	import { currentOmUrl } from '$lib/stores/om-url';
+	import { currentOmUrl, currentOmUrl2 } from '$lib/stores/om-url';
 	import { updateUrl } from '$lib/url';
 
 	function onToggle(e: Event) {
@@ -26,6 +26,7 @@
 		// commitOpacity is captured at SlotManager construction; force a refresh
 		// so the new value is picked up on the next slot rotation.
 		currentOmUrl.set('');
+		currentOmUrl2.set('');
 		changeOMfileURL();
 	}
 </script>

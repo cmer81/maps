@@ -138,8 +138,31 @@ export class SlotManager {
 			if (this.map.getLayer(id)) this.map.removeLayer(id);
 		}
 		this.slotLayers[slot] = [];
-		const srcId = this.sourceId(slot);
-		if (this.map.style.getSource(srcId)) this.map.removeSource(srcId);
+		this.purgeOrphanSource(this.sourceId(slot));
+	}
+
+	/**
+	 * Remove a source even if untracked layers still reference it.
+	 *
+	 * `slotLayers` only tracks layers we successfully added through `addSlotLayers`.
+	 * In rare cases (fast playback ticks, aborted rotations), MapLibre may keep a
+	 * layer attached to the source that we no longer reference here. Calling
+	 * `removeSource` then throws ("Source is in use") or is silently skipped, and
+	 * the next `addSource` with the same id fails with "Source already exists".
+	 */
+	private purgeOrphanSource(srcId: string): void {
+		if (!this.map.style.getSource(srcId)) return;
+
+		const style = this.map.getStyle();
+		if (style?.layers) {
+			for (const layer of style.layers) {
+				if ('source' in layer && layer.source === srcId) {
+					if (this.map.getLayer(layer.id)) this.map.removeLayer(layer.id);
+				}
+			}
+		}
+
+		this.map.removeSource(srcId);
 	}
 
 	private removeSlot(slot: Slot): void {
@@ -149,6 +172,8 @@ export class SlotManager {
 
 	private addSlotLayers(slot: Slot, sourceUrl: string): void {
 		const sourceId = this.sourceId(slot);
+		// Defensive: a concurrent rotation may have left the source in the style.
+		this.purgeOrphanSource(sourceId);
 		this.map.addSource(sourceId, this.opts.sourceSpec(sourceUrl));
 
 		const layers = this.opts.layerFactory();

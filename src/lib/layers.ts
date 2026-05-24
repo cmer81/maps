@@ -19,7 +19,7 @@ import {
 import { type SlotLayer, SlotManager } from '$lib/slot-manager';
 
 import { refreshPopup } from './popup';
-import { currentOmUrl } from './stores/om-url';
+import { currentOmUrl, currentOmUrl2 } from './stores/om-url';
 import { getOMUrl, getOMUrlFor, getWindOverlayUrl } from './url';
 
 // =============================================================================
@@ -344,7 +344,10 @@ export const addOmFileLayers = (): void => {
 	}
 	if (get(layer2Enabled)) {
 		const omUrl2 = getOMUrlFor(get(variable2));
-		if (omUrl2) rasterManager2?.update('om://' + omUrl2);
+		if (omUrl2) {
+			currentOmUrl2.set(omUrl2);
+			rasterManager2?.update('om://' + omUrl2);
+		}
 	}
 };
 
@@ -382,10 +385,14 @@ export const changeOMfileURL = (vectorOnly = false, rasterOnly = false): void =>
 				rasterManager2 = buildRasterManager2(map);
 			}
 			const omUrl2 = getOMUrlFor(get(variable2));
-			if (omUrl2) rasterManager2?.update('om://' + omUrl2);
+			if (omUrl2 && get(currentOmUrl2) !== omUrl2) {
+				currentOmUrl2.set(omUrl2);
+				rasterManager2?.update('om://' + omUrl2);
+			}
 		} else {
 			rasterManager2?.destroy();
 			rasterManager2 = undefined;
+			currentOmUrl2.set('');
 		}
 	}
 };
