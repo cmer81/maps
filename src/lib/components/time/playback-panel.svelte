@@ -1,15 +1,18 @@
 <script lang="ts">
 	import { get } from 'svelte/store';
-	import { SvelteDate } from 'svelte/reactivity';
 	import { onDestroy } from 'svelte';
 
 	import { toast } from 'svelte-sonner';
 
 	import { PLAYBACK_FRAME_MS } from '$lib/constants';
-	import { arePlaybackBoundsValid, nextPlaybackFrame, timeStepsBetween } from '$lib/playback';
-	import { prefetchData } from '$lib/prefetch';
+	import { nextPlaybackFrame, timeStepsBetween } from '$lib/playback';
+	import { type PrefetchMode, getDateRangeForMode, prefetchData } from '$lib/prefetch';
+
+	import * as Select from '$lib/components/ui/select';
+
 	import {
 		playbackEnd,
+		playbackMode,
 		playbackPrefetchProgress,
 		playbackStart,
 		playbackStatus
@@ -25,34 +28,30 @@
 	let timeoutId: ReturnType<typeof setTimeout> | undefined;
 	let abortController: AbortController | null = null;
 
-	// Reactive timeSteps derived from current metaJson.
-	const timeSteps = $derived(
-		$metaJson?.valid_times.map((vt: string) => new SvelteDate(vt)) ?? []
-	);
-
-	const boundsValid = $derived(
-		arePlaybackBoundsValid($playbackStart, $playbackEnd, timeSteps as Date[])
-	);
+	const playbackModeLabels = new Map<PrefetchMode, string>([
+		['today', 'Today'],
+		['next24h', 'Next 24h'],
+		['prev24h', 'Prev 24h'],
+		['completeModelRun', 'Full run']
+	]);
 
 	const frameCount = $derived(
-		timeStepsBetween($playbackStart, $playbackEnd, timeSteps as Date[])
+		timeStepsBetween(
+			$playbackStart,
+			$playbackEnd,
+			($metaJson?.valid_times ?? []).map((vt: string) => new Date(vt))
+		)
 	);
 
-	const currentIdx = $derived(
-		boundsValid ? (timeSteps as Date[]).findIndex((s) => s.getTime() === $time.getTime()) : -1
-	);
-
-	const startIdx = $derived(
-		$playbackStart
-			? (timeSteps as Date[]).findIndex((s) => s.getTime() === $playbackStart!.getTime())
-			: -1
-	);
-
-	const frameIndexLabel = $derived(
-		boundsValid && currentIdx >= 0 && startIdx >= 0
-			? `${currentIdx - startIdx + 1}/${frameCount}`
-			: ''
-	);
+	const frameIndexLabel = $derived.by(() => {
+		if (!$playbackStart || !$playbackEnd) return '';
+		const steps = ($metaJson?.valid_times ?? []).map((vt: string) => new Date(vt));
+		const startMs = $playbackStart.getTime();
+		const startIdx = steps.findIndex((s) => s.getTime() >= startMs);
+		const currentIdx = steps.findIndex((s) => s.getTime() === $time.getTime());
+		if (startIdx < 0 || currentIdx < 0) return '';
+		return `${currentIdx - startIdx + 1}/${frameCount}`;
+	});
 
 	const stopPlayback = () => {
 		if (abortController) {
@@ -65,6 +64,8 @@
 		}
 		playbackStatus.set('idle');
 		playbackPrefetchProgress.set(null);
+		playbackStart.set(undefined);
+		playbackEnd.set(undefined);
 	};
 
 	const tick = () => {
@@ -83,35 +84,10 @@
 		timeoutId = setTimeout(tick, PLAYBACK_FRAME_MS);
 	};
 
-	const setStartHere = () => {
-		const t = get(time);
-		const end = get(playbackEnd);
-		playbackStart.set(t);
-		if (end && end.getTime() <= t.getTime()) {
-			playbackEnd.set(undefined);
-		}
-	};
-
-	const setEndHere = () => {
-		const t = get(time);
-		const start = get(playbackStart);
-		playbackEnd.set(t);
-		if (start && start.getTime() >= t.getTime()) {
-			playbackStart.set(undefined);
-		}
-	};
-
 	const play = async () => {
 		const status = get(playbackStatus);
-		const start = get(playbackStart);
-		const end = get(playbackEnd);
-		const meta = get(metaJson);
-		const run = get(modelRun);
 
-		if (!boundsValid || !meta || !run || !start || !end) {
-			toast.warning('Define start and end bounds before playing');
-			return;
-		}
+		if (status === 'prefetching') return;
 
 		if (status === 'paused') {
 			playbackStatus.set('playing');
@@ -119,15 +95,29 @@
 			return;
 		}
 
-		// idle path → prefetch then play
+		const meta = get(metaJson);
+		const run = get(modelRun);
+		if (!meta || !run) {
+			toast.warning('Map metadata not loaded yet');
+			return;
+		}
+
+		const { startDate, endDate } = getDateRangeForMode(get(playbackMode), get(time), meta);
+		if (!startDate || !endDate || startDate.getTime() >= endDate.getTime()) {
+			toast.warning('No playable range for the selected mode');
+			return;
+		}
+
+		playbackStart.set(startDate);
+		playbackEnd.set(endDate);
 		playbackStatus.set('prefetching');
 		playbackPrefetchProgress.set({ current: 0, total: 0 });
 		abortController = new AbortController();
 
 		const result = await prefetchData(
 			{
-				startDate: start,
-				endDate: end,
+				startDate,
+				endDate,
 				metaJson: meta,
 				modelRun: run,
 				domain: get(domainStore),
@@ -142,6 +132,8 @@
 		if (result.aborted) {
 			playbackStatus.set('idle');
 			playbackPrefetchProgress.set(null);
+			playbackStart.set(undefined);
+			playbackEnd.set(undefined);
 			return;
 		}
 
@@ -149,11 +141,16 @@
 			toast.error(result.error ?? 'Prefetch failed');
 			playbackStatus.set('idle');
 			playbackPrefetchProgress.set(null);
+			playbackStart.set(undefined);
+			playbackEnd.set(undefined);
 			return;
 		}
 
-		// Snap $time to start so playback begins at the first frame.
-		time.set(new Date(start));
+		// Snap $time to the first frame in the range so playback always starts there.
+		const steps = meta.valid_times.map((vt: string) => new Date(vt));
+		const firstFrame = steps.find((s) => s.getTime() >= startDate.getTime());
+		if (firstFrame) time.set(firstFrame);
+
 		playbackPrefetchProgress.set(null);
 		playbackStatus.set('playing');
 		timeoutId = setTimeout(tick, PLAYBACK_FRAME_MS);
@@ -169,14 +166,13 @@
 		if (abortController) abortController.abort();
 	};
 
-	// Stop on domain/variable/modelRun change — bounds preserved.
+	// Stop on domain/variable/modelRun change.
 	$effect(() => {
-		// register deps
 		void $selectedDomain;
 		void $selectedVariable;
 		void $modelRun;
 		const s = get(playbackStatus);
-		if (s === 'playing' || s === 'prefetching') {
+		if (s === 'playing' || s === 'prefetching' || s === 'paused') {
 			stopPlayback();
 		}
 	});
@@ -186,14 +182,41 @@
 	});
 </script>
 
-<div class="flex items-center gap-1 text-xs">
+<div class="flex items-center gap-0.5 text-xs">
+	<Select.Root
+		type="single"
+		value={$playbackMode}
+		onValueChange={(v) => {
+			if (v) playbackMode.set(v as PrefetchMode);
+		}}
+	>
+		<Select.Trigger
+			class="h-4.5! text-xs pl-1.5 pr-0.75 py-0 gap-1 border-none bg-transparent shadow-none hover:bg-accent/50 focus-visible:ring-0 focus-visible:ring-offset-0 cursor-pointer"
+			aria-label="Select playback range"
+			disabled={$playbackStatus === 'playing' || $playbackStatus === 'prefetching'}
+		>
+			{playbackModeLabels.get($playbackMode) ?? 'Next 24h'}
+		</Select.Trigger>
+		<Select.Content
+			class="left-5 border-none max-h-60 bg-glass/65 backdrop-blur-sm"
+			sideOffset={4}
+			align="end"
+		>
+			{#each Array.from(playbackModeLabels.entries()) as [value, label] (value)}
+				<Select.Item {value} {label} class="cursor-pointer text-xs">
+					{label}
+				</Select.Item>
+			{/each}
+		</Select.Content>
+	</Select.Root>
+
 	{#if $playbackStatus === 'prefetching'}
-		<span class="text-blue-500 animate-pulse">
+		<span class="text-blue-500 animate-pulse tabular-nums">
 			{$playbackPrefetchProgress?.current ?? 0}/{$playbackPrefetchProgress?.total ?? 0}
 		</span>
 		<button
 			type="button"
-			class="cursor-pointer hover:text-foreground text-foreground/70"
+			class="cursor-pointer hover:text-foreground text-foreground/70 w-4 h-4.5 flex items-center justify-center"
 			onclick={cancelPrefetch}
 			aria-label="Cancel prefetch"
 			title="Cancel prefetch"
@@ -213,84 +236,45 @@
 				<line x1="6" y1="6" x2="18" y2="18" />
 			</svg>
 		</button>
+	{:else if $playbackStatus === 'playing'}
+		<button
+			type="button"
+			class="cursor-pointer text-blue-500 hover:text-foreground w-4 h-4.5 flex items-center justify-center"
+			onclick={pause}
+			aria-label="Pause playback"
+			title="Pause playback ({frameIndexLabel})"
+		>
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				width="14"
+				height="14"
+				viewBox="0 0 24 24"
+				fill="currentColor"
+				stroke="none"
+			>
+				<rect x="6" y="5" width="4" height="14" />
+				<rect x="14" y="5" width="4" height="14" />
+			</svg>
+		</button>
+		<span class="tabular-nums text-foreground/60">{frameIndexLabel}</span>
 	{:else}
 		<button
 			type="button"
-			class="cursor-pointer hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed {$playbackStart
-				? 'text-blue-500'
-				: 'text-foreground/70'}"
-			onclick={setStartHere}
-			disabled={$playbackStatus === 'playing'}
-			aria-label="Set playback start at current time"
-			title={$playbackStart
-				? `Playback start: ${$playbackStart.toISOString().slice(11, 16)} UTC (click to update)`
-				: 'Set playback start at current time'}
+			class="cursor-pointer text-foreground/70 hover:text-foreground w-4 h-4.5 flex items-center justify-center"
+			onclick={play}
+			aria-label={$playbackStatus === 'paused' ? 'Resume playback' : 'Play animation'}
+			title={$playbackStatus === 'paused' ? 'Resume playback' : 'Play animation'}
 		>
-			[
-		</button>
-		<button
-			type="button"
-			class="cursor-pointer hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed {$playbackEnd
-				? 'text-blue-500'
-				: 'text-foreground/70'}"
-			onclick={setEndHere}
-			disabled={$playbackStatus === 'playing'}
-			aria-label="Set playback end at current time"
-			title={$playbackEnd
-				? `Playback end: ${$playbackEnd.toISOString().slice(11, 16)} UTC (click to update)`
-				: 'Set playback end at current time'}
-		>
-			]
-		</button>
-
-		{#if $playbackStatus === 'playing'}
-			<button
-				type="button"
-				class="cursor-pointer text-blue-500 hover:text-foreground"
-				onclick={pause}
-				aria-label="Pause playback"
-				title="Pause playback ({frameIndexLabel})"
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				width="14"
+				height="14"
+				viewBox="0 0 24 24"
+				fill="currentColor"
+				stroke="none"
 			>
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					width="14"
-					height="14"
-					viewBox="0 0 24 24"
-					fill="currentColor"
-					stroke="none"
-				>
-					<rect x="6" y="5" width="4" height="14" />
-					<rect x="14" y="5" width="4" height="14" />
-				</svg>
-			</button>
-			<span class="tabular-nums text-foreground/60">{frameIndexLabel}</span>
-		{:else}
-			<button
-				type="button"
-				class="cursor-pointer hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed {boundsValid
-					? 'text-green-500'
-					: 'text-foreground/70'}"
-				onclick={play}
-				disabled={!boundsValid}
-				aria-label={$playbackStatus === 'paused' ? 'Resume playback' : 'Play animation'}
-				title={boundsValid
-					? `Play animation (${frameCount} frames)`
-					: 'Define start [ and end ] bounds first'}
-			>
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					width="14"
-					height="14"
-					viewBox="0 0 24 24"
-					fill="currentColor"
-					stroke="none"
-				>
-					<polygon points="6,4 20,12 6,20" />
-				</svg>
-			</button>
-			{#if boundsValid}
-				<span class="tabular-nums text-foreground/60">{frameCount}f</span>
-			{/if}
-		{/if}
+				<polygon points="6,4 20,12 6,20" />
+			</svg>
+		</button>
 	{/if}
 </div>

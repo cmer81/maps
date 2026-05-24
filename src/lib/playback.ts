@@ -20,21 +20,6 @@ export const nextPlaybackFrame = (
 };
 
 /**
- * True iff start and end are both present, start < end, and both appear in steps.
- */
-export const arePlaybackBoundsValid = (
-	start: Date | undefined,
-	end: Date | undefined,
-	steps: Date[] | undefined
-): boolean => {
-	if (!start || !end || !steps || steps.length === 0) return false;
-	if (start.getTime() >= end.getTime()) return false;
-	const hasStart = steps.some((s) => s.getTime() === start.getTime());
-	const hasEnd = steps.some((s) => s.getTime() === end.getTime());
-	return hasStart && hasEnd;
-};
-
-/**
  * Count of steps falling within [start, end] inclusive. Returns 0 if bounds invalid.
  */
 export const timeStepsBetween = (
