@@ -4,6 +4,7 @@ import maplibregl from 'maplibre-gl';
 import { mode, setMode } from 'mode-watcher';
 
 import { clippingPanelOpen } from '$lib/stores/clipping';
+import { DEFAULT_SHOW_LABELS, showLabels } from '$lib/stores/labels';
 import { omProtocolSettings } from '$lib/stores/om-protocol-settings';
 import {
 	defaultPreferences,
@@ -169,6 +170,40 @@ export class HelpButton {
 		return div;
 	}
 	onRemove() {}
+}
+
+export class LabelsButton {
+	private unsubscribe: () => void = () => {};
+
+	onAdd() {
+		const div = document.createElement('div');
+		div.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+		div.title = 'Afficher les valeurs sur la carte';
+
+		const inactiveSVG = `<button style="display:flex;justify-content:center;align-items:center;">
+			<svg xmlns="http://www.w3.org/2000/svg" opacity="0.75" stroke-width="1.2" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5h16v2"/><path d="M9 19h6"/><path d="M12 5v14"/></svg>
+			</button>`;
+		const activeSVG = `<button style="display:flex;justify-content:center;align-items:center;color:rgb(51,181,229);">
+			<svg xmlns="http://www.w3.org/2000/svg" opacity="1" stroke-width="1.5" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5h16v2"/><path d="M9 19h6"/><path d="M12 5v14"/></svg>
+			</button>`;
+
+		const render = () => {
+			div.innerHTML = get(showLabels) ? activeSVG : inactiveSVG;
+		};
+		this.unsubscribe = showLabels.subscribe(render);
+
+		div.addEventListener('contextmenu', (e) => e.preventDefault());
+		div.addEventListener('click', () => {
+			const next = !get(showLabels);
+			showLabels.set(next);
+			updateUrl('labels', String(next), String(DEFAULT_SHOW_LABELS));
+		});
+		return div;
+	}
+
+	onRemove() {
+		this.unsubscribe();
+	}
 }
 
 export class ClippingButton {

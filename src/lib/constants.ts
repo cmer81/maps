@@ -52,7 +52,8 @@ export const COMPLETE_DEFAULT_VALUES: { [key: string]: boolean | string | number
 	opacity2: 70,
 	layer2: 'false',
 	wind_overlay: 'false',
-	wind_overlay_level: '10m'
+	wind_overlay_level: '10m',
+	labels: 'false'
 };
 
 // Time constants

@@ -15,6 +15,7 @@
 
 	import { version } from '$app/environment';
 
+	import { showLabels } from '$lib/stores/labels';
 	import { map } from '$lib/stores/map';
 	import { omProtocolSettings } from '$lib/stores/om-protocol-settings';
 	import { currentOmUrl } from '$lib/stores/om-url';
@@ -27,14 +28,15 @@
 		url
 	} from '$lib/stores/preferences';
 	import { metaJson, modelRun, time } from '$lib/stores/time';
-	import { windOverlayEnabled, windOverlayLevel } from '$lib/stores/vector';
 	import { domain, selectedDomain, selectedVariable, variable } from '$lib/stores/variables';
+	import { windOverlayEnabled, windOverlayLevel } from '$lib/stores/vector';
 
 	import {
 		ClippingButton,
 		DarkModeButton,
 		HelpButton,
 		HillshadeButton,
+		LabelsButton,
 		SettingsButton
 	} from '$lib/components/buttons';
 	import ClippingPanel from '$lib/components/clipping/clipping-panel.svelte';
@@ -48,6 +50,7 @@
 	import TimeSelector from '$lib/components/time/time-selector.svelte';
 
 	import { checkHighDefinition } from '$lib/helpers';
+	import { ensureLabelsLayer, refreshLabels } from '$lib/labels-layer';
 	import { addOmFileLayers, changeOMfileURL } from '$lib/layers';
 	import { addTerrainSource, getStyle, setMapControlSettings } from '$lib/map-controls';
 	import { getInitialMetaData, getMetaData, matchVariableOrFirst } from '$lib/metadata';
@@ -127,11 +130,18 @@
 			addTerrainSource($map);
 			addTerrainSource($map, 'terrainSource2');
 			$map.addControl(new HillshadeButton());
+			$map.addControl(new LabelsButton());
 			clippingPanel?.initTerraDraw();
 
 			addOmFileLayers();
 			addPopup();
 			changeOMfileURL();
+
+			ensureLabelsLayer();
+			$map.on('moveend', () => {
+				if (get(showLabels)) refreshLabels();
+			});
+			refreshLabels();
 		});
 	});
 
@@ -183,6 +193,12 @@
 		// Invalidate cached URL so changeOMfileURL recomputes
 		currentOmUrl.set('');
 		changeOMfileURL();
+	});
+
+	$effect(() => {
+		// Pass deps so the effect re-runs whenever any of them changes —
+		// refreshLabels itself reads the current store values via get().
+		refreshLabels([$showLabels, $variable, $time, $domain, $modelRun]);
 	});
 
 	onDestroy(() => {
