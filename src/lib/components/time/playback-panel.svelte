@@ -5,6 +5,7 @@
 	import { toast } from 'svelte-sonner';
 
 	import { PLAYBACK_FRAME_MS } from '$lib/constants';
+	import { changeOMfileURL } from '$lib/layers';
 	import { nextPlaybackFrame, timeStepsBetween } from '$lib/playback';
 	import { type PrefetchMode, getDateRangeForMode, prefetchData } from '$lib/prefetch';
 
@@ -80,6 +81,7 @@
 		const next = nextPlaybackFrame(get(time), start, end, steps);
 		if (next) {
 			time.set(next);
+			changeOMfileURL();
 		}
 		timeoutId = setTimeout(tick, PLAYBACK_FRAME_MS);
 	};
@@ -149,7 +151,10 @@
 		// Snap $time to the first frame in the range so playback always starts there.
 		const steps = meta.valid_times.map((vt: string) => new Date(vt));
 		const firstFrame = steps.find((s) => s.getTime() >= startDate.getTime());
-		if (firstFrame) time.set(firstFrame);
+		if (firstFrame) {
+			time.set(firstFrame);
+			changeOMfileURL();
+		}
 
 		playbackPrefetchProgress.set(null);
 		playbackStatus.set('playing');
