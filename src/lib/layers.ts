@@ -303,6 +303,7 @@ export const createManagers = (): void => {
 			maxzoom: 14
 		}),
 		removeDelayMs: 300,
+		// Both raster and vector fire commit; waitForCommit(slotEvents) resolves on the first.
 		onCommit: () => {
 			loading.set(false);
 			refreshPopup();
