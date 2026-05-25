@@ -14,13 +14,11 @@
 		variableOptions
 	} from '@openmeteo/weather-map-layer';
 
-	import { CUMUL_BASE_VARIABLES, CUMUL_GROUP_PREFIX, CUMUL_HOURS } from '$lib/constants';
-	import { getOmWorkerUrl, isCumulFlagEnabled } from '$lib/runtime-env';
 	import { desktop, loading } from '$lib/stores/preferences';
 	import { metaJson } from '$lib/stores/time';
 	import {
-		cumulGroupSelected,
 		cumulSelectionOpen as cSO,
+		cumulGroupSelected,
 		domainSelectionOpen as dSO,
 		domain,
 		level,
@@ -38,16 +36,18 @@
 	import * as Command from '$lib/components/ui/command';
 	import * as Popover from '$lib/components/ui/popover';
 
+	import { CUMUL_BASE_VARIABLES, CUMUL_GROUP_PREFIX, CUMUL_HOURS } from '$lib/constants';
 	import {
 		cumulDurationLabelFr,
 		cumulGroupLabelFr,
 		localizeVariableOption,
 		translateVariableLabel
 	} from '$lib/i18n/variables-fr';
-
-	const cumulWorkerEnabled = Boolean(getOmWorkerUrl()) && isCumulFlagEnabled();
+	import { getOmWorkerUrl, isCumulFlagEnabled } from '$lib/runtime-env';
 
 	import VariableSelectionEmpty from './variable-selection-empty.svelte';
+
+	const cumulWorkerEnabled = Boolean(getOmWorkerUrl()) && isCumulFlagEnabled();
 
 	// list of variables, with the level groups filtered out, and adding a prefix for the group.
 	// When the cumul worker is configured, also insert a sentinel `__cumul:<base>` entry right
@@ -81,7 +81,8 @@
 
 	// Cumul variants exposed per base variable, keyed by sentinel (`__cumul:precipitation`).
 	const cumulGroupsList = $derived.by(() => {
-		if (!cumulWorkerEnabled || !$metaJson) return {} as Record<string, { value: string; label: string }[]>;
+		if (!cumulWorkerEnabled || !$metaJson)
+			return {} as Record<string, { value: string; label: string }[]>;
 		const groups: Record<string, { value: string; label: string }[]> = {};
 		for (const mjVariable of $metaJson.variables) {
 			if (!(CUMUL_BASE_VARIABLES as readonly string[]).includes(mjVariable)) continue;
@@ -585,8 +586,7 @@
 									{#each cumulGroupsList[$cumulGroupSelected.value] as { value, label } (value)}
 										<Command.Item
 											{value}
-											class="hover:bg-primary/20! cursor-pointer {$selectedVariable.value ===
-											value
+											class="hover:bg-primary/20! cursor-pointer {$selectedVariable.value === value
 												? 'bg-primary/10!'
 												: ''}"
 											onSelect={() => {

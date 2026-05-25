@@ -77,12 +77,4 @@ export const METADATA_REFRESH_INTERVAL = 5 * MILLISECONDS_PER_MINUTE; // 5 minut
 export const PLAYBACK_FRAME_MS = 250;
 
 // Calendar display constants
-export const DAY_NAMES = [
-	'Dimanche',
-	'Lundi',
-	'Mardi',
-	'Mercredi',
-	'Jeudi',
-	'Vendredi',
-	'Samedi'
-];
+export const DAY_NAMES = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];

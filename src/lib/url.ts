@@ -216,8 +216,7 @@ export const urlParamsToPreferences = () => {
 /** Cumul variables (`*_sum_Nh`) are an opt-in feature on top of the worker.
  * Disabled when the cumul flag is off *or* when the worker URL isn't
  * configured. Labels are gated separately on the worker URL alone. */
-export const isCumulEnabled = (): boolean =>
-	Boolean(getOmWorkerUrl()) && isCumulFlagEnabled();
+export const isCumulEnabled = (): boolean => Boolean(getOmWorkerUrl()) && isCumulFlagEnabled();
 
 /**
  * Builds the path prefix expected by infoclimat-om-worker so omProtocol can
@@ -264,11 +263,7 @@ export const CUMUL_VARIABLE_REGEX = /^(?<base>.+)_sum_(?<hours>\d+)h$/;
  * When the user's run is already compatible (e.g. they picked an earlier run
  * than 00Z, or the window falls fully after the run), we leave it untouched.
  */
-export const resolveCumulModelRun = (
-	modelRun: Date,
-	selectedTime: Date,
-	hours: number
-): Date => {
+export const resolveCumulModelRun = (modelRun: Date, selectedTime: Date, hours: number): Date => {
 	const windowStartMs = selectedTime.getTime() - (hours - 1) * 3600_000;
 	if (windowStartMs >= modelRun.getTime()) return modelRun;
 	const ws = new Date(windowStartMs);

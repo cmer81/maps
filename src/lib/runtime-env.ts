@@ -27,8 +27,7 @@ export function getOmWorkerUrl(): string {
 }
 
 export function isCumulFlagEnabled(): boolean {
-	const fromWindow =
-		typeof window !== 'undefined' ? window.__OM_CONFIG?.CUMUL_ENABLED : undefined;
+	const fromWindow = typeof window !== 'undefined' ? window.__OM_CONFIG?.CUMUL_ENABLED : undefined;
 	const fromEnv = import.meta.env.VITE_CUMUL_ENABLED as string | undefined;
 	const v = fromWindow ?? fromEnv;
 	return v !== 'false';
