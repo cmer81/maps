@@ -107,7 +107,9 @@
 			zoom: domainObject.grid.zoom,
 			keyboard: false,
 			hash: true,
-			maxPitch: 85
+			maxPitch: 85,
+			// Required for canvas.toBlob() during playback pre-rendering — see playback-renderer.ts
+			canvasContextAttributes: { preserveDrawingBuffer: true }
 		});
 
 		setMapControlSettings();
