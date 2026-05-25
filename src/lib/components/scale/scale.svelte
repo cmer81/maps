@@ -33,7 +33,9 @@
 	let { editable = true }: Props = $props();
 
 	const isDark = $derived(mode.current === 'dark');
-	const baseColorScale: RenderableColorScale = $derived(getColorScale($variable, isDark));
+	const baseColorScale: RenderableColorScale = $derived(
+		getColorScale($variable, isDark, $omProtocolSettings.colorScales)
+	);
 	// Use custom scale if available, otherwise use base
 	const colorScale = $derived($customColorScales[$variable] ?? baseColorScale);
 

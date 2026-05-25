@@ -10,6 +10,7 @@ import { persisted } from 'svelte-persisted-store';
 
 import { browser } from '$app/environment';
 
+import { infoclimatTemperatureScale } from '$lib/color-scales/infoclimat-temperature';
 import {
 	DEFAULT_CACHE_BLOCK_SIZE_KB,
 	DEFAULT_CACHE_MAX_BYTES_MB,
@@ -87,7 +88,11 @@ export const omProtocolSettings: Writable<OmProtocolSettings> = writable({
 	resolveRequest: cumulAwareResolveRequest,
 
 	// dynamic (can be changed during runtime)
-	colorScales: { ...defaultOmProtocolSettings.colorScales, ...initialCustomColorScales },
+	colorScales: {
+		...defaultOmProtocolSettings.colorScales,
+		temperature: infoclimatTemperatureScale,
+		...initialCustomColorScales
+	},
 
 	postReadCallback: (omFileReader: WeatherMapLayerFileReader, data: Data, state: OmUrlState) => {
 		const nextOmUrls = getNextOmUrls(state.omFileUrl, get(selectedDomain), get(metaJson));
