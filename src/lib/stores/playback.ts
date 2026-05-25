@@ -2,7 +2,7 @@ import { type Writable, writable } from 'svelte/store';
 
 import type { PrefetchMode } from '$lib/prefetch';
 
-export type PlaybackStatus = 'idle' | 'prefetching' | 'playing' | 'paused';
+export type PlaybackStatus = 'idle' | 'prefetching' | 'prerendering' | 'playing' | 'paused';
 
 export const playbackStatus: Writable<PlaybackStatus> = writable('idle');
 

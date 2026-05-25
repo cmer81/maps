@@ -76,5 +76,13 @@ export const METADATA_REFRESH_INTERVAL = 5 * MILLISECONDS_PER_MINUTE; // 5 minut
 // Playback (animation) frame interval in milliseconds (4 fps).
 export const PLAYBACK_FRAME_MS = 250;
 
+export const PLAYBACK_FPS_OPTIONS = [4, 6, 10, 15] as const;
+export type PlaybackFps = (typeof PLAYBACK_FPS_OPTIONS)[number];
+export const PLAYBACK_DEFAULT_FPS: PlaybackFps = 6;
+
+export const PRERENDER_FRAME_TIMEOUT_MS = 10_000;
+export const PRERENDER_MAX_FAILURE_RATIO = 0.2;
+export const PLAYBACK_WEBP_QUALITY = 0.85;
+
 // Calendar display constants
 export const DAY_NAMES = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
