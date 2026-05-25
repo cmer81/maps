@@ -15,9 +15,10 @@ import { map as m, popup as p, popupMode } from '$lib/stores/map';
 import { omProtocolSettings } from '$lib/stores/om-protocol-settings';
 import { convertValue, getDisplayUnit, unitPreferences } from '$lib/stores/units';
 import { selectedDomain, variable as v } from '$lib/stores/variables';
+import { windOverlayEnabled } from '$lib/stores/vector';
 
 import { textWhite } from './helpers';
-import { rasterManager } from './layers';
+import { rasterManager, vectorManager } from './layers';
 import { terraDrawActive } from './stores/clipping';
 import { desktop, opacity } from './stores/preferences';
 
@@ -27,6 +28,9 @@ let contentDiv: HTMLDivElement | undefined;
 let valueSpan: HTMLSpanElement | undefined;
 let unitSpan: HTMLSpanElement | undefined;
 let elevationSpan: HTMLSpanElement | undefined;
+let windSpan: HTMLSpanElement | undefined;
+
+const WIND_VARIABLE_REGEX = /_(?:u|v)_component_/;
 
 // Cached clipping tester — recomputed only when clippingOptions reference changes.
 let cachedClippingOptionsRef: unknown = undefined;
@@ -53,11 +57,14 @@ const initPopupDiv = (): void => {
 	valueSpan.classList.add('popup-value');
 	unitSpan = document.createElement('span');
 	unitSpan.classList.add('popup-unit');
+	windSpan = document.createElement('span');
+	windSpan.classList.add('popup-wind');
 	elevationSpan = document.createElement('span');
 	elevationSpan.classList.add('popup-elevation');
 
 	contentDiv.append(valueSpan);
 	contentDiv.append(unitSpan);
+	contentDiv.append(windSpan);
 	contentDiv.append(elevationSpan);
 
 	wrapperDiv.append(contentDiv);
@@ -66,7 +73,7 @@ const initPopupDiv = (): void => {
 
 /** Update the popup content for the given coordinates without moving the marker. */
 const updatePopupContent = async (coordinates: maplibregl.LngLat): Promise<void> => {
-	if (!el || !contentDiv || !valueSpan || !unitSpan || !elevationSpan) return;
+	if (!el || !contentDiv || !valueSpan || !unitSpan || !windSpan || !elevationSpan) return;
 
 	const map = get(m);
 
@@ -76,7 +83,15 @@ const updatePopupContent = async (coordinates: maplibregl.LngLat): Promise<void>
 	const activeUrl = rasterManager?.getActiveSourceUrl();
 	if (!activeUrl) return;
 
-	const { value } = await getValueFromLatLong(coordinates.lat, coordinates.lng, activeUrl);
+	const showWind = get(windOverlayEnabled) && !WIND_VARIABLE_REGEX.test(get(v));
+	const windUrl = showWind ? vectorManager?.getActiveSourceUrl() : undefined;
+
+	const [{ value }, windResult] = await Promise.all([
+		getValueFromLatLong(coordinates.lat, coordinates.lng, activeUrl),
+		windUrl
+			? getValueFromLatLong(coordinates.lat, coordinates.lng, windUrl).catch(() => undefined)
+			: Promise.resolve(undefined)
+	]);
 
 	if (isFinite(value)) {
 		const omProtocolSettingsState = get(omProtocolSettings);
@@ -92,6 +107,7 @@ const updatePopupContent = async (coordinates: maplibregl.LngLat): Promise<void>
 				contentDiv.style.color = '';
 				valueSpan.innerText = 'Hors zone';
 				unitSpan.innerText = '';
+				windSpan.innerText = '';
 				elevationSpan.innerText = hasElevation ? `${Math.round(elevation)}m` : '';
 				return;
 			}
@@ -110,6 +126,12 @@ const updatePopupContent = async (coordinates: maplibregl.LngLat): Promise<void>
 		const displayValue = convertValue(value, colorScale.unit, units);
 		valueSpan.innerText = displayValue.toFixed(1);
 		unitSpan.innerText = getDisplayUnit(colorScale.unit, units);
+		if (windResult && isFinite(windResult.value)) {
+			const windDisplay = convertValue(windResult.value, 'm/s', units);
+			windSpan.innerText = `· ${windDisplay.toFixed(1)} ${getDisplayUnit('m/s', units)}`;
+		} else {
+			windSpan.innerText = '';
+		}
 		elevationSpan.innerText = hasElevation ? `${Math.round(elevation)}m` : '';
 		elevationSpan.style.color = textWhite(color, isDark) ? 'white' : 'black';
 	} else {
@@ -126,6 +148,7 @@ const updatePopupContent = async (coordinates: maplibregl.LngLat): Promise<void>
 
 		valueSpan.innerText = insideDomain ? 'Pas de données' : 'Hors domaine';
 		unitSpan.innerText = '';
+		windSpan.innerText = '';
 		elevationSpan.innerText = hasElevation ? `${Math.round(elevation)}m` : '';
 		elevationSpan.style.color = '';
 	}

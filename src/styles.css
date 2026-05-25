@@ -342,6 +342,16 @@
 	}*/
 }
 
+.popup-wind {
+	margin-left: 4px;
+	font-weight: 600;
+	opacity: 0.9;
+}
+
+.popup-wind:empty {
+	display: none;
+}
+
 .popup-elevation {
 	top: -18px;
 	position: absolute;
