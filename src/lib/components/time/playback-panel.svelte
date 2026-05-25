@@ -5,6 +5,7 @@
 	import { toast } from 'svelte-sonner';
 
 	import { map as m } from '$lib/stores/map';
+	import { currentOmUrl } from '$lib/stores/om-url';
 	import {
 		playbackCurrentIndex,
 		playbackEnd,
@@ -201,11 +202,18 @@
 				return;
 			}
 
+			const previousOmUrl = get(currentOmUrl);
 			time.set(steps[i]);
 			changeOMfileURL();
+			// changeOMfileURL court-circuite quand l'URL ne change pas (frame déjà
+			// affichée). Dans ce cas, aucun event commit ne sera émis — on saute
+			// directement au waitForIdle qui résoudra vite si la map est déjà au repos.
+			const triggeredLoad = get(currentOmUrl) !== previousOmUrl;
 
 			try {
-				await waitForCommit(slotEvents, PRERENDER_FRAME_TIMEOUT_MS, signal);
+				if (triggeredLoad) {
+					await waitForCommit(slotEvents, PRERENDER_FRAME_TIMEOUT_MS, signal);
+				}
 				await waitForIdle(map, PRERENDER_FRAME_TIMEOUT_MS, signal);
 				const blob = await captureFrame(map, PLAYBACK_WEBP_QUALITY);
 				if (blob) {
@@ -219,7 +227,9 @@
 
 			playbackPrerenderProgress.set({ current: i + 1, total: steps.length });
 
-			if (isFailureRateExceeded(failures, i + 1, PRERENDER_MAX_FAILURE_RATIO)) {
+			// N'applique le seuil d'échec qu'après assez d'échantillons : un échec sur
+			// la première frame (cas rare) ne doit pas tuer toute la lecture.
+			if (i + 1 >= 5 && isFailureRateExceeded(failures, i + 1, PRERENDER_MAX_FAILURE_RATIO)) {
 				toast.error('Pré-rendu interrompu : trop de frames en échec');
 				stopPlayback();
 				return;
