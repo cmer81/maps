@@ -72,24 +72,39 @@ export const waitForCommit = (
 
 /**
  * Wait for the map to become idle (no in-flight tile loads, all paints done),
- * or reject on timeout. Acts as a safety net in case the SlotManager `commit`
- * event fires before all auxiliary layers (hillshade, labels) are painted.
+ * or reject on timeout or abort signal. Acts as a safety net in case the
+ * SlotManager `commit` event fires before all auxiliary layers (hillshade,
+ * labels) are painted.
  */
-export const waitForIdle = (map: MaplibreMap, timeoutMs: number): Promise<void> =>
+export const waitForIdle = (
+	map: MaplibreMap,
+	timeoutMs: number,
+	signal?: AbortSignal
+): Promise<void> =>
 	new Promise<void>((resolve, reject) => {
 		let settled = false;
-		const onIdle = () => {
-			if (settled) return;
-			settled = true;
+		const cleanup = () => {
 			clearTimeout(timeoutId);
-			resolve();
+			map.off('idle', onIdle);
+			signal?.removeEventListener('abort', onAbort);
 		};
-		const timeoutId = setTimeout(() => {
+		const settle = (fn: () => void) => {
 			if (settled) return;
 			settled = true;
-			map.off('idle', onIdle);
-			reject(new Error(`waitForIdle timeout after ${timeoutMs}ms`));
-		}, timeoutMs);
+			cleanup();
+			fn();
+		};
+		const onIdle = () => settle(() => resolve());
+		const onAbort = () => settle(() => reject(new Error('waitForIdle aborted')));
+		const timeoutId = setTimeout(
+			() => settle(() => reject(new Error(`waitForIdle timeout after ${timeoutMs}ms`))),
+			timeoutMs
+		);
+		if (signal?.aborted) {
+			settle(() => reject(new Error('waitForIdle aborted')));
+			return;
+		}
+		signal?.addEventListener('abort', onAbort);
 		map.once('idle', onIdle);
 	});
 
@@ -100,7 +115,7 @@ export const waitForIdle = (map: MaplibreMap, timeoutMs: number): Promise<void> 
  * blend state during a cross-fade.
  *
  * Note: MapLibre's WebGL context must be created with `preserveDrawingBuffer: true`
- * for `toBlob` to work reliably. This is checked at app boot — see Task 7.
+ * for `toBlob` to work reliably. This is set in src/routes/+page.svelte via canvasContextAttributes.
  */
 export const captureFrame = (map: MaplibreMap, quality: number): Promise<Blob | null> =>
 	new Promise<Blob | null>((resolve) => {
@@ -150,7 +165,6 @@ export class MapInteractionLock {
 
 	freeze(): void {
 		if (this.previouslyEnabled.length > 0) return;
-		this.previouslyEnabled = [];
 		for (const key of INTERACTION_KEYS) {
 			const handler = this.map[key] as MapInteractionHandler | undefined;
 			if (handler && handler.isEnabled()) {

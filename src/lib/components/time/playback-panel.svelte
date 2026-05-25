@@ -112,7 +112,7 @@
 	const play = async () => {
 		const status = get(playbackStatus);
 
-		if (status === 'prefetching' || status === 'prerendering') return;
+		if (status === 'prefetching' || status === 'prerendering' || status === 'playing') return;
 		if (status === 'paused') {
 			resume();
 			return;
@@ -206,7 +206,7 @@
 
 			try {
 				await waitForCommit(slotEvents, PRERENDER_FRAME_TIMEOUT_MS, signal);
-				await waitForIdle(map, PRERENDER_FRAME_TIMEOUT_MS);
+				await waitForIdle(map, PRERENDER_FRAME_TIMEOUT_MS, signal);
 				const blob = await captureFrame(map, PLAYBACK_WEBP_QUALITY);
 				if (blob) {
 					blobs.push(blob);
