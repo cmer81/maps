@@ -224,7 +224,7 @@
 </script>
 
 <svelte:head>
-	<title>Open-Meteo Maps</title>
+	<title>Infoclimat - Modèles</title>
 </svelte:head>
 
 {#if $loading}
