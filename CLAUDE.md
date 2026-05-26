@@ -57,7 +57,25 @@ Single page app: `src/routes/+page.svelte` is the entry; `+layout.ts` opts out o
 
 Organized by feature under `src/lib/components/` (`buttons/`, `clipping/`, `time/`, `scale/`, `selection/`, `settings/`, `help/`, `keyboard/`, `dropzone/`, `loading/`). Primitive UI lives under `src/lib/components/ui/` and is managed by `shadcn-svelte` — regenerate with `npm run upgrade:ui` (uses `components.json`). Aliases: `$lib/components`, `$lib/components/ui`, `$lib/utils`.
 
-The map buttons (`ClippingButton`, `DarkModeButton`, `HelpButton`, `HillshadeButton`, `SettingsButton`) are MapLibre `IControl` implementations exported from `src/lib/components/buttons/index.ts`, added via `$map.addControl(...)`.
+The map buttons (`ClippingButton`, `DarkModeButton`, `DepartmentsButton`, `HelpButton`, `HillshadeButton`, `LabelsButton`, `SettingsButton`) are MapLibre `IControl` implementations exported from `src/lib/components/buttons/index.ts`, added via `$map.addControl(...)`.
+
+### GeoJSON overlays
+
+`src/lib/labels-layer.ts` (valeurs numériques au-dessus de la carte) and `src/lib/departments-layer.ts` (contours des départements français) share the same pattern: a single `geojson` source + a MapLibre layer placed below `BEFORE_LAYER_VECTOR`, toggled by a persisted store (`showLabels`, `showDepartments`). Both expose `ensure<Name>Layer()` (idempotent registration) and `refresh<Name>()` (data update, possibly fetching). Reuse this pattern for any new overlay (régions, communes, etc.) rather than wiring sources/layers from `+page.svelte` directly.
+
+The departments contour file is bundled (`static/departements.geojson`) to avoid CORS issues with third-party CDNs; the labels endpoint is dynamic (per-viewport fetches to `infoclimat-om-worker`).
+
+### Playback (diaporama)
+
+`src/lib/playback-renderer.ts` and `src/lib/playback.ts` implement a pre-rendered animation feature: frames are captured from the canvas (`preserveDrawingBuffer` is enabled on the map for this — see `+page.svelte`), decoded, and replayed via a `PlaybackOverlay`. State lives in `src/lib/stores/playback.ts` (fps, frames, currentIndex, prerenderProgress). The slot manager emits commit/error events (`slot-events.ts`) so playback can observe when a tile load completes. Playback locks map interaction (`MapInteractionLock`) during pre-render.
+
+### Domain allowlist (Infoclimat preset)
+
+`DOMAIN_ALLOWLIST` in `src/lib/constants.ts` filters the domain selector in `variable-selection.svelte` to the Infoclimat-relevant subset (MF AROME / ARPEGE, ECMWF IFS / AIFS, DWD ICON). This is **display-only**: URLs sharing a non-listed domain still resolve correctly (the rest of the app reads `domainOptions` from the package unfiltered). Add/remove entries in the list to expose more models in the UI.
+
+### Cumul precipitation (worker integration)
+
+Variables matching `CUMUL_VARIABLE_REGEX` (`^(.+)_sum_(\d+)h$`) are routed to `infoclimat-om-worker` via `getOMUrl()` instead of the upstream Open-Meteo S3 bucket. The worker URL is read from `VITE_OM_WORKER_URL` (build-time) or `/runtime-config.js` (Docker runtime templating). Cumul UI entries appear in the variable selector only when the worker URL is set AND the cumul flag is enabled (`isCumulEnabled()`). See the root `CLAUDE.md` for the full cross-project contract.
 
 ### Tests
 

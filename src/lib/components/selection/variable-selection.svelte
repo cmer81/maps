@@ -36,7 +36,12 @@
 	import * as Command from '$lib/components/ui/command';
 	import * as Popover from '$lib/components/ui/popover';
 
-	import { CUMUL_BASE_VARIABLES, CUMUL_GROUP_PREFIX, CUMUL_HOURS } from '$lib/constants';
+	import {
+		CUMUL_BASE_VARIABLES,
+		CUMUL_GROUP_PREFIX,
+		CUMUL_HOURS,
+		DOMAIN_ALLOWLIST
+	} from '$lib/constants';
 	import {
 		cumulDurationLabelFr,
 		cumulGroupLabelFr,
@@ -48,6 +53,13 @@
 	import VariableSelectionEmpty from './variable-selection-empty.svelte';
 
 	const cumulWorkerEnabled = Boolean(getOmWorkerUrl()) && isCumulFlagEnabled();
+
+	// Préset Infoclimat : filtre purement d'affichage (URLs partagées vers un
+	// modèle non whitelisté restent fonctionnelles ailleurs dans l'app).
+	const visibleDomainOptions = domainOptions.filter((d) => DOMAIN_ALLOWLIST.includes(d.value));
+	const visibleDomainGroups = domainGroups.filter((g) =>
+		visibleDomainOptions.some((d) => d.value.startsWith(g.value))
+	);
 
 	// list of variables, with the level groups filtered out, and adding a prefix for the group.
 	// When the cumul worker is configured, also insert a sentinel `__cumul:<base>` entry right
@@ -247,9 +259,9 @@
 						<Command.Input class="border-none ring-0" placeholder="Rechercher un domaine…" />
 						<Command.List>
 							<Command.Empty>Aucun domaine trouvé.</Command.Empty>
-							{#each domainGroups as { value: group, label: groupLabel } (group)}
+							{#each visibleDomainGroups as { value: group, label: groupLabel } (group)}
 								<Command.Group heading={groupLabel}>
-									{#each domainOptions as { value, label } (value)}
+									{#each visibleDomainOptions as { value, label } (value)}
 										{#if value.startsWith(group)}
 											<Command.Item
 												{value}
