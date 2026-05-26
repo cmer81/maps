@@ -60,8 +60,54 @@ export const COMPLETE_DEFAULT_VALUES: { [key: string]: boolean | string | number
 	layer2: 'false',
 	wind_overlay: 'false',
 	wind_overlay_level: '10m',
-	labels: 'false'
+	labels: 'false',
+	departments: 'false'
 };
+
+// Contours administratifs FR — GeoJSON simplifié (~550 KB / ~80 KB gzip),
+// licence ODbL, bundlé depuis `gregoiredavid/france-geojson`.
+export const DEPARTMENTS_GEOJSON_URL = '/departements.geojson';
+
+// Préset Infoclimat : sous-ensemble de modèles exposés dans le sélecteur de
+// domaine. Le reste de l'app (résolution d'URLs partagées, métadonnées) reste
+// indépendant — c'est purement un filtre d'affichage.
+//
+// Pour réactiver tous les modèles : passer la liste à `null` ou retirer le
+// filtre dans variable-selection.svelte.
+export const DOMAIN_ALLOWLIST: readonly string[] = [
+	// Cœur français
+	'meteofrance_arome_france_hd',
+	'meteofrance_arome_france_hd_15min',
+	'meteofrance_arome_france0025',
+	'meteofrance_arome_france0025_15min',
+	'meteofrance_arpege_europe',
+
+	// Référence globale + Europe
+	'ecmwf_ifs',
+	'ecmwf_ifs025',
+	'ecmwf_aifs025_single',
+	'dwd_icon_d2',
+	'dwd_icon_eu',
+
+	// Ensembles — commentés pour le moment
+	// 'ecmwf_ifs025_ensemble',
+	// 'ecmwf_aifs025_ensemble',
+	// 'meteoswiss_icon_ch1_ensemble',
+	// 'meteoswiss_icon_ch2_ensemble',
+
+	// Mer / littoral — commentés
+	// 'meteofrance_wave',
+	// 'ecmwf_wam025',
+	// 'meteofrance_currents',
+	// 'meteofrance_sea_surface_temperature',
+
+	// Qualité de l'air — commenté
+	// 'cams_global',
+
+	// Long terme — commentés
+	// 'ecmwf_seas5_monthly',
+	// 'ecmwf_ec46_weekly'
+];
 
 // Time constants
 export const MILLISECONDS_PER_SECOND = 1000; // 1 second in milliseconds

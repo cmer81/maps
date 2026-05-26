@@ -12,6 +12,7 @@ import { mode } from 'mode-watcher';
 
 import { replaceState } from '$app/navigation';
 
+import { showDepartments } from '$lib/stores/departments';
 import { showLabels } from '$lib/stores/labels';
 import { map as m } from '$lib/stores/map';
 import {
@@ -196,6 +197,13 @@ export const urlParamsToPreferences = () => {
 		showLabels.set(labelsRaw === 'true');
 	} else if (get(showLabels)) {
 		url.searchParams.set('labels', 'true');
+	}
+
+	const departmentsRaw = params.get('departments');
+	if (departmentsRaw !== null) {
+		showDepartments.set(departmentsRaw === 'true');
+	} else if (get(showDepartments)) {
+		url.searchParams.set('departments', 'true');
 	}
 
 	const clipCountries = parseClipCountriesParam(params.get(CLIP_COUNTRIES_PARAM));

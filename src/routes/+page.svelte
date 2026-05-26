@@ -15,6 +15,7 @@
 
 	import { version } from '$app/environment';
 
+	import { showDepartments } from '$lib/stores/departments';
 	import { showLabels } from '$lib/stores/labels';
 	import { map } from '$lib/stores/map';
 	import { omProtocolSettings } from '$lib/stores/om-protocol-settings';
@@ -34,6 +35,7 @@
 	import {
 		ClippingButton,
 		DarkModeButton,
+		DepartmentsButton,
 		HelpButton,
 		HillshadeButton,
 		LabelsButton,
@@ -50,6 +52,7 @@
 	import SiteHeader from '$lib/components/site-header/site-header.svelte';
 	import TimeSelector from '$lib/components/time/time-selector.svelte';
 
+	import { ensureDepartmentsLayer, refreshDepartments } from '$lib/departments-layer';
 	import { checkHighDefinition } from '$lib/helpers';
 	import { ensureLabelsLayer, refreshLabels } from '$lib/labels-layer';
 	import { addOmFileLayers, changeOMfileURL } from '$lib/layers';
@@ -134,6 +137,7 @@
 			addTerrainSource($map, 'terrainSource2');
 			$map.addControl(new HillshadeButton());
 			$map.addControl(new LabelsButton());
+			$map.addControl(new DepartmentsButton());
 			clippingPanel?.initTerraDraw();
 
 			addOmFileLayers();
@@ -141,10 +145,12 @@
 			changeOMfileURL();
 
 			ensureLabelsLayer();
+			ensureDepartmentsLayer();
 			$map.on('moveend', () => {
 				if (get(showLabels)) refreshLabels();
 			});
 			refreshLabels();
+			refreshDepartments();
 		});
 	});
 
@@ -202,6 +208,10 @@
 		// Pass deps so the effect re-runs whenever any of them changes —
 		// refreshLabels itself reads the current store values via get().
 		refreshLabels([$showLabels, $variable, $time, $domain, $modelRun]);
+	});
+
+	$effect(() => {
+		refreshDepartments([$showDepartments]);
 	});
 
 	onDestroy(() => {
