@@ -40,7 +40,8 @@
 		CUMUL_BASE_VARIABLES,
 		CUMUL_GROUP_PREFIX,
 		CUMUL_HOURS,
-		DOMAIN_ALLOWLIST
+		DOMAIN_ALLOWLIST,
+		VISIBLE_PRESSURE_LEVELS_HPA
 	} from '$lib/constants';
 	import {
 		cumulDurationLabelFr,
@@ -106,6 +107,8 @@
 		return groups;
 	});
 
+	const visiblePressureLevels = new Set<number>(VISIBLE_PRESSURE_LEVELS_HPA);
+
 	const levelGroupsList = $derived.by(() => {
 		if ($metaJson) {
 			const groups: { [key: string]: [{ value: string; label: string }] } = {};
@@ -116,6 +119,14 @@
 					const prefix = prefixMatch?.groups?.prefix;
 
 					if (prefix) {
+						// Filtre d'affichage : ne garde que les niveaux hPa whitelistés.
+						// Les autres unités (m) passent toujours.
+						const unitMatch = mjVariable.match(LEVEL_UNIT_REGEX);
+						if (unitMatch?.groups?.unit === 'hPa') {
+							const lvlNum = Number(unitMatch.groups.level);
+							if (!visiblePressureLevels.has(lvlNum)) continue;
+						}
+
 						let variableObject = variableOptions.find(({ value }) => value === mjVariable) ?? {
 							value: mjVariable,
 							label: mjVariable
