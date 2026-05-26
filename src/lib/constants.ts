@@ -68,6 +68,13 @@ export const COMPLETE_DEFAULT_VALUES: { [key: string]: boolean | string | number
 // licence ODbL, bundlé depuis `gregoiredavid/france-geojson`.
 export const DEPARTMENTS_GEOJSON_URL = '/departements.geojson';
 
+// Niveaux iso-pression exposés dans le sélecteur (hPa). Les niveaux non listés
+// restent fonctionnels via URL partagée — c'est purement un filtre d'affichage.
+// Les unités non-hPa (2m, 10m, 80m, 120m, 180m…) ne sont pas filtrées.
+export const VISIBLE_PRESSURE_LEVELS_HPA: readonly number[] = [
+	925, 850, 700, 500, 300, 250, 200
+];
+
 // Préset Infoclimat : sous-ensemble de modèles exposés dans le sélecteur de
 // domaine. Le reste de l'app (résolution d'URLs partagées, métadonnées) reste
 // indépendant — c'est purement un filtre d'affichage.
