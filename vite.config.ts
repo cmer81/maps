@@ -9,6 +9,10 @@ const addHeaders = (res: ServerResponse) => {
 	res.setHeader('Access-Control-Allow-Origin', '*');
 	res.setHeader('Access-Control-Allow-Methods', 'GET');
 	res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+	// `require-corp` works because the R2 bucket is served via a custom
+	// Cloudflare domain (cumul-om.infoclimat.net) with a Transform Rule
+	// injecting `Cross-Origin-Resource-Policy: cross-origin`. Universal
+	// COEP support (incl. Safari) for the price of one CF rule.
 	res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
 	res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
 };
