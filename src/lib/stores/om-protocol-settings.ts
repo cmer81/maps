@@ -101,6 +101,15 @@ const cumulAwareResolveRequest: typeof defaultResolveRequest = (urlComponents, s
 	return { dataOptions: { domain, variable, bounds: undefined }, renderOptions };
 };
 
+/** Échelles de couleur « standard » de l'app (défaut du package + nos palettes
+ *  infoclimat / anomalie), AVANT toute personnalisation utilisateur. Sert de
+ *  référence pour le bouton « réinitialiser aux couleurs standard ». */
+export const standardColorScales = {
+	...defaultOmProtocolSettings.colorScales,
+	temperature: infoclimatTemperatureScale,
+	temperature_2m_anomaly: temperatureAnomalyScale
+};
+
 export const omProtocolSettings: Writable<OmProtocolSettings> = writable({
 	...defaultOmProtocolSettings,
 	// static
@@ -111,13 +120,10 @@ export const omProtocolSettings: Writable<OmProtocolSettings> = writable({
 	resolveRequest: cumulAwareResolveRequest,
 
 	// dynamic (can be changed during runtime)
+	// `standardColorScales` (défaut + palettes infoclimat/anomalie) surchargé par
+	// les customisations persistées de l'utilisateur.
 	colorScales: {
-		...defaultOmProtocolSettings.colorScales,
-		temperature: infoclimatTemperatureScale,
-		// Surcharge la color scale anomalie intégrée au package (clé exacte
-		// résolue par `defaultResolveRequest` pour la variable
-		// `temperature_2m_anomaly`) par notre palette divergente ±10 °C.
-		temperature_2m_anomaly: temperatureAnomalyScale,
+		...standardColorScales,
 		...initialCustomColorScales
 	},
 

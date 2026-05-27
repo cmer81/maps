@@ -6,7 +6,11 @@
 	import { mode } from 'mode-watcher';
 	import { toast } from 'svelte-sonner';
 
-	import { customColorScales, omProtocolSettings } from '$lib/stores/om-protocol-settings';
+	import {
+		customColorScales,
+		omProtocolSettings,
+		standardColorScales
+	} from '$lib/stores/om-protocol-settings';
 	import { opacity, preferences } from '$lib/stores/preferences';
 	import {
 		convertValue,
@@ -96,6 +100,24 @@
 		editingIndex = null;
 	};
 
+	// Vrai quand l'utilisateur a personnalisé les couleurs de la variable courante.
+	const hasCustomScale = $derived(Boolean($customColorScales[$variable]));
+
+	/** Réinitialise l'échelle de la variable courante aux couleurs standard. */
+	const resetColorScale = async () => {
+		const standard = getColorScale($variable, isDark, standardColorScales);
+		customColorScales.update((scales) => {
+			const next = { ...scales };
+			delete next[$variable];
+			return next;
+		});
+		$omProtocolSettings.colorScales[$variable] = standard;
+		editingIndex = null;
+		await tick();
+		await changeOMfileURL();
+		toast('Couleurs réinitialisées');
+	};
+
 	const digits = 2;
 	const labeledColors = $derived(getLabeledColorsForLegend(colorScale));
 	const displayUnit = $derived(getDisplayUnit(colorScale.unit, $unitPreferences));
@@ -167,7 +189,9 @@
 
 			{#if colorScale.unit}
 				<div
-					class="bg-glass/75 rounded-t backdrop-blur-sm shadow-md h-6 w-full overflow-hidden text-center text-xs"
+					class="bg-glass/75 backdrop-blur-sm shadow-md h-6 w-full overflow-hidden text-center text-xs {editable
+						? ''
+						: 'rounded-t'}"
 				>
 					{#if unitOptions}
 						<Select.Root
@@ -200,6 +224,21 @@
 						<span class="leading-6">{displayUnit}</span>
 					{/if}
 				</div>
+			{/if}
+
+			{#if editable}
+				<button
+					type="button"
+					onclick={resetColorScale}
+					disabled={!hasCustomScale}
+					class="bg-glass/75 rounded-t backdrop-blur-sm shadow-md h-4 w-full text-center text-[11px] leading-4 {hasCustomScale
+						? 'hover:bg-glass/95 cursor-pointer'
+						: 'cursor-default opacity-40'}"
+					title={hasCustomScale ? 'Réinitialiser aux couleurs standard' : 'Couleurs déjà standard'}
+					aria-label="Réinitialiser aux couleurs standard"
+				>
+					↺
+				</button>
 			{/if}
 		</div>
 	</div>

@@ -310,6 +310,24 @@ export const provisionalDateSet = (metaJson: unknown): Set<string> =>
 		)
 	);
 
+/** Suffixe `&color_hash=…` quand l'échelle de couleurs diffère du défaut du
+ *  package (couleurs custom de l'utilisateur, ou nos palettes infoclimat/anomalie).
+ *  Force un re-render des tuiles quand les couleurs changent. */
+const colorHashSuffix = (): string => {
+	const s = get(omProtocolSettings);
+	const colorJson = JSON.stringify(s.colorScales);
+	if (
+		s.colorScales !== undefined &&
+		colorJson !== JSON.stringify(defaultOmProtocolSettings.colorScales)
+	) {
+		const cached = memorisedHash(colorJson, cachedColorJson, cachedColorHash);
+		cachedColorJson = cached.json;
+		cachedColorHash = cached.hash;
+		return `&color_hash=${cached.hash}`;
+	}
+	return '';
+};
+
 export const getOMUrlFor = (variable: string): string | undefined => {
 	const domain = get(d);
 	const modelRun = get(mR);
@@ -321,7 +339,8 @@ export const getOMUrlFor = (variable: string): string | undefined => {
 		const base = getModelsBucketUrl().replace(/\/$/, '');
 		return (
 			`${base}/anomaly/temperature_2m/${phase}/${fmtDateYMD(selectedTime)}.om` +
-			`?variable=${ANOMALY_VARIABLE}`
+			`?variable=${ANOMALY_VARIABLE}` +
+			colorHashSuffix()
 		);
 	}
 
@@ -368,16 +387,7 @@ export const getOMUrlFor = (variable: string): string | undefined => {
 		result += `&clipping_options_hash=${cached.hash}`;
 	}
 
-	const colorJson = JSON.stringify(omProtocolSettingsState.colorScales);
-	if (
-		omProtocolSettingsState.colorScales !== undefined &&
-		colorJson !== JSON.stringify(defaultOmProtocolSettings.colorScales)
-	) {
-		const cached = memorisedHash(colorJson, cachedColorJson, cachedColorHash);
-		cachedColorJson = cached.json;
-		cachedColorHash = cached.hash;
-		result += `&color_hash=${cached.hash}`;
-	}
+	result += colorHashSuffix();
 
 	return result;
 };
