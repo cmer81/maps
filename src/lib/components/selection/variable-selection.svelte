@@ -14,7 +14,7 @@
 		variableOptions
 	} from '@openmeteo/weather-map-layer';
 
-	import { desktop, loading } from '$lib/stores/preferences';
+	import { desktop } from '$lib/stores/preferences';
 	import { metaJson } from '$lib/stores/time';
 	import {
 		cumulSelectionOpen as cSO,
