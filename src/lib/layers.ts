@@ -6,10 +6,12 @@ import { toast } from 'svelte-sonner';
 
 import { map as m } from '$lib/stores/map';
 import { loading, opacity, opacity2, preferences as p } from '$lib/stores/preferences';
-import { layer2Enabled, variable2 } from '$lib/stores/variables';
+import { metaJson as mJ, time } from '$lib/stores/time';
+import { domain as d, layer2Enabled, variable2 } from '$lib/stores/variables';
 import { vectorOptions as vO } from '$lib/stores/vector';
 
 import {
+	ANOMALY_DOMAIN,
 	BEFORE_LAYER_RASTER,
 	BEFORE_LAYER_RASTER_SECONDARY,
 	BEFORE_LAYER_VECTOR,
@@ -21,7 +23,7 @@ import { type SlotLayer, SlotManager } from '$lib/slot-manager';
 
 import { refreshPopup } from './popup';
 import { currentOmUrl, currentOmUrl2 } from './stores/om-url';
-import { getOMUrl, getOMUrlFor, getWindOverlayUrl } from './url';
+import { anomalyPhase, getOMUrl, getOMUrlFor, getWindOverlayUrl, provisionalDateSet } from './url';
 
 // =============================================================================
 // Expression helpers
@@ -30,9 +32,18 @@ import { getOMUrl, getOMUrlFor, getWindOverlayUrl } from './url';
 const isDark = (): boolean => mode.current === 'dark';
 const lightOrDark = (light: string, dark: string): string => (isDark() ? dark : light);
 
+/** Facteur d'opacité appliqué aux jours d'anomalie provisoires (estimation
+ *  ARPEGE en attendant ERA5) : rendu plus pâle pour les distinguer du définitif. */
+const PROVISIONAL_OPACITY_FACTOR = 0.45;
+
 const getRasterOpacity = (): number => {
 	const opacityValue = get(opacity) / 100;
-	return isDark() ? Math.max(0, (opacityValue * 100 - 10) / 100) : opacityValue;
+	const base = isDark() ? Math.max(0, (opacityValue * 100 - 10) / 100) : opacityValue;
+	if (get(d) === ANOMALY_DOMAIN) {
+		const phase = anomalyPhase(get(time), new Date(), provisionalDateSet(get(mJ)));
+		if (phase === 'provisional') return base * PROVISIONAL_OPACITY_FACTOR;
+	}
+	return base;
 };
 
 const makeArrowColor = (): maplibregl.ExpressionSpecification => {

@@ -23,7 +23,7 @@ import {
 	tileSize as tS,
 	url as u
 } from '$lib/stores/preferences';
-import { modelRun as mR, modelRunLocked as mRL, time } from '$lib/stores/time';
+import { metaJson as mJ, modelRun as mR, modelRunLocked as mRL, time } from '$lib/stores/time';
 import { domain as d, layer2Enabled, variable as v, variable2 } from '$lib/stores/variables';
 import { vectorOptions as vO, windOverlayEnabled, windOverlayLevel } from '$lib/stores/vector';
 
@@ -288,9 +288,27 @@ export const fmtDateYMD = (d: Date): string =>
 const startOfUTCDay = (d: Date): Date =>
 	new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0));
 
-/** `observed` si la date est avant aujourd'hui (UTC), sinon `forecast`. */
-export const anomalyPhase = (selected: Date, now: Date): 'observed' | 'forecast' =>
-	selected.getTime() < startOfUTCDay(now).getTime() ? 'observed' : 'forecast';
+/** Phase (= préfixe bucket) d'une date d'anomalie :
+ *  - futur/aujourd'hui → `forecast`
+ *  - passé présent dans `provisionalDates` → `provisional` (estimation ARPEGE)
+ *  - passé sinon → `observed` (réanalyse ERA5 définitive).
+ *  `provisionalDates` = set de dates `YYYY-MM-DD`. */
+export const anomalyPhase = (
+	selected: Date,
+	now: Date,
+	provisionalDates: Set<string> = new Set()
+): 'observed' | 'forecast' | 'provisional' => {
+	if (selected.getTime() >= startOfUTCDay(now).getTime()) return 'forecast';
+	return provisionalDates.has(fmtDateYMD(selected)) ? 'provisional' : 'observed';
+};
+
+/** Extrait du metaJson le set des dates provisoires (`YYYY-MM-DD`). */
+export const provisionalDateSet = (metaJson: unknown): Set<string> =>
+	new Set(
+		((metaJson as { provisional_times?: string[] } | undefined)?.provisional_times ?? []).map((t) =>
+			t.slice(0, 10)
+		)
+	);
 
 export const getOMUrlFor = (variable: string): string | undefined => {
 	const domain = get(d);
@@ -299,7 +317,7 @@ export const getOMUrlFor = (variable: string): string | undefined => {
 	const selectedTime = get(time);
 
 	if (domain === ANOMALY_DOMAIN) {
-		const phase = anomalyPhase(selectedTime, new Date());
+		const phase = anomalyPhase(selectedTime, new Date(), provisionalDateSet(get(mJ)));
 		const base = getModelsBucketUrl().replace(/\/$/, '');
 		return (
 			`${base}/anomaly/temperature_2m/${phase}/${fmtDateYMD(selectedTime)}.om` +
@@ -392,13 +410,14 @@ export const getNextOmUrls = (
 		const idx = metaJson.valid_times.findIndex((s) => s === dateString);
 		const bucket = getModelsBucketUrl().replace(/\/$/, '');
 		const now = new Date();
+		const provisional = provisionalDateSet(metaJson);
 		const buildAnomalyUrl = (i: number): string | undefined => {
 			const t = metaJson.valid_times[i];
 			if (!t) return undefined;
 			const d2 = new Date(t);
 			if (isNaN(d2.getTime())) return undefined;
 			return (
-				`${bucket}/anomaly/temperature_2m/${anomalyPhase(d2, now)}/${fmtDateYMD(d2)}.om` +
+				`${bucket}/anomaly/temperature_2m/${anomalyPhase(d2, now, provisional)}/${fmtDateYMD(d2)}.om` +
 				`?variable=${ANOMALY_VARIABLE}`
 			);
 		};
