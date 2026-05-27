@@ -161,7 +161,7 @@
 			await tick(); // await the selectedDomain to be set
 			updateUrl('domain', newDomain);
 			$modelRun = undefined;
-			toast('Domain set to: ' + $selectedDomain.label);
+			toast('Modèle : ' + $selectedDomain.label);
 		}
 
 		getInitialMetaDataPromise = (async () => {
@@ -190,7 +190,7 @@
 		if ($variable !== newVar) {
 			await tick(); // await the selectedVariable to be set
 			updateUrl('variable', newVar);
-			toast('Variable set to: ' + $selectedVariable.label);
+			toast('Variable : ' + $selectedVariable.label);
 		}
 
 		changeOMfileURL();

@@ -250,7 +250,7 @@
 				>
 					<Popover.Close
 						class="absolute right-0.5 top-0.5 flex h-5 w-5 cursor-pointer items-center justify-center"
-						><button aria-label="Close popover"
+						><button aria-label="Fermer la fenêtre"
 							><svg
 								xmlns="http://www.w3.org/2000/svg"
 								width="12"
@@ -358,7 +358,7 @@
 				>
 					<Popover.Close
 						class="absolute right-0.5 top-0.5 flex h-5 w-5 cursor-pointer items-center justify-center"
-						><button aria-label="Close popover"
+						><button aria-label="Fermer la fenêtre"
 							><svg
 								xmlns="http://www.w3.org/2000/svg"
 								width="12"
