@@ -197,9 +197,8 @@
 	});
 
 	$effect(() => {
-		// Subscribe to wind overlay state changes
-		$windOverlayEnabled;
-		$windOverlayLevel;
+		// Read the stores so the effect re-runs on wind overlay state changes
+		const _deps = [$windOverlayEnabled, $windOverlayLevel];
 		// Invalidate cached URL so changeOMfileURL recomputes
 		currentOmUrl.set('');
 		changeOMfileURL();
