@@ -503,6 +503,7 @@
 
 	let hoursHoverContainer: HTMLElement | undefined = $state();
 	let hoursHoverContainerWidth: number = $state(0);
+	let runControlsWidth: number = $state(0);
 
 	let percentageVisible = $derived(hoursHoverContainerWidth / dayContainerScrollWidth);
 
@@ -535,6 +536,17 @@
 	);
 
 	let currentPercentage = $derived(currentPosition / hoursHoverContainerWidth);
+	let hoverTooltipConflictsRunControls = $derived(
+		desktop.current &&
+			hoverX > 0 &&
+			runControlsWidth > 0 &&
+			hoverX + 38 > hoursHoverContainerWidth - runControlsWidth - 8
+	);
+	let currentTooltipConflictsRunControls = $derived(
+		desktop.current &&
+			runControlsWidth > 0 &&
+			currentPosition + 38 > hoursHoverContainerWidth - runControlsWidth - 8
+	);
 
 	const timeValid = (date: Date) => isValidTimeStep(date, timeSteps);
 
@@ -749,7 +761,9 @@
 					<div
 						transition:fade={{ duration: 200 }}
 						style="left: calc({hoverX}px - 33px);"
-						class="absolute shadow-md -top-8 p-0.5 w-16.5 text-center rounded bg-glass/75 backdrop-blur-sm {hoveredHour &&
+						class="absolute shadow-md {hoverTooltipConflictsRunControls
+							? '-top-14'
+							: '-top-8'} p-0.5 w-16.5 text-center rounded bg-glass/75 backdrop-blur-sm {hoveredHour &&
 						currentTimeStep &&
 						currentTimeStep.getTime() === hoveredHour.getTime()
 							? 'font-bold'
@@ -774,7 +788,9 @@
 							: 0.5 * hoursHoverContainerWidth - 33}px), calc(100% - 38px));"
 						class="absolute md:bg-glass/75 md:shadow-md md:backdrop-blur-sm rounded {!desktop.current
 							? '-top-2 rounded-none!'
-							: '-top-6'} p-0.5 w-16.5 text-center"
+							: currentTooltipConflictsRunControls
+								? '-top-12'
+								: '-top-6'} p-0.5 w-16.5 text-center"
 					>
 						<div class="relative duration-500 {!disabled ? 'text-foreground' : ''}">
 							{#if currentTimeStep}
@@ -811,6 +827,7 @@
 		</div>
 		<!-- Model Run Selection Dropdown -->
 		<div
+			bind:clientWidth={runControlsWidth}
 			class="-top-4.5 h-4.5 z-10 right-0 absolute flex rounded-t-lg items-center px-2 gap-0.5 bg-glass/65 backdrop-blur-sm"
 		>
 			<PrefetchButton />

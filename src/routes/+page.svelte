@@ -21,6 +21,7 @@
 	import { omProtocolSettings } from '$lib/stores/om-protocol-settings';
 	import { currentOmUrl } from '$lib/stores/om-url';
 	import {
+		exportFrameVisible,
 		loading,
 		localStorageVersion,
 		resetStates,
@@ -232,6 +233,26 @@
 {/if}
 
 <div class="map maplibregl-map" id="#map_container" bind:this={mapContainer}></div>
+
+{#if $exportFrameVisible}
+	<div
+		class="pointer-events-none fixed left-1/2 top-1/2 z-50 aspect-square w-[min(100vw,100vh)] -translate-x-1/2 -translate-y-1/2 border-2 border-white/95 shadow-[0_0_0_9999px_rgba(0,0,0,0.24),0_0_18px_rgba(0,0,0,0.45)]"
+		aria-hidden="true"
+	>
+		<div class="absolute inset-0 border border-black/60"></div>
+		<div
+			class="absolute left-1/2 top-2 -translate-x-1/2 rounded bg-black/70 px-2 py-0.5 text-xs font-bold text-white shadow"
+		>
+			PNG carré
+		</div>
+		<!-- Bande recouverte par le filigrane Infoclimat dans le PNG final (~118/1080 px). -->
+		<div
+			class="absolute inset-x-0 bottom-0 flex h-[10.9%] items-center justify-center border-t border-white/60 bg-black/45 text-[10px] font-semibold uppercase tracking-wide text-white/80"
+		>
+			filigrane
+		</div>
+	</div>
+{/if}
 
 <SiteHeader />
 <Scale />

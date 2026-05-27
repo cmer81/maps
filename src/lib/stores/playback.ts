@@ -6,7 +6,13 @@ import { PLAYBACK_DEFAULT_FPS, type PlaybackFps } from '$lib/constants';
 
 import type { PrefetchMode } from '$lib/prefetch';
 
-export type PlaybackStatus = 'idle' | 'prefetching' | 'prerendering' | 'playing' | 'paused';
+export type PlaybackStatus =
+	| 'idle'
+	| 'prefetching'
+	| 'prerendering'
+	| 'exporting'
+	| 'playing'
+	| 'paused';
 
 export const playbackStatus: Writable<PlaybackStatus> = writable('idle');
 
@@ -22,6 +28,10 @@ export const playbackPrefetchProgress: Writable<{ current: number; total: number
 
 // Progress for the new prerender phase (status === 'prerendering').
 export const playbackPrerenderProgress: Writable<{ current: number; total: number } | null> =
+	writable(null);
+
+// Progress for PNG archive generation (status === 'exporting').
+export const playbackExportProgress: Writable<{ current: number; total: number } | null> =
 	writable(null);
 
 // Frames-per-second for diaporama playback. Persisted across sessions.

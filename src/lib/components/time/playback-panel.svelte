@@ -2,13 +2,17 @@
 	import { onDestroy } from 'svelte';
 	import { get } from 'svelte/store';
 
+	import { type RenderableColorScale, getColor, getColorScale } from '@openmeteo/weather-map-layer';
+	import { mode } from 'mode-watcher';
 	import { toast } from 'svelte-sonner';
 
 	import { map as m } from '$lib/stores/map';
+	import { omProtocolSettings } from '$lib/stores/om-protocol-settings';
 	import { currentOmUrl } from '$lib/stores/om-url';
 	import {
 		playbackCurrentIndex,
 		playbackEnd,
+		playbackExportProgress,
 		playbackFps,
 		playbackFrames,
 		playbackMode,
@@ -17,7 +21,9 @@
 		playbackStart,
 		playbackStatus
 	} from '$lib/stores/playback';
+	import { exportFrameVisible, opacity } from '$lib/stores/preferences';
 	import { metaJson, modelRun, time } from '$lib/stores/time';
+	import { convertValue, getDisplayUnit, unitPreferences } from '$lib/stores/units';
 	import {
 		domain as domainStore,
 		selectedDomain,
@@ -46,8 +52,18 @@
 		waitForCommit,
 		waitForIdle
 	} from '$lib/playback-renderer';
+	import {
+		type PngExportFormat,
+		type ZipFileEntry,
+		captureWatermarkedPng,
+		createStoredZip,
+		downloadBlob,
+		formatUtcStamp,
+		sanitizeFilenamePart
+	} from '$lib/png-export';
 	import { type PrefetchMode, getDateRangeForMode, prefetchData } from '$lib/prefetch';
 	import { slotEvents } from '$lib/slot-events';
+	import { formatISOWithoutTimezone } from '$lib/time-format';
 
 	let abortController: AbortController | null = null;
 	let overlay: PlaybackOverlay | null = null;
@@ -64,6 +80,85 @@
 		const total = $playbackFrames.length;
 		if (total === 0) return '';
 		return `${$playbackCurrentIndex + 1}/${total}`;
+	});
+
+	const formatLegendValue = (value: number, colorScale: RenderableColorScale): string => {
+		const converted = convertValue(value, colorScale.unit, get(unitPreferences));
+		if (Math.abs(converted) >= 1) return converted.toFixed(0);
+		if (Math.abs(converted) >= 0.1) return converted.toFixed(1);
+		return converted.toFixed(2);
+	};
+
+	const getLegendEntries = (colorScale: RenderableColorScale) => {
+		if (colorScale.type === 'rgba') {
+			const steps = 25;
+			const stepSize = (colorScale.max - colorScale.min) / steps;
+			return Array.from({ length: steps + 1 }, (_, i) => {
+				const value = colorScale.min + i * stepSize;
+				return {
+					value: formatLegendValue(value, colorScale),
+					color: getColor(colorScale, value)
+				};
+			});
+		}
+
+		return colorScale.breakpoints.map((value) => ({
+			value: formatLegendValue(value, colorScale),
+			color: getColor(colorScale, value)
+		}));
+	};
+
+	const getPngLegend = () => {
+		const variable = get(variableStore);
+		const colorScale = getColorScale(
+			variable,
+			mode.current === 'dark',
+			get(omProtocolSettings).colorScales
+		);
+		return {
+			unit: getDisplayUnit(colorScale.unit, get(unitPreferences)),
+			opacity: get(opacity) / 100,
+			entries: getLegendEntries(colorScale)
+		};
+	};
+
+	const formatLeadTimeLabel = (run: Date, validTime: Date): string => {
+		const totalMinutes = Math.round((validTime.getTime() - run.getTime()) / 60_000);
+		const sign = totalMinutes < 0 ? '-' : '+';
+		const absMinutes = Math.abs(totalMinutes);
+		const hours = Math.floor(absMinutes / 60);
+		const minutes = absMinutes % 60;
+		if (minutes === 0) return `H${sign}${hours}`;
+		return `H${sign}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+	};
+
+	const formatLeadTimeForFilename = (run: Date, validTime: Date): string => {
+		const totalMinutes = Math.round((validTime.getTime() - run.getTime()) / 60_000);
+		const sign = totalMinutes < 0 ? 'm' : 'h';
+		const absMinutes = Math.abs(totalMinutes);
+		if (absMinutes % 60 === 0) return `${sign}${String(absMinutes / 60).padStart(3, '0')}`;
+		return `${sign}${String(Math.floor(absMinutes / 60)).padStart(3, '0')}${String(
+			absMinutes % 60
+		).padStart(2, '0')}`;
+	};
+
+	const getPngDetails = (
+		run: Date,
+		validTime: Date,
+		frameIndex: number,
+		frameCount: number,
+		domainLabel: string,
+		variableLabel: string
+	) => ({
+		title: variableLabel,
+		leadTimeLabel: formatLeadTimeLabel(run, validTime),
+		domainLabel,
+		variableLabel,
+		modelRun: run,
+		validTime,
+		frameIndex,
+		frameCount,
+		legend: getPngLegend()
 	});
 
 	const detachOverlay = () => {
@@ -88,6 +183,7 @@
 		playbackStatus.set('idle');
 		playbackPrefetchProgress.set(null);
 		playbackPrerenderProgress.set(null);
+		playbackExportProgress.set(null);
 		playbackStart.set(undefined);
 		playbackEnd.set(undefined);
 	};
@@ -113,7 +209,13 @@
 	const play = async () => {
 		const status = get(playbackStatus);
 
-		if (status === 'prefetching' || status === 'prerendering' || status === 'playing') return;
+		if (
+			status === 'prefetching' ||
+			status === 'prerendering' ||
+			status === 'exporting' ||
+			status === 'playing'
+		)
+			return;
 		if (status === 'paused') {
 			resume();
 			return;
@@ -274,13 +376,229 @@
 		}
 	};
 
+	const getPlaybackSteps = () => {
+		const meta = get(metaJson);
+		const currentTime = get(time);
+		if (!meta) return { meta, startDate: undefined, endDate: undefined, steps: [] as Date[] };
+
+		const { startDate, endDate } = getDateRangeForMode(get(playbackMode), currentTime, meta);
+		const steps = meta.valid_times
+			.map((vt: string) => new Date(vt))
+			.filter((s) => s.getTime() >= startDate.getTime() && s.getTime() <= endDate.getTime());
+
+		return { meta, startDate, endDate, steps };
+	};
+
+	const exportPngArchive = async () => {
+		const status = get(playbackStatus);
+		if (status !== 'idle' && status !== 'paused') return;
+
+		// Même flux à deux temps que l'export unitaire « PNG » : premier clic pour
+		// afficher le cadre carré, second clic pour lancer l'export de la série.
+		if (!get(exportFrameVisible)) {
+			exportFrameVisible.set(true);
+			toast.info('Cadrez la carte, puis cliquez à nouveau sur Série');
+			return;
+		}
+
+		const run = get(modelRun);
+		const map = get(m);
+		const { meta, startDate, endDate, steps } = getPlaybackSteps();
+		if (!meta || !run) {
+			toast.warning('Métadonnées de la carte non encore chargées');
+			return;
+		}
+		if (!map) {
+			toast.error('Carte non initialisée');
+			return;
+		}
+		if (!startDate || !endDate || steps.length === 0) {
+			toast.warning('Aucune frame à exporter');
+			return;
+		}
+
+		detachOverlay();
+		playbackStart.set(startDate);
+		playbackEnd.set(endDate);
+		abortController = new AbortController();
+		const signal = abortController.signal;
+		const originalTime = new Date(get(time));
+		let timeMutated = false;
+
+		playbackStatus.set('prefetching');
+		playbackPrefetchProgress.set({ current: 0, total: 0 });
+
+		try {
+			const prefetchResult = await prefetchData(
+				{
+					startDate,
+					endDate,
+					metaJson: meta,
+					modelRun: run,
+					domain: get(domainStore),
+					variable: get(variableStore),
+					signal
+				},
+				(progress) => playbackPrefetchProgress.set(progress)
+			);
+
+			playbackPrefetchProgress.set(null);
+			if (prefetchResult.aborted || signal.aborted) return;
+			if (!prefetchResult.success) {
+				toast.error(prefetchResult.error ?? "Échec du préchargement avant l'export PNG");
+				return;
+			}
+
+			interactionLock = new MapInteractionLock(map);
+			interactionLock.freeze();
+			playbackStatus.set('exporting');
+			playbackExportProgress.set({ current: 0, total: steps.length });
+			toast.info(`Export PNG de ${steps.length} frames en cours`);
+
+			const entries: ZipFileEntry[] = [];
+			// On n'arrive ici qu'avec le cadre carré affiché : la série est croppée carré.
+			const pngFormat: PngExportFormat = 'square';
+			const domainLabel = get(selectedDomain).label ?? get(domainStore);
+			const variableLabel = get(selectedVariable).label ?? get(variableStore);
+			const basename = [
+				sanitizeFilenamePart(get(domainStore)),
+				sanitizeFilenamePart(get(variableStore)),
+				formatUtcStamp(run)
+			].join('_');
+
+			let failures = 0;
+			for (let i = 0; i < steps.length; i++) {
+				if (signal.aborted) return;
+
+				const previousOmUrl = get(currentOmUrl);
+				timeMutated = true;
+				time.set(steps[i]);
+				changeOMfileURL();
+				const triggeredLoad = get(currentOmUrl) !== previousOmUrl;
+
+				try {
+					if (triggeredLoad) {
+						await waitForCommit(slotEvents, PRERENDER_FRAME_TIMEOUT_MS, signal);
+					}
+					await waitForIdle(map, PRERENDER_FRAME_TIMEOUT_MS, signal);
+					const png = await captureWatermarkedPng(
+						map,
+						getPngDetails(run, steps[i], i, steps.length, domainLabel, variableLabel),
+						pngFormat
+					);
+					entries.push({
+						name: `${basename}_${formatLeadTimeForFilename(
+							run,
+							steps[i]
+						)}_${formatISOWithoutTimezone(steps[i])}.png`,
+						blob: png
+					});
+				} catch {
+					failures++;
+				}
+
+				playbackExportProgress.set({ current: i + 1, total: steps.length });
+				if (i + 1 >= 5 && isFailureRateExceeded(failures, i + 1, PRERENDER_MAX_FAILURE_RATIO)) {
+					toast.error('Export PNG interrompu : trop de frames en échec');
+					return;
+				}
+			}
+
+			if (entries.length === 0) {
+				toast.error('Aucune image PNG générée');
+				return;
+			}
+
+			try {
+				const zip = await createStoredZip(entries);
+				downloadBlob(zip, `${basename}_carre_png.zip`);
+				toast.success(`${entries.length} PNG exportés`);
+				exportFrameVisible.set(false);
+			} catch {
+				toast.error("Impossible de créer l'archive PNG");
+			}
+		} finally {
+			interactionLock?.thaw();
+			interactionLock = null;
+			abortController = null;
+			playbackStatus.set('idle');
+			playbackPrefetchProgress.set(null);
+			playbackExportProgress.set(null);
+			playbackStart.set(undefined);
+			playbackEnd.set(undefined);
+			if (timeMutated) {
+				time.set(originalTime);
+				changeOMfileURL();
+			}
+		}
+	};
+
+	const exportCurrentSquarePng = async () => {
+		const status = get(playbackStatus);
+		if (status !== 'idle' && status !== 'paused') return;
+
+		if (!get(exportFrameVisible)) {
+			exportFrameVisible.set(true);
+			toast.info('Cadrez la carte, puis cliquez à nouveau sur PNG');
+			return;
+		}
+
+		const run = get(modelRun);
+		const map = get(m);
+		const currentTime = get(time);
+		if (!run) {
+			toast.warning('Run non encore chargé');
+			return;
+		}
+		if (!map) {
+			toast.error('Carte non initialisée');
+			return;
+		}
+
+		try {
+			if (!map.loaded()) {
+				await waitForIdle(map, PRERENDER_FRAME_TIMEOUT_MS);
+			}
+			const domainValue = get(domainStore);
+			const variableValue = get(variableStore);
+			const domainLabel = get(selectedDomain).label ?? domainValue;
+			const variableLabel = get(selectedVariable).label ?? variableValue;
+			const png = await captureWatermarkedPng(
+				map,
+				getPngDetails(run, currentTime, 0, 1, domainLabel, variableLabel),
+				'square'
+			);
+			const filename = [
+				'infoclimat',
+				sanitizeFilenamePart(domainValue),
+				sanitizeFilenamePart(variableValue),
+				formatUtcStamp(run),
+				formatLeadTimeForFilename(run, currentTime),
+				formatISOWithoutTimezone(currentTime),
+				'square'
+			].join('_');
+			downloadBlob(png, `${filename}.png`);
+			exportFrameVisible.set(false);
+			toast.success('PNG carré exporté');
+		} catch (error) {
+			console.error('Square PNG export failed', error);
+			toast.error("Impossible d'exporter le PNG carré");
+		}
+	};
+
 	// Stop sur changement domain/variable/modelRun (cleanup overlay + bitmaps inclus dans stopPlayback)
 	$effect(() => {
 		void $selectedDomain;
 		void $selectedVariable;
 		void $modelRun;
 		const s = get(playbackStatus);
-		if (s === 'playing' || s === 'prefetching' || s === 'prerendering' || s === 'paused') {
+		if (
+			s === 'playing' ||
+			s === 'prefetching' ||
+			s === 'prerendering' ||
+			s === 'exporting' ||
+			s === 'paused'
+		) {
 			stopPlayback();
 		}
 	});
@@ -404,6 +722,32 @@
 				<line x1="6" y1="6" x2="18" y2="18" />
 			</svg>
 		</button>
+	{:else if $playbackStatus === 'exporting'}
+		<span class="text-blue-500 animate-pulse tabular-nums">
+			PNG {$playbackExportProgress?.current ?? 0}/{$playbackExportProgress?.total ?? 0}
+		</span>
+		<button
+			type="button"
+			class="cursor-pointer hover:text-foreground text-foreground/70 w-4 h-4.5 flex items-center justify-center"
+			onclick={cancelPrefetch}
+			aria-label="Annuler l'export PNG"
+			title="Annuler l'export PNG"
+		>
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				width="12"
+				height="12"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2.5"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
+				<line x1="18" y1="6" x2="6" y2="18" />
+				<line x1="6" y1="6" x2="18" y2="18" />
+			</svg>
+		</button>
 	{:else if $playbackStatus === 'playing'}
 		<button
 			type="button"
@@ -426,6 +770,32 @@
 		</button>
 		<span class="tabular-nums text-foreground/60">{frameIndexLabel}</span>
 	{:else}
+		<button
+			type="button"
+			class="cursor-pointer min-w-6 h-4.5 flex items-center justify-center text-[10px] font-bold tabular-nums {$exportFrameVisible
+				? 'text-blue-500'
+				: 'text-foreground/70 hover:text-foreground'}"
+			onclick={exportCurrentSquarePng}
+			aria-label="Exporter la carte courante en PNG carré"
+			title={$exportFrameVisible
+				? 'Exporter le cadre en PNG carré'
+				: "Afficher le cadre d'export PNG carré"}
+		>
+			PNG
+		</button>
+		<button
+			type="button"
+			class="cursor-pointer min-w-7 h-4.5 flex items-center justify-center text-[10px] font-bold tabular-nums {$exportFrameVisible
+				? 'text-blue-500'
+				: 'text-foreground/60 hover:text-foreground'}"
+			onclick={exportPngArchive}
+			aria-label="Exporter la série de cartes en PNG carré"
+			title={$exportFrameVisible
+				? 'Exporter la série dans le cadre carré'
+				: "Afficher le cadre d'export PNG carré"}
+		>
+			Série
+		</button>
 		<button
 			type="button"
 			class="cursor-pointer text-foreground/70 hover:text-foreground w-4 h-4.5 flex items-center justify-center"
