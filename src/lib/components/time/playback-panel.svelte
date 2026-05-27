@@ -393,6 +393,14 @@
 		const status = get(playbackStatus);
 		if (status !== 'idle' && status !== 'paused') return;
 
+		// Même flux à deux temps que l'export unitaire « PNG » : premier clic pour
+		// afficher le cadre carré, second clic pour lancer l'export de la série.
+		if (!get(exportFrameVisible)) {
+			exportFrameVisible.set(true);
+			toast.info('Cadrez la carte, puis cliquez à nouveau sur Série');
+			return;
+		}
+
 		const run = get(modelRun);
 		const map = get(m);
 		const { meta, startDate, endDate, steps } = getPlaybackSteps();
@@ -448,10 +456,8 @@
 			toast.info(`Export PNG de ${steps.length} frames en cours`);
 
 			const entries: ZipFileEntry[] = [];
-			// La série suit le même cadrage que l'export unitaire « PNG » : si le cadre
-			// carré est affiché, chaque frame est croppée en carré ; sinon vue courante.
-			const squareFormat = get(exportFrameVisible);
-			const pngFormat: PngExportFormat = squareFormat ? 'square' : 'current-view';
+			// On n'arrive ici qu'avec le cadre carré affiché : la série est croppée carré.
+			const pngFormat: PngExportFormat = 'square';
 			const domainLabel = get(selectedDomain).label ?? get(domainStore);
 			const variableLabel = get(selectedVariable).label ?? get(variableStore);
 			const basename = [
@@ -505,9 +511,9 @@
 
 			try {
 				const zip = await createStoredZip(entries);
-				downloadBlob(zip, `${basename}${squareFormat ? '_carre' : ''}_png.zip`);
+				downloadBlob(zip, `${basename}_carre_png.zip`);
 				toast.success(`${entries.length} PNG exportés`);
-				if (squareFormat) exportFrameVisible.set(false);
+				exportFrameVisible.set(false);
 			} catch {
 				toast.error("Impossible de créer l'archive PNG");
 			}
@@ -779,10 +785,14 @@
 		</button>
 		<button
 			type="button"
-			class="cursor-pointer text-foreground/60 hover:text-foreground min-w-7 h-4.5 flex items-center justify-center text-[10px] font-bold tabular-nums"
+			class="cursor-pointer min-w-7 h-4.5 flex items-center justify-center text-[10px] font-bold tabular-nums {$exportFrameVisible
+				? 'text-blue-500'
+				: 'text-foreground/60 hover:text-foreground'}"
 			onclick={exportPngArchive}
-			aria-label="Exporter la série de cartes en PNG"
-			title="Exporter toute la plage en série de PNG"
+			aria-label="Exporter la série de cartes en PNG carré"
+			title={$exportFrameVisible
+				? 'Exporter la série dans le cadre carré'
+				: "Afficher le cadre d'export PNG carré"}
 		>
 			Série
 		</button>
