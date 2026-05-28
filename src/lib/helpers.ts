@@ -1,7 +1,9 @@
 import { browser, dev } from '$app/environment';
 
-import { ANOMALY_DOMAIN } from '$lib/constants';
+import { ANOMALY_DOMAIN, AROME_OM_REUNION_DOMAIN } from '$lib/constants';
 import { getModelsBucketUrl } from '$lib/runtime-env';
+
+const BUCKET_DOMAINS: ReadonlySet<string> = new Set([ANOMALY_DOMAIN, AROME_OM_REUNION_DOMAIN]);
 
 /**
  * Pads a number with leading zeros to ensure 2 digits
@@ -15,7 +17,7 @@ export const fmtSelectedTime = (t: Date): string =>
 	`${t.getUTCFullYear()}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())}T${pad(t.getUTCHours())}${pad(t.getUTCMinutes())}`;
 
 export const getBaseUri = (domainValue: string): string => {
-	if (domainValue === ANOMALY_DOMAIN) {
+	if (BUCKET_DOMAINS.has(domainValue)) {
 		return getModelsBucketUrl().replace(/\/$/, '');
 	}
 	return dev && domainValue.startsWith('dwd_icon') && !domainValue.endsWith('eps')

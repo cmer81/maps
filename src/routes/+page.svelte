@@ -54,6 +54,7 @@
 	import SiteHeader from '$lib/components/site-header/site-header.svelte';
 	import TimeSelector from '$lib/components/time/time-selector.svelte';
 
+	import { DOMAIN_DEFAULT_VIEWS } from '$lib/constants';
 	import { ensureDepartmentsLayer, refreshDepartments } from '$lib/departments-layer';
 	import { checkHighDefinition } from '$lib/helpers';
 	import { ensureLabelsLayer, refreshLabels } from '$lib/labels-layer';
@@ -163,6 +164,21 @@
 			updateUrl('domain', newDomain);
 			$modelRun = undefined;
 			toast('Modèle : ' + $selectedDomain.label);
+
+			const view = DOMAIN_DEFAULT_VIEWS[newDomain];
+			if (view && $map) {
+				const mapInstance = $map;
+				mapInstance.flyTo(view);
+				// flyTo anime ~2s ; pendant l'animation, MapLibre ne déclenche pas
+				// le tile-loading. Si changeOMfileURL fire avant moveend, le slot
+				// commit prématurément (source.loaded() = true sans tuiles à charger),
+				// et les tuiles de la zone d'arrivée ne sont jamais redemandées.
+				// Re-trigger changeOMfileURL une fois la caméra stable.
+				mapInstance.once('moveend', () => {
+					currentOmUrl.set('');
+					changeOMfileURL();
+				});
+			}
 		}
 
 		getInitialMetaDataPromise = (async () => {

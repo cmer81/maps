@@ -10,10 +10,12 @@ import {
 import { type Persisted, persisted } from 'svelte-persisted-store';
 
 import { registerAnomalyDomain } from '$lib/anomaly-domain';
+import { registerAromeOmDomain } from '$lib/arome-om-domain';
 import { CUMUL_GROUP_PREFIX, DEFAULT_DOMAIN, DEFAULT_VARIABLE } from '$lib/constants';
 
 // Doit tourner avant la première évaluation de `selectedDomain`.
 registerAnomalyDomain();
+registerAromeOmDomain();
 
 const CUMUL_VARIABLE_REGEX = /^(?<base>.+)_sum_(?<hours>\d+)h$/;
 
