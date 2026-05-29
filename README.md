@@ -70,7 +70,7 @@ Tests dans `src/lib/tests/**` (logique pure : temps, URLs, stores playback…).
 
 ## Architecture
 
-Voir [`CLAUDE.md`](./CLAUDE.md) pour les détails internes :
+Voir [`.claude/CLAUDE.md`](./.claude/CLAUDE.md) et les règles ciblées dans [`.claude/rules/`](./.claude/rules/) pour les détails internes :
 
 - protocole MapLibre `om://` et résolution d'URL (`src/lib/url.ts`)
 - routing des cumuls vers le worker (`getOMUrl()` + `om-protocol-settings.ts`)
