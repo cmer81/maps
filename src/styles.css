@@ -367,6 +367,15 @@
 	margin-right: 3px;
 }
 
+.popup-sounding-btn {
+	margin-top: 4px;
+	width: 100%;
+	border-radius: 4px;
+	padding: 2px 6px;
+	font-size: 12px;
+	cursor: pointer;
+}
+
 .dark .popup-elevation {
 	color: white;
 }

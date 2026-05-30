@@ -13,6 +13,7 @@ import { mode } from 'mode-watcher';
 
 import { map as m, popup as p, popupMode } from '$lib/stores/map';
 import { omProtocolSettings } from '$lib/stores/om-protocol-settings';
+import { sounding } from '$lib/stores/sounding';
 import { convertValue, getDisplayUnit, unitPreferences } from '$lib/stores/units';
 import { selectedDomain, variable as v } from '$lib/stores/variables';
 import { windOverlayEnabled } from '$lib/stores/vector';
@@ -29,6 +30,8 @@ let valueSpan: HTMLSpanElement | undefined;
 let unitSpan: HTMLSpanElement | undefined;
 let elevationSpan: HTMLSpanElement | undefined;
 let windSpan: HTMLSpanElement | undefined;
+let soundingBtn: HTMLButtonElement | undefined;
+let lastCoords: maplibregl.LngLat | undefined;
 
 const WIND_VARIABLE_REGEX = /_(?:u|v)_component_/;
 
@@ -68,11 +71,21 @@ const initPopupDiv = (): void => {
 	contentDiv.append(elevationSpan);
 
 	wrapperDiv.append(contentDiv);
+
+	soundingBtn = document.createElement('button');
+	soundingBtn.className = 'popup-sounding-btn';
+	soundingBtn.innerText = 'Sondage vertical';
+	soundingBtn.addEventListener('click', () => {
+		if (lastCoords) sounding.open(lastCoords.lat, lastCoords.lng);
+	});
+	wrapperDiv.append(soundingBtn);
+
 	el.append(wrapperDiv);
 };
 
 /** Update the popup content for the given coordinates without moving the marker. */
 const updatePopupContent = async (coordinates: maplibregl.LngLat): Promise<void> => {
+	lastCoords = coordinates;
 	if (!el || !contentDiv || !valueSpan || !unitSpan || !windSpan || !elevationSpan) return;
 
 	const map = get(m);
