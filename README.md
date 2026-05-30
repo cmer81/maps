@@ -77,6 +77,7 @@ Voir [`.claude/CLAUDE.md`](./.claude/CLAUDE.md) et les règles ciblées dans [`.
 - système de slots double-buffered pour les transitions de tuiles (`slot-manager.ts`)
 - pipeline playback / pré-rendu (`playback-renderer.ts`)
 - synchronisation URL ↔ stores Svelte 5
+- sondages verticaux client-side (Skew-T + hodographe + indices convectifs) calculés depuis les OMfiles AROME niveaux de pression au point cliqué (`src/lib/sounding/`)
 
 ## Crédits & licence
 

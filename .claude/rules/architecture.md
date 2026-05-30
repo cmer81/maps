@@ -38,6 +38,16 @@ The departments contour file is bundled (`static/departements.geojson`) to avoid
 
 `DOMAIN_ALLOWLIST` in `src/lib/constants.ts` filters the domain selector in `variable-selection.svelte` to the Infoclimat-relevant subset (MF AROME / ARPEGE, ECMWF IFS / AIFS, DWD ICON). This is **display-only**: URLs sharing a non-listed domain still resolve correctly (the rest of the app reads `domainOptions` from the package unfiltered). Add/remove entries in the list to expose more models in the UI.
 
+## Sondage vertical (Skew-T)
+
+`src/lib/sounding/` implémente un sondage atmosphérique client-side en trois couches indépendantes :
+
+1. **Lecture** (`column.ts`) — `fetchColumn()` instancie un `WeatherMapLayerFileReader`, appelle `setToOmFile()` une seule fois puis `readVariable()` pour chaque variable (température, humidité, vent U/V) sur une petite bbox autour du point cliqué, avec interpolation bilinéaire. Le choix de `WeatherMapLayerFileReader` est délibéré : `getValueFromLatLong()` ne retourne la valeur que pour la variable actuellement rendue ; ici on lit les niveaux de pression indépendamment. Le cache bloc-byte du reader évite un re-téléchargement du `.om` (même mécanique que `src/lib/prefetch.ts`).
+2. **Calcul** (`thermo.ts`, `parcel.ts`, `indices.ts`, `skewt-coords.ts`) — fonctions pures TypeScript sans dépendance au domaine : primitives Bolton/Magnus, adiabates, bulbe humide, parcelle SB & MU (LCL/LFC/EL), CAPE/CIN/LI, LPN/isothermie, cisaillement 0-1/0-3/0-6 km, et la transformation log-P + inclinaison du Skew-T.
+3. **UI** (`src/lib/components/sounding/`) — panel tabulé réactif sur le scrubber de temps (debounce + jeton de génération pour annuler les fetch obsolètes).
+
+La couche lecture est source-agnostique : `SOUNDING_LEVELS_BY_DOMAIN` dans `src/lib/constants.ts` mappe chaque domaine vers ses niveaux de pression disponibles ; le domaine `arome_om_reunion` (Réunion) est anticipé dans la table mais pas encore exposé dans l'UI. Ajouter un nouveau domaine ne nécessite de modifier que cette constante et `soundingLevelsForDomain()`.
+
 ## infoclimat-om-worker integration
 
 The worker URL (`getOmWorkerUrl()`, read from `VITE_OM_WORKER_URL` at build time or `/runtime-config.js` for Docker runtime templating) backs two features: the basemap tile-proxy (`map-controls.ts`) and the labels overlay (`labels-layer.ts`, per-viewport numeric value fetches). When the URL is unset, those features are disabled.
