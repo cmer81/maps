@@ -24,12 +24,12 @@
 	let error = $state<string | null>(null);
 
 	let generation = 0;
-	let controller: AbortController | undefined;
 
 	async function load(lat: number, lng: number) {
-		controller?.abort();
-		controller = new AbortController();
-		const signal = controller.signal;
+		// Pas d'AbortController : le cache de blocs est partagé entre lectures, et
+		// annuler une charge périmée rejette des fetchs de blocs dont la charge
+		// suivante dépend (dédup inflight) → lectures NaN. Le jeton `generation`
+		// suffit à écarter les résultats obsolètes sans corrompre les lectures en cours.
 		const myGen = ++generation;
 		loading = true;
 		error = null;
@@ -37,7 +37,7 @@
 			const map = get(mapStore);
 			const rawElev = map?.queryTerrainElevation(new maplibregl.LngLat(lng, lat));
 			const elev = typeof rawElev === 'number' && isFinite(rawElev) ? rawElev : 0;
-			const col = await fetchColumn(lat, lng, elev, signal);
+			const col = await fetchColumn(lat, lng, elev);
 			if (myGen !== generation) return;
 			if (col.levels.length < 3) {
 				error = 'Pas assez de données à ce point.';
@@ -48,7 +48,7 @@
 			parcel = liftParcel(col.surface, col.levels);
 			indices = computeIndices(col);
 		} catch {
-			if (myGen === generation && !signal.aborted) error = 'Échec du chargement du sondage.';
+			if (myGen === generation) error = 'Échec du chargement du sondage.';
 		} finally {
 			if (myGen === generation) loading = false;
 		}
