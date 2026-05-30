@@ -20,6 +20,24 @@ const profile: ColumnProfile = {
 };
 
 describe('indices', () => {
+	it('computeIndices avec levels vide retourne un sentinel sans lever', () => {
+		const emptyProfile: ColumnProfile = {
+			lat: 45,
+			lng: 2,
+			validTime: '2026-05-30T12:00',
+			surface: levels[0],
+			levels: []
+		};
+		const idx = computeIndices(emptyProfile);
+		expect(idx.sb.cape).toBe(0);
+		expect(idx.sb.cin).toBe(0);
+		expect(Number.isNaN(idx.sb.li)).toBe(true);
+		expect(idx.mu.cape).toBe(0);
+		expect(idx.lpn.iso0).toBeNull();
+		expect(idx.lpn.isoTw).toBeNull();
+		expect(idx.shear).toHaveLength(0);
+	});
+
 	it('profil instable : CAPE SB > 0, CIN <= 0, LI < 0', () => {
 		const idx = computeIndices(profile);
 		expect(idx.sb.cape).toBeGreaterThan(0);

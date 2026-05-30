@@ -15,8 +15,10 @@ const G = 9.81;
 /** Interpole linéairement une grandeur le long de la hauteur. */
 function interpAtHeight(levels: LevelDatum[], targetH: number, key: 'u' | 'v'): number {
 	for (let i = 1; i < levels.length; i++) {
+		const dh = levels[i].height - levels[i - 1].height;
+		if (dh === 0) continue; // skip degenerate adjacent pair to avoid divide-by-zero
 		if (levels[i].height >= targetH) {
-			const f = (targetH - levels[i - 1].height) / (levels[i].height - levels[i - 1].height);
+			const f = (targetH - levels[i - 1].height) / dh;
 			return levels[i - 1][key] + f * (levels[i][key] - levels[i - 1][key]);
 		}
 	}
@@ -76,6 +78,14 @@ function crossingHeight(
 
 export function computeIndices(profile: ColumnProfile): SoundingIndices {
 	const { surface, levels } = profile;
+	if (levels.length < 2) {
+		return {
+			sb: { cape: 0, cin: 0, li: NaN },
+			mu: { cape: 0, cin: 0, li: NaN },
+			lpn: { iso0: null, isoTw: null, isothermal: false },
+			shear: []
+		};
+	}
 	const sbParcel = liftParcel(surface, levels);
 	const muStart = mostUnstableLevel(surface, levels);
 	const muParcel = liftParcel(muStart, levels);
