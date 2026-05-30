@@ -24,8 +24,12 @@
 	let error = $state<string | null>(null);
 
 	let generation = 0;
+	let controller: AbortController | undefined;
 
 	async function load(lat: number, lng: number) {
+		controller?.abort();
+		controller = new AbortController();
+		const signal = controller.signal;
 		const myGen = ++generation;
 		loading = true;
 		error = null;
@@ -33,7 +37,7 @@
 			const map = get(mapStore);
 			const rawElev = map?.queryTerrainElevation(new maplibregl.LngLat(lng, lat));
 			const elev = typeof rawElev === 'number' && isFinite(rawElev) ? rawElev : 0;
-			const col = await fetchColumn(lat, lng, elev);
+			const col = await fetchColumn(lat, lng, elev, signal);
 			if (myGen !== generation) return;
 			if (col.levels.length < 3) {
 				error = 'Pas assez de données à ce point.';
@@ -44,21 +48,28 @@
 			parcel = liftParcel(col.surface, col.levels);
 			indices = computeIndices(col);
 		} catch {
-			if (myGen === generation) error = 'Échec du chargement du sondage.';
+			if (myGen === generation && !signal.aborted) error = 'Échec du chargement du sondage.';
 		} finally {
 			if (myGen === generation) loading = false;
 		}
 	}
 
 	let debounce: ReturnType<typeof setTimeout> | undefined;
+	let lastKey = '';
 	$effect(() => {
-		const s = $sounding;
-		void $time; // dépendance : recalcul live au scrub du curseur temps
-		if (!s.open || s.lat === null || s.lng === null) return;
+		// Dépendances : point cliqué + curseur temps (recalcul live au scrub).
+		// On exclut activeTab : changer d'onglet ne doit pas relancer ~125 lectures.
+		const { open, lat, lng } = $sounding;
+		const key = `${lat},${lng},${String($time)}`;
+		if (!open || lat === null || lng === null) return;
+		if (key === lastKey) return;
+		lastKey = key;
 		clearTimeout(debounce);
-		const { lat, lng } = s;
 		debounce = setTimeout(() => load(lat, lng), 300);
 	});
+
+	// Nettoyage du timer en attente au démontage du composant.
+	$effect(() => () => clearTimeout(debounce));
 </script>
 
 {#if $sounding.open}
