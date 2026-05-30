@@ -24,7 +24,7 @@
 		{#if indices.lpn.isothermal}<div class="text-amber-500">⚠ Isothermie détectée</div>{/if}
 	</div>
 	<div class="border-t pt-2">
-		{#each indices.shear as s}
+		{#each indices.shear as s (s.label)}
 			<div>Cisaillement {s.label} : <b>{r0(s.magnitude)} m/s</b></div>
 		{/each}
 	</div>

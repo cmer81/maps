@@ -38,11 +38,11 @@
 </script>
 
 <svg viewBox="0 0 {W} {H}" class="h-full w-full" role="img" aria-label="Diagramme Skew-T">
-	{#each isobars as p}
+	{#each isobars as p (p)}
 		<line x1="0" y1={py(p)} x2={W} y2={py(p)} stroke={grid} stroke-width="0.5" />
 		<text x="2" y={py(p) - 2} fill={axis} font-size="9">{p}</text>
 	{/each}
-	{#each isotherms as t}
+	{#each isotherms as t (t)}
 		<line
 			x1={px(t, cfg.pBottom)}
 			y1={H}

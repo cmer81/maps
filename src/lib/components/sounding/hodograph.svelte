@@ -20,7 +20,7 @@
 </script>
 
 <svg viewBox="0 0 {S} {S}" class="h-full w-full" role="img" aria-label="Hodographe">
-	{#each rings as r}
+	{#each rings as r (r)}
 		<circle cx={c} cy={c} r={scale(r)} fill="none" stroke={grid} stroke-width="0.5" />
 	{/each}
 	<line x1="0" y1={c} x2={S} y2={c} stroke={grid} stroke-width="0.5" />
