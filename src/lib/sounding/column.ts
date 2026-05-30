@@ -106,17 +106,35 @@ interface SimpleReader {
 	): Promise<{ values?: ArrayLike<number> }>;
 }
 
+/** Reader unique réutilisé pour le sondage + chaîne de sérialisation des appels. */
+let soundingReader: WeatherMapLayerFileReader | undefined;
+let soundingChain: Promise<unknown> = Promise.resolve();
+
 /**
  * Reconstruit la colonne verticale au point (lat,lng) pour le run/temps courant.
  *
- * Source-agnostique : ouvre le `.om` une seule fois via un lecteur privé qui
- * réutilise le cache de blocs partagé (mêmes `fileReaderConfig` que le singleton
- * de rendu) — le fichier n'est donc pas re-téléchargé. Chaque variable est lue
- * sur une PETITE bounding box autour du point puis interpolée au scalaire, en
- * miroir exact de `getValueFromLatLong` (getRanges + GridFactory +
- * getLinearInterpolatedValue + normalizeLon).
+ * Les appels sont SÉRIALISÉS sur un reader unique réutilisé : le cache de blocs et
+ * le WASM reader ne tolèrent pas des lectures concurrentes entre charges (course →
+ * NaN intermittents si une charge fait `dispose()`/abort pendant qu'une autre lit).
+ * Le jeton `generation` côté panneau écarte les résultats périmés. Source-agnostique :
+ * ne nomme aucune source (URL via getOMUrlFor, qui route Open-Meteo ou le bucket R2).
  */
-export async function fetchColumn(
+export function fetchColumn(
+	lat: number,
+	lng: number,
+	terrainElevation: number,
+	signal?: AbortSignal
+): Promise<ColumnProfile> {
+	const run = soundingChain.then(() => doFetchColumn(lat, lng, terrainElevation, signal));
+	// La chaîne ne doit jamais rester en rejet, sinon les appels suivants planteraient.
+	soundingChain = run.then(
+		() => undefined,
+		() => undefined
+	);
+	return run;
+}
+
+async function doFetchColumn(
 	lat: number,
 	lng: number,
 	terrainElevation: number,
@@ -138,77 +156,76 @@ export async function fetchColumn(
 	}
 	const omUrl = sampleUrl.split('?')[0];
 
-	// Lecteur privé qui partage le cache de blocs (réutilise les octets déjà
-	// téléchargés sans perturber l'état setToOmFile du singleton de rendu).
-	const reader = new WeatherMapLayerFileReader(settings.fileReaderConfig);
+	// Reader unique réutilisé (partage le cache de blocs ; pas de `dispose` entre
+	// appels pour ne pas casser une lecture concurrente sérialisée juste après).
+	if (!soundingReader) {
+		soundingReader = new WeatherMapLayerFileReader(settings.fileReaderConfig);
+	}
+	const reader = soundingReader;
 	const simpleReader = reader as unknown as SimpleReader;
 
-	try {
-		await reader.setToOmFile(omUrl);
+	await reader.setToOmFile(omUrl);
 
-		// Petite bounding box autour du point : on ne lit JAMAIS toute la grille.
-		const bounds: [number, number, number, number] = [
-			lng - BBOX_HALF_DEG,
-			lat - BBOX_HALF_DEG,
-			lng + BBOX_HALF_DEG,
-			lat + BBOX_HALF_DEG
-		];
-		const ranges = getRanges(grid, bounds);
-		// La grille est créée avec les `ranges` réduits : l'index calculé pour
-		// (lat, lon) tient compte de l'offset de la sous-fenêtre (cf. minX/minY).
-		const gridGetter = GridFactory.create(grid, ranges);
-		const lonNormalized = normalizeLon(lng);
+	// Petite bounding box autour du point : on ne lit JAMAIS toute la grille.
+	const bounds: [number, number, number, number] = [
+		lng - BBOX_HALF_DEG,
+		lat - BBOX_HALF_DEG,
+		lng + BBOX_HALF_DEG,
+		lat + BBOX_HALF_DEG
+	];
+	const ranges = getRanges(grid, bounds);
+	// La grille est créée avec les `ranges` réduits : l'index calculé pour
+	// (lat, lon) tient compte de l'offset de la sous-fenêtre (cf. minX/minY).
+	const gridGetter = GridFactory.create(grid, ranges);
+	const lonNormalized = normalizeLon(lng);
 
-		// Lecture brute d'une variable + interpolation au point ; NaN si échec.
-		const read: VariableReader = async (variable) => {
-			if (signal?.aborted) return NaN;
-			try {
-				const data = await simpleReader.readSimpleVariable(variable, ranges, signal);
-				if (!data?.values) return NaN;
-				const value = gridGetter.getLinearInterpolatedValue(
-					data.values as unknown as Float32Array,
-					lat,
-					lonNormalized
-				);
-				return Number.isFinite(value) ? value : NaN;
-			} catch {
-				return NaN;
-			}
-		};
+	// Lecture brute d'une variable + interpolation au point ; NaN si échec.
+	const read: VariableReader = async (variable) => {
+		if (signal?.aborted) return NaN;
+		try {
+			const data = await simpleReader.readSimpleVariable(variable, ranges, signal);
+			if (!data?.values) return NaN;
+			const value = gridGetter.getLinearInterpolatedValue(
+				data.values as unknown as Float32Array,
+				lat,
+				lonNormalized
+			);
+			return Number.isFinite(value) ? value : NaN;
+		} catch {
+			return NaN;
+		}
+	};
 
-		// Concurrence bornée (~8) pour les ~125 lectures (5 vars × 24 niveaux + surface).
-		const limited = createLimiter(READ_CONCURRENCY);
-		const boundedRead: VariableReader = (variable) => limited(() => read(variable));
+	// Concurrence bornée (~8) pour les ~125 lectures (5 vars × 24 niveaux + surface).
+	const limited = createLimiter(READ_CONCURRENCY);
+	const boundedRead: VariableReader = (variable) => limited(() => read(variable));
 
-		// Variables de surface lues en parallèle.
-		const [t2m, rh2m, sp, u10, v10] = await Promise.all([
-			boundedRead('temperature_2m'),
-			boundedRead('relative_humidity_2m'),
-			boundedRead('surface_pressure'),
-			boundedRead('wind_u_component_10m'),
-			boundedRead('wind_v_component_10m')
-		]);
+	// Variables de surface lues en parallèle.
+	const [t2m, rh2m, sp, u10, v10] = await Promise.all([
+		boundedRead('temperature_2m'),
+		boundedRead('relative_humidity_2m'),
+		boundedRead('surface_pressure'),
+		boundedRead('wind_u_component_10m'),
+		boundedRead('wind_v_component_10m')
+	]);
 
-		const surface: SurfaceInput = {
-			temperature: t2m,
-			rh: rh2m,
-			pressure: Number.isFinite(sp) ? sp : 1013,
-			height: terrainElevation,
-			u: u10,
-			v: v10
-		};
+	const surface: SurfaceInput = {
+		temperature: t2m,
+		rh: rh2m,
+		pressure: Number.isFinite(sp) ? sp : 1013,
+		height: terrainElevation,
+		u: u10,
+		v: v10
+	};
 
-		return assembleColumn({
-			lat,
-			lng,
-			validTime,
-			levels,
-			surface,
-			read: boundedRead
-		});
-	} finally {
-		reader.dispose();
-	}
+	return assembleColumn({
+		lat,
+		lng,
+		validTime,
+		levels,
+		surface,
+		read: boundedRead
+	});
 }
 
 /** Limiteur de concurrence minimal (file d'attente FIFO). */
