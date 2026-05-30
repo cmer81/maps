@@ -43,15 +43,15 @@ Le livrable est le **sondage complet** ; les indices en sont des lectures.
 
 ## Décisions de conception (arbitrées en brainstorming)
 
-| Sujet | Décision | Raison |
-|---|---|---|
-| Déclenchement | **Bouton « Sondage vertical » dans le popup valeur existant** | Discoverable, pas de mode, ne lance les ~125 lectures que sur action explicite, cohabite avec l'existant. |
-| Rendu Skew-T / hodographe | **SVG custom en composant Svelte 5** | Zéro dépendance, thémable clair/sombre, interactif (survol), géométrie testable. Sert le contrat source-agnostique. |
-| Thermodynamique | **Module TS 100 % custom, fonctions pures, TDD** | Aucune lib JS ne calcule CAPE/CIN/LI clé en main (meteoJS ne fournit que des primitives et ne calcule pas l'ascension/CAPE). La couche dure est à notre charge de toute façon ; colle à la culture zéro-dépendance + Vitest du repo. |
-| Particules | **Surface (SB) + Most-Unstable (MU)** | Couvre la prévi convective (instabilité élevée/nocturne) sans exploser le scope. ML en V1.1. |
-| Agencement panneau | **Onglets compacts** : Skew-T / Hodographe / Indices, une vue à la fois | Tracé plein cadre, cohérent desktop + mobile. |
-| Lien au temps | **Live** : suit le curseur de temps (debounce + annulation des lectures obsolètes) | Permet le balayage temporel de l'évolution convective. |
-| Hodographe | **Cisaillement 0-1 / 0-3 / 0-6 km seul** (MVP) | Couvre l'essentiel du risque supercellulaire. SRH / Bunkers en V1.1. |
+| Sujet                     | Décision                                                                           | Raison                                                                                                                                                                                                                               |
+| ------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Déclenchement             | **Bouton « Sondage vertical » dans le popup valeur existant**                      | Discoverable, pas de mode, ne lance les ~125 lectures que sur action explicite, cohabite avec l'existant.                                                                                                                            |
+| Rendu Skew-T / hodographe | **SVG custom en composant Svelte 5**                                               | Zéro dépendance, thémable clair/sombre, interactif (survol), géométrie testable. Sert le contrat source-agnostique.                                                                                                                  |
+| Thermodynamique           | **Module TS 100 % custom, fonctions pures, TDD**                                   | Aucune lib JS ne calcule CAPE/CIN/LI clé en main (meteoJS ne fournit que des primitives et ne calcule pas l'ascension/CAPE). La couche dure est à notre charge de toute façon ; colle à la culture zéro-dépendance + Vitest du repo. |
+| Particules                | **Surface (SB) + Most-Unstable (MU)**                                              | Couvre la prévi convective (instabilité élevée/nocturne) sans exploser le scope. ML en V1.1.                                                                                                                                         |
+| Agencement panneau        | **Onglets compacts** : Skew-T / Hodographe / Indices, une vue à la fois            | Tracé plein cadre, cohérent desktop + mobile.                                                                                                                                                                                        |
+| Lien au temps             | **Live** : suit le curseur de temps (debounce + annulation des lectures obsolètes) | Permet le balayage temporel de l'évolution convective.                                                                                                                                                                               |
+| Hodographe                | **Cisaillement 0-1 / 0-3 / 0-6 km seul** (MVP)                                     | Couvre l'essentiel du risque supercellulaire. SRH / Bunkers en V1.1.                                                                                                                                                                 |
 
 ## Architecture — 3 couches découplées
 
@@ -84,20 +84,20 @@ Arborescence :
 ```ts
 // Une mesure à un niveau de pression (ou la surface)
 interface LevelDatum {
-  pressure: number;      // hPa
-  temperature: number;   // °C
-  dewpoint: number;      // °C (dérivé de RH)
-  height: number;        // m (géopotentiel ; surface = altitude terrain)
-  u: number;             // m/s
-  v: number;             // m/s
+	pressure: number; // hPa
+	temperature: number; // °C
+	dewpoint: number; // °C (dérivé de RH)
+	height: number; // m (géopotentiel ; surface = altitude terrain)
+	u: number; // m/s
+	v: number; // m/s
 }
 
 interface ColumnProfile {
-  lat: number;
-  lng: number;
-  validTime: string;     // timestep
-  surface: LevelDatum;   // base de la particule SB
-  levels: LevelDatum[];  // triés du sol vers le sommet, NaN exclus
+	lat: number;
+	lng: number;
+	validTime: string; // timestep
+	surface: LevelDatum; // base de la particule SB
+	levels: LevelDatum[]; // triés du sol vers le sommet, NaN exclus
 }
 ```
 
@@ -111,7 +111,7 @@ interface ColumnProfile {
   `geopotential_height_<L>hPa`, `wind_u_component_<L>hPa`, `wind_v_component_<L>hPa` via
   `getValueFromLatLong(lat, lng, urlFor(variable))`.
 - **Surface** : lit `temperature_2m`, l'humidité 2 m, la pression de surface et le vent 10 m.
-  → *Point de vérification implémentation* : confirmer les noms exacts des variables surface
+  → _Point de vérification implémentation_ : confirmer les noms exacts des variables surface
   dans le meta JSON live (`temperature_2m`, `relative_humidity_2m` vs `dewpoint_2m`,
   `surface_pressure` vs `pressure_msl`, `wind_u_component_10m`…). L'altitude terrain peut venir
   de `map.queryTerrainElevation` (déjà utilisé dans `popup.ts`).
@@ -204,10 +204,10 @@ Toutes ces fonctions sont **pures** et validées Vitest contre des sondages de r
 
 ```ts
 interface SoundingState {
-  open: boolean;
-  lat: number | null;
-  lng: number | null;
-  activeTab: 'skewt' | 'hodograph' | 'indices';
+	open: boolean;
+	lat: number | null;
+	lng: number | null;
+	activeTab: 'skewt' | 'hodograph' | 'indices';
 }
 ```
 

@@ -17,6 +17,7 @@
 ## File Structure
 
 **Logique pure (`src/lib/sounding/`)** — testable hors DOM :
+
 - `types.ts` — `LevelDatum`, `ColumnProfile`, `ParcelResult`, `ParcelIndices`, `ShearLayer`, `SoundingIndices`.
 - `thermo.ts` — primitives thermodynamiques (fonctions pures).
 - `parcel.ts` — ascension de particule SB/MU → LCL/LFC/EL.
@@ -25,15 +26,18 @@
 - `column.ts` — `fetchColumn()` (dépend des primitives de la lib ; source-agnostique).
 
 **État (`src/lib/stores/`)** :
+
 - `sounding.ts` — état du panneau.
 
 **Composants (`src/lib/components/sounding/`)** :
+
 - `sounding-panel.svelte` — conteneur à onglets + états chargement/erreur.
 - `skew-t.svelte` — tracé Skew-T.
 - `hodograph.svelte` — hodographe.
 - `indices-table.svelte` — tableau d'indices.
 
 **Intégration (modifications)** :
+
 - `src/lib/constants.ts` — `SOUNDING_PRESSURE_LEVELS_HPA` + table `domain → niveaux`.
 - `src/lib/popup.ts` — bouton « Sondage vertical ».
 - `src/routes/+page.svelte` — montage du panneau.
@@ -49,6 +53,7 @@
 But : confirmer que ~125 lectures sur le même `.om` ne re-téléchargent pas le fichier, et figer la stratégie de lecture. **Ne pas coder `column.ts` avant la conclusion de cette tâche.**
 
 **Files:**
+
 - Aucun fichier produit ici (investigation). Notes consignées dans la PR / le commit message.
 
 - [ ] **Step 1: Installer les dépendances**
@@ -59,10 +64,12 @@ Expected: `node_modules/@openmeteo/weather-map-layer` présent.
 - [ ] **Step 2: Inspecter la signature et le cache de `getValueFromLatLong`**
 
 Run:
+
 ```bash
 find node_modules/@openmeteo/weather-map-layer -name '*.d.ts' | head
 grep -rn "getValueFromLatLong\|FileReader\|cache\|OmFileReader\|fetchOmFile" node_modules/@openmeteo/weather-map-layer/dist 2>/dev/null | head -40
 ```
+
 Examiner : `getValueFromLatLong` re-télécharge-t-il le `.om` à chaque appel, ou réutilise-t-il un reader/cache ? Existe-t-il une primitive lisant plusieurs variables d'un même fichier (ex. un `OmFileReader` réutilisable) ?
 
 - [ ] **Step 3: Mesurer empiriquement**
@@ -72,6 +79,7 @@ Lancer `npm run dev`, ouvrir la console, et chronométrer 125 appels parallèles
 - [ ] **Step 4: Figer la stratégie et la documenter**
 
 Décision à acter dans le commit message de la Task 8 (column) :
+
 - **Cas A — fichier mis en cache** (attendu) : stratégie = `Promise.all` des lectures par variable (lots de ~16). Aucune adaptation.
 - **Cas B — re-téléchargement** : utiliser le reader bas-niveau réutilisable de la lib (à identifier au Step 2) pour décoder le fichier une fois puis échantillonner chaque variable ; sinon, ouvrir un ticket et limiter le MVP aux niveaux essentiels. **Mettre à jour la signature de `fetchColumn` en conséquence (Task 8).**
 
@@ -86,6 +94,7 @@ git commit --allow-empty -m "chore: investigation perf lecture colonne sondage (
 ## Task 1: Types partagés
 
 **Files:**
+
 - Create: `src/lib/sounding/types.ts`
 
 - [ ] **Step 1: Écrire les types**
@@ -162,6 +171,7 @@ git commit -m "feat(sounding): types du profil et des indices"
 ## Task 2: Thermodynamique — primitives (`thermo.ts`)
 
 **Files:**
+
 - Create: `src/lib/sounding/thermo.ts`
 - Test: `src/lib/tests/thermo.test.ts`
 
@@ -211,7 +221,7 @@ describe('thermo', () => {
 
 	it('adiabatique saturée : refroidit moins vite que la sèche', () => {
 		const dry = dryAdiabatTemp(potentialTemperature(293.15, 1000), 700) - 273.15;
-		const moist = moistLapseTemp(20, 1000, 700) ;
+		const moist = moistLapseTemp(20, 1000, 700);
 		expect(moist).toBeGreaterThan(dry); // pseudo-adiabatique plus chaude en altitude
 	});
 
@@ -327,6 +337,7 @@ git commit -m "feat(sounding): primitives thermodynamiques (Bolton, Magnus, adia
 ## Task 3: Géométrie Skew-T (`skewt-coords.ts`)
 
 **Files:**
+
 - Create: `src/lib/sounding/skewt-coords.ts`
 - Test: `src/lib/tests/skewt-coords.test.ts`
 
@@ -415,6 +426,7 @@ git commit -m "feat(sounding): géométrie Skew-T log-P + skew (transformations 
 ## Task 4: Ascension de particule (`parcel.ts`)
 
 **Files:**
+
 - Create: `src/lib/sounding/parcel.ts`
 - Test: `src/lib/tests/parcel.test.ts`
 
@@ -426,8 +438,8 @@ Hypothèses : la particule monte sèche jusqu'au LCL (température potentielle c
 // src/lib/tests/parcel.test.ts
 import { describe, expect, it } from 'vitest';
 
-import { type LevelDatum } from '$lib/sounding/types';
 import { liftParcel, mostUnstableLevel } from '$lib/sounding/parcel';
+import { type LevelDatum } from '$lib/sounding/types';
 
 // Profil idéalisé instable : surface chaude/humide, décroissance ~7°C/km.
 const env: LevelDatum[] = [
@@ -473,10 +485,10 @@ Expected: FAIL.
 // src/lib/sounding/parcel.ts
 import {
 	dryAdiabatTemp,
+	mixingRatio,
 	moistLapseTemp,
 	potentialTemperature,
-	saturationVaporPressure,
-	mixingRatio
+	saturationVaporPressure
 } from './thermo';
 import { type LevelDatum, type ParcelResult } from './types';
 
@@ -568,6 +580,7 @@ git commit -m "feat(sounding): ascension de particule (LCL/LFC/EL, SB & MU)"
 ## Task 5: Indices (`indices.ts`)
 
 **Files:**
+
 - Create: `src/lib/sounding/indices.ts`
 - Test: `src/lib/tests/indices.test.ts`
 
@@ -577,8 +590,8 @@ git commit -m "feat(sounding): ascension de particule (LCL/LFC/EL, SB & MU)"
 // src/lib/tests/indices.test.ts
 import { describe, expect, it } from 'vitest';
 
-import { type ColumnProfile, type LevelDatum } from '$lib/sounding/types';
 import { computeIndices } from '$lib/sounding/indices';
+import { type ColumnProfile, type LevelDatum } from '$lib/sounding/types';
 
 const levels: LevelDatum[] = [
 	{ pressure: 1000, temperature: 25, dewpoint: 20, height: 100, u: 0, v: 5 },
@@ -693,7 +706,11 @@ function computeShear(levels: LevelDatum[]): ShearLayer[] {
 }
 
 /** Altitude (m) du premier passage de `valueOf` à `threshold` en montant. */
-function crossingHeight(levels: LevelDatum[], valueOf: (l: LevelDatum) => number, threshold: number): number | null {
+function crossingHeight(
+	levels: LevelDatum[],
+	valueOf: (l: LevelDatum) => number,
+	threshold: number
+): number | null {
 	for (let i = 1; i < levels.length; i++) {
 		const a = valueOf(levels[i - 1]);
 		const b = valueOf(levels[i]);
@@ -716,7 +733,10 @@ export function computeIndices(profile: ColumnProfile): SoundingIndices {
 	// Isothermie : couche de ≥ 2 niveaux où |dT| < 0.5°C près de 0°C.
 	let isothermal = false;
 	for (let i = 1; i < levels.length; i++) {
-		if (Math.abs(levels[i].temperature - levels[i - 1].temperature) < 0.5 && Math.abs(levels[i].temperature) < 2) {
+		if (
+			Math.abs(levels[i].temperature - levels[i - 1].temperature) < 0.5 &&
+			Math.abs(levels[i].temperature) < 2
+		) {
 			isothermal = true;
 			break;
 		}
@@ -750,6 +770,7 @@ git commit -m "feat(sounding): indices CAPE/CIN/LI (SB & MU), LPN, isothermie, c
 ## Task 6: Constantes — niveaux du sondage
 
 **Files:**
+
 - Modify: `src/lib/constants.ts` (après `VISIBLE_PRESSURE_LEVELS_HPA`, vers la ligne 84)
 
 - [ ] **Step 1: Ajouter les constantes**
@@ -791,6 +812,7 @@ git commit -m "feat(sounding): niveaux de pression du sondage (table par domaine
 ## Task 7: Store du panneau (`stores/sounding.ts`)
 
 **Files:**
+
 - Create: `src/lib/stores/sounding.ts`
 
 - [ ] **Step 1: Écrire le store**
@@ -840,6 +862,7 @@ git commit -m "feat(sounding): store d'état du panneau"
 ## Task 8: Couche lecture (`column.ts`)
 
 **Files:**
+
 - Create: `src/lib/sounding/column.ts`
 - Test: `src/lib/tests/column.test.ts`
 
@@ -967,6 +990,7 @@ Expected: PASS.
 Ajouter dans `column.ts` la fonction `fetchColumn` qui branche `assembleColumn` sur le reader bas-niveau. Étudier d'abord `src/lib/prefetch.ts:123-143` (précédent : `getProtocolInstance(...).omFileReader.setToOmFile(url)` puis lecture) et l'implémentation de `getValueFromLatLong` dans `node_modules/@openmeteo/weather-map-layer/dist/index.mjs` (pour reproduire l'interpolation : `GridFactory.create(grid, ranges).getLinearInterpolatedValue(values, lat, lonNormalized)`).
 
 Points à respecter (issus de l'investigation Task 0) :
+
 - **Une seule URL `.om`** pour tout le sondage (le `.om` du timestep courant). La variable se sélectionne via `readVariable(variable, ...)`, pas via `?variable=`. Construire l'URL de base avec `getOMUrlFor('temperature_1000hPa')` puis retirer le `?variable=...` (ou exposer un helper d'URL de base) — confirmer la forme attendue par `setToOmFile` en lisant `prefetch.ts`.
 - **Reader privé réutilisant le cache partagé** pour ne pas entrer en conflit avec le singleton de rendu : `new WeatherMapLayerFileReader({ useSAB: true, cache: get(omProtocolSettings).fileReaderConfig.cache })` (vérifier le chemin exact de la config cache dans `stores/om-protocol-settings.ts`). À défaut, réutiliser `getProtocolInstance(get(omProtocolSettings)).omFileReader` mais sans interleaver avec une navigation carte.
 - **Petite bbox** autour du point (`getRanges(domain.grid, boundsAutourDuPoint)`) — ne PAS lire la grille entière pour 125 variables.
@@ -977,12 +1001,14 @@ Squelette (les types/chemins exacts d'API sont à confirmer en lisant `prefetch.
 
 ```ts
 // --- suite de column.ts ---
-import { GridFactory, WeatherMapLayerFileReader, getRanges } from '@openmeteo/weather-map-layer';
 import { get } from 'svelte/store';
 
-import { soundingLevelsForDomain } from '$lib/constants';
+import { GridFactory, WeatherMapLayerFileReader, getRanges } from '@openmeteo/weather-map-layer';
+
 import { omProtocolSettings } from '$lib/stores/om-protocol-settings';
 import { selectedDomain } from '$lib/stores/variables';
+
+import { soundingLevelsForDomain } from '$lib/constants';
 import { getOMUrlFor } from '$lib/url';
 
 /** Lit la colonne au point courant pour le domaine/run/temps actifs. */
@@ -1010,7 +1036,11 @@ export async function fetchColumn(
 	const read: VariableReader = async (variable) => {
 		try {
 			const values = await reader.readVariable(variable, ranges, signal);
-			return GridFactory.create(grid, ranges).getLinearInterpolatedValue(values, lat, normalizeLon(lng));
+			return GridFactory.create(grid, ranges).getLinearInterpolatedValue(
+				values,
+				lat,
+				normalizeLon(lng)
+			);
 		} catch {
 			return NaN;
 		}
@@ -1047,15 +1077,18 @@ Implémenter les helpers manquants (`baseOmUrl`, `boundsAround`, `normalizeLon`,
 - [ ] **Step 6: Confirmer noms de variables surface + API reader en lançant l'app**
 
 Run:
+
 ```bash
 npm run dev
 ```
+
 Dans la console navigateur : (a) vérifier que `temperature_2m`, `relative_humidity_2m`, `surface_pressure` (ou `pressure_msl`), `wind_u_component_10m`, `wind_v_component_10m` existent dans le meta JSON du domaine ; (b) cliquer un point et confirmer que `fetchColumn` renvoie des valeurs finies sur plusieurs niveaux (pas que des `NaN`) — c'est LA validation que le reader bas-niveau fonctionne là où `getValueFromLatLong` échouerait. Corriger les noms/API si besoin. Vérifier que `selectedDomain` est bien exporté par `$lib/stores/variables` (cf. `popup.ts`).
 
 - [ ] **Step 7: Typecheck + commit**
 
 Run: `npm run check`
 Expected: PASS.
+
 ```bash
 git add src/lib/sounding/column.ts src/lib/tests/column.test.ts
 git commit -m "feat(sounding): lecture de colonne source-agnostique (assemblage + wiring lib)"
@@ -1066,6 +1099,7 @@ git commit -m "feat(sounding): lecture de colonne source-agnostique (assemblage 
 ## Task 9: Composant `skew-t.svelte`
 
 **Files:**
+
 - Create: `src/lib/components/sounding/skew-t.svelte`
 
 - [ ] **Step 1: Implémenter le tracé**
@@ -1095,13 +1129,19 @@ git commit -m "feat(sounding): lecture de colonne source-agnostique (assemblage 
 	const axis = $derived(isDark ? '#64748b' : '#94a3b8');
 
 	const tempPath = $derived(
-		profile.levels.map((l, i) => `${i ? 'L' : 'M'}${px(l.temperature, l.pressure)},${py(l.pressure)}`).join(' ')
+		profile.levels
+			.map((l, i) => `${i ? 'L' : 'M'}${px(l.temperature, l.pressure)},${py(l.pressure)}`)
+			.join(' ')
 	);
 	const dewPath = $derived(
-		profile.levels.map((l, i) => `${i ? 'L' : 'M'}${px(l.dewpoint, l.pressure)},${py(l.pressure)}`).join(' ')
+		profile.levels
+			.map((l, i) => `${i ? 'L' : 'M'}${px(l.dewpoint, l.pressure)},${py(l.pressure)}`)
+			.join(' ')
 	);
 	const parcelPath = $derived(
-		profile.levels.map((l, i) => `${i ? 'L' : 'M'}${px(parcel.temperature[i], l.pressure)},${py(l.pressure)}`).join(' ')
+		profile.levels
+			.map((l, i) => `${i ? 'L' : 'M'}${px(parcel.temperature[i], l.pressure)},${py(l.pressure)}`)
+			.join(' ')
 	);
 </script>
 
@@ -1111,7 +1151,14 @@ git commit -m "feat(sounding): lecture de colonne source-agnostique (assemblage 
 		<text x="2" y={py(p) - 2} fill={axis} font-size="9">{p}</text>
 	{/each}
 	{#each isotherms as t}
-		<line x1={px(t, cfg.pBottom)} y1={H} x2={px(t, cfg.pTop)} y2="0" stroke={grid} stroke-width="0.4" />
+		<line
+			x1={px(t, cfg.pBottom)}
+			y1={H}
+			x2={px(t, cfg.pTop)}
+			y2="0"
+			stroke={grid}
+			stroke-width="0.4"
+		/>
 	{/each}
 	<path d={dewPath} fill="none" stroke="#22c55e" stroke-width="2" />
 	<path d={tempPath} fill="none" stroke="#ef4444" stroke-width="2" />
@@ -1136,6 +1183,7 @@ git commit -m "feat(sounding): composant Skew-T (SVG, thémé)"
 ## Task 10: Composant `hodograph.svelte`
 
 **Files:**
+
 - Create: `src/lib/components/sounding/hodograph.svelte`
 
 - [ ] **Step 1: Implémenter**
@@ -1159,9 +1207,7 @@ git commit -m "feat(sounding): composant Skew-T (SVG, thémé)"
 
 	// y inversé (vent vers le haut = -v).
 	const path = $derived(
-		profile.levels
-			.map((l, i) => `${i ? 'L' : 'M'}${c + scale(l.u)},${c - scale(l.v)}`)
-			.join(' ')
+		profile.levels.map((l, i) => `${i ? 'L' : 'M'}${c + scale(l.u)},${c - scale(l.v)}`).join(' ')
 	);
 	const rings = [10, 20, 30, 40];
 </script>
@@ -1180,6 +1226,7 @@ git commit -m "feat(sounding): composant Skew-T (SVG, thémé)"
 
 Run: `npm run check`
 Expected: PASS.
+
 ```bash
 git add src/lib/components/sounding/hodograph.svelte
 git commit -m "feat(sounding): composant hodographe (SVG)"
@@ -1190,6 +1237,7 @@ git commit -m "feat(sounding): composant hodographe (SVG)"
 ## Task 11: Composant `indices-table.svelte`
 
 **Files:**
+
 - Create: `src/lib/components/sounding/indices-table.svelte`
 
 - [ ] **Step 1: Implémenter**
@@ -1206,7 +1254,9 @@ git commit -m "feat(sounding): composant hodographe (SVG)"
 <div class="space-y-2 p-2 text-sm">
 	<table class="w-full">
 		<thead>
-			<tr class="text-left text-xs text-slate-500"><th></th><th>Surface</th><th>Plus instable</th></tr>
+			<tr class="text-left text-xs text-slate-500"
+				><th></th><th>Surface</th><th>Plus instable</th></tr
+			>
 		</thead>
 		<tbody class="font-mono">
 			<tr><td>CAPE (J/kg)</td><td>{r0(indices.sb.cape)}</td><td>{r0(indices.mu.cape)}</td></tr>
@@ -1231,6 +1281,7 @@ git commit -m "feat(sounding): composant hodographe (SVG)"
 
 Run: `npm run check`
 Expected: PASS.
+
 ```bash
 git add src/lib/components/sounding/indices-table.svelte
 git commit -m "feat(sounding): tableau d'indices"
@@ -1243,6 +1294,7 @@ git commit -m "feat(sounding): tableau d'indices"
 Orchestration : lecture (debounce sur le temps), calcul, états, onglets, fermeture.
 
 **Files:**
+
 - Create: `src/lib/components/sounding/sounding-panel.svelte`
 
 - [ ] **Step 1: Implémenter**
@@ -1252,17 +1304,18 @@ Orchestration : lecture (debounce sur le temps), calcul, états, onglets, fermet
 <script lang="ts">
 	import { get } from 'svelte/store';
 
-	import { time } from '$lib/stores/time';
-	import { sounding } from '$lib/stores/sounding';
 	import { map as mapStore } from '$lib/stores/map';
+	import { sounding } from '$lib/stores/sounding';
+	import { time } from '$lib/stores/time';
+
 	import { fetchColumn } from '$lib/sounding/column';
 	import { computeIndices } from '$lib/sounding/indices';
 	import { liftParcel, mostUnstableLevel } from '$lib/sounding/parcel';
 	import { type ColumnProfile, type ParcelResult, type SoundingIndices } from '$lib/sounding/types';
 
-	import SkewT from './skew-t.svelte';
 	import Hodograph from './hodograph.svelte';
 	import IndicesTable from './indices-table.svelte';
+	import SkewT from './skew-t.svelte';
 
 	let profile = $state<ColumnProfile | null>(null);
 	let parcel = $state<ParcelResult | null>(null);
@@ -1309,12 +1362,23 @@ Orchestration : lecture (debounce sur le temps), calcul, états, onglets, fermet
 </script>
 
 {#if $sounding.open}
-	<div class="sounding-panel fixed bottom-4 right-4 z-40 w-[340px] rounded-lg border bg-background shadow-lg">
+	<div
+		class="sounding-panel fixed bottom-4 right-4 z-40 w-[340px] rounded-lg border bg-background shadow-lg"
+	>
 		<div class="flex items-center justify-between border-b p-2">
 			<div class="flex gap-1">
-				<button class:font-bold={$sounding.activeTab === 'skewt'} onclick={() => sounding.setTab('skewt')}>Skew-T</button>
-				<button class:font-bold={$sounding.activeTab === 'hodograph'} onclick={() => sounding.setTab('hodograph')}>Hodographe</button>
-				<button class:font-bold={$sounding.activeTab === 'indices'} onclick={() => sounding.setTab('indices')}>Indices</button>
+				<button
+					class:font-bold={$sounding.activeTab === 'skewt'}
+					onclick={() => sounding.setTab('skewt')}>Skew-T</button
+				>
+				<button
+					class:font-bold={$sounding.activeTab === 'hodograph'}
+					onclick={() => sounding.setTab('hodograph')}>Hodographe</button
+				>
+				<button
+					class:font-bold={$sounding.activeTab === 'indices'}
+					onclick={() => sounding.setTab('indices')}>Indices</button
+				>
 			</div>
 			<button aria-label="Fermer" onclick={() => sounding.close()}>✕</button>
 		</div>
@@ -1322,7 +1386,14 @@ Orchestration : lecture (debounce sur le temps), calcul, états, onglets, fermet
 			{#if loading}
 				<p class="p-4 text-sm text-slate-500">Chargement du sondage…</p>
 			{:else if error}
-				<p class="p-4 text-sm text-red-500">{error} <button class="underline" onclick={() => $sounding.lat !== null && load($sounding.lat, $sounding.lng!)}>Recharger</button></p>
+				<p class="p-4 text-sm text-red-500">
+					{error}
+					<button
+						class="underline"
+						onclick={() => $sounding.lat !== null && load($sounding.lat, $sounding.lng!)}
+						>Recharger</button
+					>
+				</p>
 			{:else if profile && parcel && indices}
 				{#if $sounding.activeTab === 'skewt'}<SkewT {profile} {parcel} />{/if}
 				{#if $sounding.activeTab === 'hodograph'}<Hodograph {profile} />{/if}
@@ -1350,6 +1421,7 @@ git commit -m "feat(sounding): panneau à onglets (lecture live, états, debounc
 ## Task 13: Bouton dans le popup
 
 **Files:**
+
 - Modify: `src/lib/popup.ts`
 
 - [ ] **Step 1: Repérer le point d'insertion**
@@ -1404,6 +1476,7 @@ lastCoords = coordinates;
 
 Run: `npm run check`
 Expected: PASS.
+
 ```bash
 git add src/lib/popup.ts src/styles.css
 git commit -m "feat(sounding): bouton d'ouverture du sondage dans le popup valeur"
@@ -1414,6 +1487,7 @@ git commit -m "feat(sounding): bouton d'ouverture du sondage dans le popup valeu
 ## Task 14: Montage du panneau + format
 
 **Files:**
+
 - Modify: `src/routes/+page.svelte`
 
 - [ ] **Step 1: Monter le panneau**
@@ -1424,6 +1498,7 @@ Ajouter l'import (laisser `npm run format` trier) et le composant dans le markup
 ```svelte
 import SoundingPanel from '$lib/components/sounding/sounding-panel.svelte';
 ```
+
 ```svelte
 <SoundingPanel />
 ```
@@ -1473,6 +1548,7 @@ Comparer 1–2 sondages (CAPE, iso-0, cisaillement) à Meteociel pour le même p
 ## Task 16: Mise à jour de la documentation (même PR)
 
 **Files:**
+
 - Modify: `.claude/rules/architecture.md`, `.claude/rules/components.md`, `.claude/rules/stores.md`, `README.md`
 
 - [ ] **Step 1: Documenter**
