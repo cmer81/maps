@@ -843,7 +843,7 @@ git commit -m "feat(sounding): store d'état du panneau"
 - Create: `src/lib/sounding/column.ts`
 - Test: `src/lib/tests/column.test.ts`
 
-> ⚠️ Si la Task 0 a conclu au **Cas B** (re-téléchargement), adapter la stratégie de lecture interne ici (reader réutilisable) sans changer la signature publique `fetchColumn`.
+> ⚠️ **Conclusion Task 0 (acquise)** : `getValueFromLatLong` ne lit QUE la variable actuellement rendue (sinon `NaN`) — **inadapté** pour 24 niveaux non affichés. On lit donc via le reader bas-niveau `WeatherMapLayerFileReader` (`setToOmFile` une fois → `readVariable` par variable sur une petite bbox → interpolation). Le `.om` n'est pas re-téléchargé (cache par blocs). La logique pure `assembleColumn` (Step 1-4) est **inchangée** — seule l'implémentation réelle de `read` (Step 5) change. Précédent : `src/lib/prefetch.ts:123-143`. **Tâche de jugement → modèle capable.**
 
 - [ ] **Step 1: Écrire le test qui échoue (mock de la primitive)**
 
@@ -962,36 +962,60 @@ export async function assembleColumn(input: AssembleInput): Promise<ColumnProfil
 Run: `npx vitest run src/lib/tests/column.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Ajouter le wiring réel (lié à la lib)**
+- [ ] **Step 5: Ajouter le wiring réel via `WeatherMapLayerFileReader`**
 
-Ajouter dans `column.ts` la fonction qui branche `assembleColumn` sur les primitives réelles. **Vérifier les noms de variables surface au Step 6 avant de figer.**
+Ajouter dans `column.ts` la fonction `fetchColumn` qui branche `assembleColumn` sur le reader bas-niveau. Étudier d'abord `src/lib/prefetch.ts:123-143` (précédent : `getProtocolInstance(...).omFileReader.setToOmFile(url)` puis lecture) et l'implémentation de `getValueFromLatLong` dans `node_modules/@openmeteo/weather-map-layer/dist/index.mjs` (pour reproduire l'interpolation : `GridFactory.create(grid, ranges).getLinearInterpolatedValue(values, lat, lonNormalized)`).
+
+Points à respecter (issus de l'investigation Task 0) :
+- **Une seule URL `.om`** pour tout le sondage (le `.om` du timestep courant). La variable se sélectionne via `readVariable(variable, ...)`, pas via `?variable=`. Construire l'URL de base avec `getOMUrlFor('temperature_1000hPa')` puis retirer le `?variable=...` (ou exposer un helper d'URL de base) — confirmer la forme attendue par `setToOmFile` en lisant `prefetch.ts`.
+- **Reader privé réutilisant le cache partagé** pour ne pas entrer en conflit avec le singleton de rendu : `new WeatherMapLayerFileReader({ useSAB: true, cache: get(omProtocolSettings).fileReaderConfig.cache })` (vérifier le chemin exact de la config cache dans `stores/om-protocol-settings.ts`). À défaut, réutiliser `getProtocolInstance(get(omProtocolSettings)).omFileReader` mais sans interleaver avec une navigation carte.
+- **Petite bbox** autour du point (`getRanges(domain.grid, boundsAutourDuPoint)`) — ne PAS lire la grille entière pour 125 variables.
+- **Concurrence bornée** (~8, comme `prefetch.ts`) plutôt qu'un `Promise.all` de 125 d'un coup.
+- `read(variable)` renvoie le scalaire interpolé, ou `NaN` en cas d'échec/variable absente.
+
+Squelette (les types/chemins exacts d'API sont à confirmer en lisant `prefetch.ts` + la lib) :
 
 ```ts
 // --- suite de column.ts ---
-import { getValueFromLatLong } from '@openmeteo/weather-map-layer';
+import { GridFactory, WeatherMapLayerFileReader, getRanges } from '@openmeteo/weather-map-layer';
 import { get } from 'svelte/store';
 
 import { soundingLevelsForDomain } from '$lib/constants';
+import { omProtocolSettings } from '$lib/stores/om-protocol-settings';
 import { selectedDomain } from '$lib/stores/variables';
 import { getOMUrlFor } from '$lib/url';
 
 /** Lit la colonne au point courant pour le domaine/run/temps actifs. */
-export async function fetchColumn(lat: number, lng: number, terrainElevation: number): Promise<ColumnProfile> {
+export async function fetchColumn(
+	lat: number,
+	lng: number,
+	terrainElevation: number,
+	signal?: AbortSignal
+): Promise<ColumnProfile> {
 	const domain = get(selectedDomain);
 	const levels = soundingLevelsForDomain(domain);
 
+	// URL de base du .om (sans ?variable=) — confirmer la forme via prefetch.ts.
+	const omUrl = baseOmUrl(getOMUrlFor('temperature_1000hPa'));
+	if (!omUrl) throw new Error('URL .om indisponible');
+
+	const reader = new WeatherMapLayerFileReader({
+		useSAB: true,
+		cache: get(omProtocolSettings).fileReaderConfig?.cache
+	});
+	await reader.setToOmFile(omUrl);
+	const grid = /* domain.grid via les métadonnées — voir prefetch.ts/popup.ts */ undefined as never;
+	const ranges = getRanges(grid, boundsAround(lat, lng));
+
 	const read: VariableReader = async (variable) => {
-		const url = getOMUrlFor(variable);
-		if (!url) return NaN;
 		try {
-			const { value } = await getValueFromLatLong(lat, lng, url);
-			return value;
+			const values = await reader.readVariable(variable, ranges, signal);
+			return GridFactory.create(grid, ranges).getLinearInterpolatedValue(values, lat, normalizeLon(lng));
 		} catch {
 			return NaN;
 		}
 	};
 
-	// Surface : noms de variables à confirmer (Step 6).
 	const [t2m, rh2m, psfc, u10, v10] = await Promise.all([
 		read('temperature_2m'),
 		read('relative_humidity_2m'),
@@ -1003,7 +1027,7 @@ export async function fetchColumn(lat: number, lng: number, terrainElevation: nu
 	return assembleColumn({
 		lat,
 		lng,
-		validTime: getOMUrlFor('temperature_1000hPa') ?? '',
+		validTime: omUrl,
 		levels,
 		surface: {
 			temperature: t2m,
@@ -1018,14 +1042,15 @@ export async function fetchColumn(lat: number, lng: number, terrainElevation: nu
 }
 ```
 
-- [ ] **Step 6: Confirmer les noms de variables surface**
+Implémenter les helpers manquants (`baseOmUrl`, `boundsAround`, `normalizeLon`, obtention de `grid`) en s'alignant **exactement** sur `prefetch.ts`/`popup.ts`. Borner la concurrence des ~125 lectures (lots de 8) si `assembleColumn`'s `Promise.all` interne s'avère trop agressif (sinon laisser : le cache + la dédup inflight absorbent les chevauchements).
+
+- [ ] **Step 6: Confirmer noms de variables surface + API reader en lançant l'app**
 
 Run:
 ```bash
 npm run dev
-# Dans la console navigateur, inspecter le meta JSON du domaine actif (cf. metaJson / getMetaUrl)
 ```
-Vérifier que `temperature_2m`, `relative_humidity_2m`, `surface_pressure`, `wind_u_component_10m`, `wind_v_component_10m` existent. Corriger les noms dans `fetchColumn` si nécessaire (ex. `pressure_msl`). Vérifier aussi que `selectedDomain` est bien le store exporté par `$lib/stores/variables` (sinon ajuster l'import — voir `popup.ts` qui importe `selectedDomain`).
+Dans la console navigateur : (a) vérifier que `temperature_2m`, `relative_humidity_2m`, `surface_pressure` (ou `pressure_msl`), `wind_u_component_10m`, `wind_v_component_10m` existent dans le meta JSON du domaine ; (b) cliquer un point et confirmer que `fetchColumn` renvoie des valeurs finies sur plusieurs niveaux (pas que des `NaN`) — c'est LA validation que le reader bas-niveau fonctionne là où `getValueFromLatLong` échouerait. Corriger les noms/API si besoin. Vérifier que `selectedDomain` est bien exporté par `$lib/stores/variables` (cf. `popup.ts`).
 
 - [ ] **Step 7: Typecheck + commit**
 
