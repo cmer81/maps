@@ -298,6 +298,16 @@ const buildRasterManager2 = (map: maplibregl.Map): SlotManager =>
 		onSlowLoad: () => {}
 	});
 
+// `clipWater` ("masquer les océans") insère les couches OMfile avant la couche
+// `water-clip` du basemap. Le style OpenFreeMap embarqué ne fournit pas cette
+// couche : on retombe alors sur BEFORE_LAYER_VECTOR pour éviter un addLayer sur
+// un beforeId inexistant (qui ferait planter MapLibre). Fonctionnalité dormante
+// tant qu'aucun basemap n'expose `water-clip`.
+const resolveVectorBeforeLayer = (map: maplibregl.Map, clipWater: boolean): string =>
+	clipWater && map.getLayer(BEFORE_LAYER_VECTOR_WATER_CLIP)
+		? BEFORE_LAYER_VECTOR_WATER_CLIP
+		: BEFORE_LAYER_VECTOR;
+
 export const createManagers = (): void => {
 	const map = get(m);
 	if (!map) return;
@@ -335,7 +345,7 @@ export const createManagers = (): void => {
 
 	vectorManager = new SlotManager(map, {
 		sourceIdPrefix: 'omVectorSource',
-		beforeLayer: preferences.clipWater ? BEFORE_LAYER_VECTOR_WATER_CLIP : BEFORE_LAYER_VECTOR,
+		beforeLayer: resolveVectorBeforeLayer(map, preferences.clipWater),
 		layerFactory: () => [
 			vectorArrowLayer(),
 			vectorGridLayer(),
@@ -383,9 +393,7 @@ export const changeOMfileURL = (vectorOnly = false, rasterOnly = false): void =>
 	loading.set(true);
 
 	const preferences = get(p);
-	vectorManager?.setBeforeLayer(
-		preferences.clipWater ? BEFORE_LAYER_VECTOR_WATER_CLIP : BEFORE_LAYER_VECTOR
-	);
+	vectorManager?.setBeforeLayer(resolveVectorBeforeLayer(map, preferences.clipWater));
 	rasterManager?.setBeforeLayer(preferences.hillshade ? HILLSHADE_LAYER : BEFORE_LAYER_RASTER);
 
 	if (!vectorOnly) rasterManager?.update('om://' + omUrl);

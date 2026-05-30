@@ -6,10 +6,11 @@ import { mode } from 'mode-watcher';
 import { map as m } from '$lib/stores/map';
 import { defaultPreferences, preferences as p } from '$lib/stores/preferences';
 
+import minimalDark from '$lib/basemap/minimal-dark.json';
+import minimalLight from '$lib/basemap/minimal-light.json';
 import { BEFORE_LAYER_RASTER, HILLSHADE_LAYER } from '$lib/constants';
 
 import { addOmFileLayers } from './layers';
-import { getOmWorkerUrl } from './runtime-env';
 import { updateUrl } from './url';
 
 export const setMapControlSettings = () => {
@@ -71,25 +72,18 @@ export const addHillshadeLayer = () => {
 	);
 };
 
-export const getStyle = async () => {
+export const getStyle = async (): Promise<maplibregl.StyleSpecification> => {
 	const preferences = get(p);
-	// tiles.open-meteo.com (basemap) doesn't serve CORS, unlike map-tiles.* and
-	// map-assets.*. When the worker URL is set, route the basemap fetches
-	// through the worker's /v1/tile-proxy endpoint, which forwards them with
-	// permissive CORS and rewrites the embedded TileJSON URLs too.
-	const styleText = await fetch(
-		`https://map-assets.open-meteo.com/styles/minimal-planet-maps${mode.current === 'dark' ? '-dark' : ''}${preferences.clipWater ? '-water-clip' : ''}.json`
-	).then((r) => r.text());
-
-	const workerBase = getOmWorkerUrl();
-	const patched =
-		workerBase.length > 0
-			? styleText.replaceAll(
-					'https://tiles.open-meteo.com/',
-					`${workerBase.replace(/\/$/, '')}/v1/tile-proxy/`
-				)
-			: styleText;
-	const style = JSON.parse(patched);
+	// Le basemap d'origine (tiles.open-meteo.com) ne renvoie pas d'en-têtes CORS,
+	// contrairement à map-tiles.* / map-assets.*. On embarque donc deux styles
+	// figés (même schéma OpenMapTiles) rebranchés sur les tuiles + glyphs
+	// OpenFreeMap, servis en CORS natif — plus aucune dépendance réseau tierce.
+	// Labels en français (cf. src/lib/basemap/*.json).
+	const style = structuredClone(
+		(mode.current === 'dark'
+			? minimalDark
+			: minimalLight) as unknown as maplibregl.StyleSpecification
+	);
 
 	return preferences.globe ? { ...style, projection: { type: 'globe' } } : style;
 };
