@@ -106,6 +106,9 @@
 			keyboard: false,
 			hash: true,
 			maxPitch: 85,
+			// Attribution gérée manuellement en mode compact (voir setMapControlSettings),
+			// pour qu'elle reste un petit bouton « i » et ne passe pas derrière le chrome.
+			attributionControl: false,
 			// Required for canvas.toBlob() during playback pre-rendering — see playback-renderer.ts
 			canvasContextAttributes: { preserveDrawingBuffer: true }
 		});

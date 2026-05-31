@@ -18,6 +18,9 @@ export const setMapControlSettings = () => {
 	if (!map) return;
 
 	map.touchZoomRotate.disableRotation();
+	// Attribution en mode compact (bouton « i », texte au tap) pour ne pas encombrer
+	// le chrome ; l'attribution auto est désactivée dans les options de la carte.
+	map.addControl(new maplibregl.AttributionControl({ compact: true }));
 	map.addControl(
 		new maplibregl.NavigationControl({ visualizePitch: true, showZoom: true, showCompass: true })
 	);
