@@ -34,14 +34,6 @@
 	import { domain, selectedDomain, selectedVariable, variable } from '$lib/stores/variables';
 	import { windOverlayEnabled, windOverlayLevel } from '$lib/stores/vector';
 
-	import {
-		ClippingButton,
-		DarkModeButton,
-		DepartmentsButton,
-		HelpButton,
-		LabelsButton,
-		SettingsButton
-	} from '$lib/components/buttons';
 	import AppChrome from '$lib/components/chrome/app-chrome.svelte';
 	import Scrim from '$lib/components/chrome/scrim.svelte';
 	import ClippingPanel from '$lib/components/clipping/clipping-panel.svelte';
@@ -50,7 +42,6 @@
 	import KeyboardHandler from '$lib/components/keyboard/keyboard-handler.svelte';
 	import Spinner from '$lib/components/loading/spinner.svelte';
 	import Scale from '$lib/components/scale/scale.svelte';
-	import Settings from '$lib/components/settings/settings.svelte';
 	import SoundingPanel from '$lib/components/sounding/sounding-panel.svelte';
 	import TimeSelector from '$lib/components/time/time-selector.svelte';
 
@@ -130,18 +121,11 @@
 		});
 
 		$map.on('load', async () => {
-			$map.addControl(new DarkModeButton());
-			$map.addControl(new SettingsButton());
-			$map.addControl(new HelpButton());
-			$map.addControl(new ClippingButton());
-
 			if (getInitialMetaDataPromise) await getInitialMetaDataPromise;
 
 			addTerrainSource($map);
 			addTerrainSource($map, 'terrainSource2');
 			initHillshadeFromPrefs();
-			$map.addControl(new LabelsButton());
-			$map.addControl(new DepartmentsButton());
 			clippingPanel?.initTerraDraw();
 
 			addOmFileLayers();
@@ -341,7 +325,6 @@
 <Scale />
 <ClippingPanel bind:this={clippingPanel} />
 <TimeSelector />
-<Settings />
 <HelpDialog />
 <SoundingPanel />
 <KeyboardHandler />
