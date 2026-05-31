@@ -134,11 +134,11 @@
 	<div
 		class="absolute z-60 {!desktop.current
 			? 'bottom-22.5'
-			: 'bottom-2.5'} duration-500 left-2.5 z-10 select-none rounded"
+			: 'bottom-2.5'} duration-500 left-2.5 z-10 select-none rounded-lg"
 		style="max-height: {totalHeight + 100}px;"
 	>
 		<div class="flex flex-col-reverse shadow-md">
-			<div class="flex flex-col-reverse bg-glass/30 backdrop-blur-sm rounded-b">
+			<div class="flex flex-col-reverse bg-glass/45 backdrop-blur-md rounded-b-lg">
 				{#each labeledColors as lc, i (lc)}
 					{@const alphaValue = getAlpha(lc.color)}
 					<button
@@ -155,7 +155,7 @@
 							: undefined}
 					>
 						<div
-							class="absolute inset-0 {i === 0 ? 'rounded-b' : ''}"
+							class="absolute inset-0 {i === 0 ? 'rounded-b-lg' : ''}"
 							style="background: rgb({lc.color[0]}, {lc.color[1]}, {lc
 								.color[2]}); opacity: {(alphaValue * $opacity) / 100};"
 						></div>
@@ -189,9 +189,9 @@
 
 			{#if colorScale.unit}
 				<div
-					class="bg-glass/75 backdrop-blur-sm shadow-md h-6 w-full overflow-hidden text-center text-xs {editable
+					class="bg-glass/45 backdrop-blur-md shadow-md h-6 w-full overflow-hidden text-center text-xs {editable
 						? ''
-						: 'rounded-t'}"
+						: 'rounded-t-lg'}"
 				>
 					{#if unitOptions}
 						<Select.Root
@@ -213,7 +213,7 @@
 							</Select.Trigger>
 							<Select.Content
 								side="top"
-								class="z-80 left-2.5 border-none bg-glass/65 backdrop-blur-sm rounded min-w-20"
+								class="z-80 left-2.5 border-none bg-glass/45 backdrop-blur-md rounded-lg min-w-20"
 							>
 								{#each unitOptions as { value, label } (value)}
 									<Select.Item {value} {label} class="cursor-pointer text-xs" />
@@ -231,8 +231,8 @@
 					type="button"
 					onclick={resetColorScale}
 					disabled={!hasCustomScale}
-					class="bg-glass/75 rounded-t backdrop-blur-sm shadow-md h-4 w-full text-center text-[11px] leading-4 {hasCustomScale
-						? 'hover:bg-glass/95 cursor-pointer'
+					class="bg-glass/45 rounded-t-lg backdrop-blur-md shadow-md h-4 w-full text-center text-[11px] leading-4 {hasCustomScale
+						? 'hover:bg-glass/65 cursor-pointer'
 						: 'cursor-default opacity-40'}"
 					title={hasCustomScale ? 'Réinitialiser aux couleurs standard' : 'Couleurs déjà standard'}
 					aria-label="Réinitialiser aux couleurs standard"

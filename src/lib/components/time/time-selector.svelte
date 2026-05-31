@@ -1038,7 +1038,7 @@
 			</button>
 		</div>
 		<div
-			class="time-selector md:px-0 h-20 md:h-12.5 relative bg-glass/75 backdrop-blur-sm duration-500"
+			class="time-selector md:px-0 h-20 md:h-12.5 relative bg-glass/45 backdrop-blur-md rounded-xl border border-white/15 duration-500"
 		>
 			{#if hoverX || currentDate.getTime() !== $time.getTime()}
 				<div
