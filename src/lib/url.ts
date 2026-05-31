@@ -12,7 +12,7 @@ import { mode } from 'mode-watcher';
 
 import { replaceState } from '$app/navigation';
 
-import { showDepartments } from '$lib/stores/departments';
+import { DEFAULT_SHOW_DEPARTMENTS, showDepartments } from '$lib/stores/departments';
 import { showLabels } from '$lib/stores/labels';
 import { map as m } from '$lib/stores/map';
 import {
@@ -27,7 +27,7 @@ import { metaJson as mJ, modelRun as mR, modelRunLocked as mRL, time } from '$li
 import { domain as d, layer2Enabled, variable as v, variable2 } from '$lib/stores/variables';
 import { vectorOptions as vO, windOverlayEnabled, windOverlayLevel } from '$lib/stores/vector';
 
-import { ANOMALY_DOMAIN, ANOMALY_VARIABLE } from '$lib/constants';
+import { ANOMALY_DOMAIN, ANOMALY_VARIABLE, DEFAULT_PREFERENCES } from '$lib/constants';
 
 import {
 	CLIP_COUNTRIES_PARAM,
@@ -94,19 +94,21 @@ export const urlParamsToPreferences = () => {
 		time.set(parseISOWithoutTimezone(urlTime));
 	}
 
-	const syncBoolParam = (paramKey: string, prefKey: keyof Preferences, writeIfDefault: boolean) => {
+	// N'écrit le paramètre dans l'URL que si la valeur diffère du défaut, pour ne
+	// pas polluer chaque URL avec les défauts (ex. hillshade=true par défaut).
+	const syncBoolParam = (paramKey: string, prefKey: keyof Preferences) => {
 		const raw = params.get(paramKey);
 		if (raw !== null) {
 			preferences[prefKey] = raw === 'true';
-		} else if (writeIfDefault ? true : preferences[prefKey]) {
+		} else if (preferences[prefKey] !== DEFAULT_PREFERENCES[prefKey]) {
 			url.searchParams.set(paramKey, String(preferences[prefKey]));
 		}
 	};
 
-	syncBoolParam('globe', 'globe', false);
-	syncBoolParam('terrain', 'terrain', false);
-	syncBoolParam('hillshade', 'hillshade', false);
-	syncBoolParam('clip_water', 'clipWater', false);
+	syncBoolParam('globe', 'globe');
+	syncBoolParam('terrain', 'terrain');
+	syncBoolParam('hillshade', 'hillshade');
+	syncBoolParam('clip_water', 'clipWater');
 
 	const domain = params.get('domain');
 	if (domain) {
@@ -189,8 +191,8 @@ export const urlParamsToPreferences = () => {
 	const departmentsRaw = params.get('departments');
 	if (departmentsRaw !== null) {
 		showDepartments.set(departmentsRaw === 'true');
-	} else if (get(showDepartments)) {
-		url.searchParams.set('departments', 'true');
+	} else if (get(showDepartments) !== DEFAULT_SHOW_DEPARTMENTS) {
+		url.searchParams.set('departments', String(get(showDepartments)));
 	}
 
 	const clipCountries = parseClipCountriesParam(params.get(CLIP_COUNTRIES_PARAM));

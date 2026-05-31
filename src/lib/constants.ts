@@ -32,7 +32,7 @@ export const DEFAULT_VECTOR_OPTIONS = {
 export const DEFAULT_PREFERENCES = {
 	globe: false,
 	terrain: false,
-	hillshade: false,
+	hillshade: true,
 	clipWater: false,
 	showScale: true
 };
@@ -71,7 +71,7 @@ export const COMPLETE_DEFAULT_VALUES: { [key: string]: boolean | string | number
 	wind_overlay: 'false',
 	wind_overlay_level: '10m',
 	labels: 'false',
-	departments: 'false'
+	departments: 'true'
 };
 
 // Contours administratifs FR — GeoJSON simplifié (~550 KB / ~80 KB gzip),

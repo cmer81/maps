@@ -9,7 +9,7 @@ export type DistanceUnit = 'm' | 'ft';
 
 export const DEFAULT_TEMPERATURE_UNIT: TemperatureUnit = '°C';
 export const DEFAULT_PRECIPITATION_UNIT: PrecipitationUnit = 'mm';
-export const DEFAULT_WIND_SPEED_UNIT: WindSpeedUnit = 'm/s';
+export const DEFAULT_WIND_SPEED_UNIT: WindSpeedUnit = 'km/h';
 export const DEFAULT_DISTANCE_UNIT: DistanceUnit = 'm';
 
 export const temperatureUnit = persisted<TemperatureUnit>(
