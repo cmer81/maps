@@ -15,17 +15,17 @@ Contraintes : diffusion à grande échelle, usage **mobile et desktop**, design 
 
 ## Décisions de conception (validées en brainstorming)
 
-| Décision | Choix retenu |
-|----------|-------------|
-| Modèle d'usage | **Interface adaptative (progressive disclosure)** — une seule UI, épurée par défaut, qui déplie la complexité à la demande. Pas de switch « simple/expert ». |
-| Couche essentielle (toujours visible) | Variable · Temps + lecture · Légende · Modèle |
-| Ossature desktop | **Barre haute** (type Windy) : modèle + onglets variables imagés + capture + accès avancé ; **rail droit** pour l'avancé ; **barre de temps** en bas. |
-| Ossature mobile | **« Tout en bas »** : modèle en pastille haute ; dock bas (variables défilantes + temps) atteignable au pouce ; `•••` → feuille avancée ; FAB capture. |
-| Direction visuelle | **Verre dépoli raffiné** (panneaux translucides + flou), bleu Infoclimat socle, **scrim de contraste obligatoire**. |
-| Capture (export PNG) | **Action de 1er niveau** (desktop : bouton barre haute ; mobile : FAB), avec **enchaînement partage** (Web Share API mobile / télécharger + copier le lien desktop). |
-| Variables | **Onglets imagés directs** dans la barre haute + `＋` ouvrant la liste catégorisée complète. |
-| Taxonomie des catégories | Température · Précipitations · Vent · Nuages · Pression/altitude · `＋` (autres). |
-| Périmètre moteur | Shell UI uniquement ; moteur intact ; **retouches moteur opportunistes** autorisées (ex. sortir les `IControl` du `addControl` MapLibre). |
+| Décision                              | Choix retenu                                                                                                                                                         |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Modèle d'usage                        | **Interface adaptative (progressive disclosure)** — une seule UI, épurée par défaut, qui déplie la complexité à la demande. Pas de switch « simple/expert ».         |
+| Couche essentielle (toujours visible) | Variable · Temps + lecture · Légende · Modèle                                                                                                                        |
+| Ossature desktop                      | **Barre haute** (type Windy) : modèle + onglets variables imagés + capture + accès avancé ; **rail droit** pour l'avancé ; **barre de temps** en bas.                |
+| Ossature mobile                       | **« Tout en bas »** : modèle en pastille haute ; dock bas (variables défilantes + temps) atteignable au pouce ; `•••` → feuille avancée ; FAB capture.               |
+| Direction visuelle                    | **Verre dépoli raffiné** (panneaux translucides + flou), bleu Infoclimat socle, **scrim de contraste obligatoire**.                                                  |
+| Capture (export PNG)                  | **Action de 1er niveau** (desktop : bouton barre haute ; mobile : FAB), avec **enchaînement partage** (Web Share API mobile / télécharger + copier le lien desktop). |
+| Variables                             | **Onglets imagés directs** dans la barre haute + `＋` ouvrant la liste catégorisée complète.                                                                         |
+| Taxonomie des catégories              | Température · Précipitations · Vent · Nuages · Pression/altitude · `＋` (autres).                                                                                    |
+| Périmètre moteur                      | Shell UI uniquement ; moteur intact ; **retouches moteur opportunistes** autorisées (ex. sortir les `IControl` du `addControl` MapLibre).                            |
 
 ## Architecture
 
@@ -45,16 +45,16 @@ Aujourd'hui 7 boutons sont ajoutés via `$map.addControl(...)` dans `+page.svelt
 
 ### Nouveaux composants (sous `src/lib/components/`)
 
-| Composant | Rôle | Réutilise |
-|-----------|------|-----------|
-| `chrome/app-chrome.svelte` | Conteneur responsive : choisit barre haute (desktop) vs dock (mobile) selon le store `desktop`. Monte le scrim. | store `desktop` |
-| `chrome/top-bar.svelte` | Barre haute desktop : logo, modèle, onglets variables, bouton capture, déclencheur avancé. | logique domaine de `variable-selection.svelte` |
-| `chrome/mobile-dock.svelte` | Dock bas mobile : pastille modèle, onglets variables défilants, barre temps, FAB capture, `•••`. | idem |
-| `chrome/variable-tabs.svelte` | Onglets imagés par catégorie + `＋` → liste catégorisée complète (popover/sheet). Sous-sélecteur de niveau de pression affiché quand pertinent. | `variableOptions`, `levelGroupsList`, i18n `variables-fr.ts` |
-| `chrome/model-selector.svelte` | Sélecteur de modèle (domaine). | popover domaine existant + `DOMAIN_ALLOWLIST` |
-| `chrome/advanced-panel.svelte` | Rail droit (desktop) / feuille glissable (mobile) avec 3 familles : Calques / Réglages / Outils. | composants `settings/*` + `wind-overlay`, `secondary-layer`, `clipping` |
-| `chrome/scrim.svelte` | Dégradés sombres haut/bas garantissant le contraste du texte verre sur carte claire. | — |
-| `capture/capture-flow.svelte` | Bouton capture → cadrage carré → export PNG → **étape partage**. | `png-export.ts`, `exportFrameVisible` |
+| Composant                      | Rôle                                                                                                                                            | Réutilise                                                               |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `chrome/app-chrome.svelte`     | Conteneur responsive : choisit barre haute (desktop) vs dock (mobile) selon le store `desktop`. Monte le scrim.                                 | store `desktop`                                                         |
+| `chrome/top-bar.svelte`        | Barre haute desktop : logo, modèle, onglets variables, bouton capture, déclencheur avancé.                                                      | logique domaine de `variable-selection.svelte`                          |
+| `chrome/mobile-dock.svelte`    | Dock bas mobile : pastille modèle, onglets variables défilants, barre temps, FAB capture, `•••`.                                                | idem                                                                    |
+| `chrome/variable-tabs.svelte`  | Onglets imagés par catégorie + `＋` → liste catégorisée complète (popover/sheet). Sous-sélecteur de niveau de pression affiché quand pertinent. | `variableOptions`, `levelGroupsList`, i18n `variables-fr.ts`            |
+| `chrome/model-selector.svelte` | Sélecteur de modèle (domaine).                                                                                                                  | popover domaine existant + `DOMAIN_ALLOWLIST`                           |
+| `chrome/advanced-panel.svelte` | Rail droit (desktop) / feuille glissable (mobile) avec 3 familles : Calques / Réglages / Outils.                                                | composants `settings/*` + `wind-overlay`, `secondary-layer`, `clipping` |
+| `chrome/scrim.svelte`          | Dégradés sombres haut/bas garantissant le contraste du texte verre sur carte claire.                                                            | —                                                                       |
+| `capture/capture-flow.svelte`  | Bouton capture → cadrage carré → export PNG → **étape partage**.                                                                                | `png-export.ts`, `exportFrameVisible`                                   |
 
 **Restyle (pas de réécriture logique) :** `scale/scale.svelte` (légende), `time/time-selector.svelte` + `time/playback-panel.svelte` (barre de temps), au style verre.
 
@@ -64,11 +64,11 @@ Aujourd'hui 7 boutons sont ajoutés via `$map.addControl(...)` dans `+page.svelt
 
 ### Migration des réglages (12 sections → 3 familles)
 
-| Famille | Contenu | Source actuelle |
-|---------|---------|-----------------|
+| Famille                             | Contenu                                                                                      | Source actuelle                                                                                                                                                 |
+| ----------------------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Calques carte** (toggles rapides) | Vent (overlay), Flèches, Contours, Valeurs, Départements, Relief, Calque secondaire, Opacité | `wind-overlay-panel`, `arrows-settings`, `contour-settings`, `LabelsButton`, `DepartmentsButton`, `HillshadeButton`, `secondary-layer-panel`, `opacity-setting` |
-| **Réglages** (préférences) | Unités, Grille, Popup, Qualité (taille tuiles), Sondage, Mode sombre, Cache, Réinitialiser | `unit-settings`, `grid-settings`, `popup-settings`, `tile-size-settings`, `sounding-settings`, `DarkModeButton`, `cache-settings`, `state-settings` |
-| **Outils** (actions) | Découpe pays, Aide | `clipping-panel` / `ClippingButton`, `help-dialog` / `HelpButton` |
+| **Réglages** (préférences)          | Unités, Grille, Popup, Qualité (taille tuiles), Sondage, Mode sombre, Cache, Réinitialiser   | `unit-settings`, `grid-settings`, `popup-settings`, `tile-size-settings`, `sounding-settings`, `DarkModeButton`, `cache-settings`, `state-settings`             |
+| **Outils** (actions)                | Découpe pays, Aide                                                                           | `clipping-panel` / `ClippingButton`, `help-dialog` / `HelpButton`                                                                                               |
 
 > La **capture** quitte « Outils » pour devenir une action de 1er niveau (voir ci-dessous).
 

@@ -15,6 +15,7 @@
 ## File Structure
 
 **Créés :**
+
 - `src/lib/variable-categories.ts` — table pure `variable → catégorie` + `categorize()`. Logique testable.
 - `src/lib/tests/variable-categories.test.ts` — tests Vitest du module pur.
 - `src/lib/components/chrome/scrim.svelte` — dégradés sombres haut/bas (contraste verre sur carte claire).
@@ -30,6 +31,7 @@
 - `src/lib/tests/share.test.ts` — tests du module partage.
 
 **Modifiés :**
+
 - `src/routes/+page.svelte` — remplace le montage du chrome (par phase) ; retire les `addControl(...)` au fil des phases.
 - `src/lib/components/scale/scale.svelte` — restyle légende (position/style verre cohérent).
 - `src/lib/components/time/time-selector.svelte` — restyle barre de temps.
@@ -42,6 +44,7 @@
 ### Task 1 : Module de catégorisation des variables
 
 **Files:**
+
 - Create: `src/lib/variable-categories.ts`
 - Test: `src/lib/tests/variable-categories.test.ts`
 
@@ -165,6 +168,7 @@ git commit -m "feat(ui): module pur de catégorisation des variables"
 ### Task 2 : Module de partage (capture)
 
 **Files:**
+
 - Create: `src/lib/share.ts`
 - Test: `src/lib/tests/share.test.ts`
 
@@ -276,6 +280,7 @@ git commit -m "feat(ui): module de partage capture (Web Share + fallback)"
 ### Task 3 : Composant scrim (contraste)
 
 **Files:**
+
 - Create: `src/lib/components/chrome/scrim.svelte`
 - Modify: `src/routes/+page.svelte` (montage du scrim)
 
@@ -338,6 +343,7 @@ git commit -m "feat(ui): scrim de contraste pour le chrome verre"
 ### Task 4 : Sélecteur de modèle isolé
 
 **Files:**
+
 - Create: `src/lib/components/chrome/model-selector.svelte`
 
 Extraire la logique du popover « domaine » de `src/lib/components/selection/variable-selection.svelte:162-259` dans un composant autonome, restylé verre. Le composant écrit `$domain` (store `variables`) exactement comme l'actuel.
@@ -437,6 +443,7 @@ git commit -m "feat(ui): sélecteur de modèle isolé (style verre)"
 ### Task 5 : Onglets de variables imagés
 
 **Files:**
+
 - Create: `src/lib/components/chrome/variable-tabs.svelte`
 
 Onglets par catégorie (de `CATEGORIES`) construits à partir de `$metaJson.variables`. Clic sur un onglet → sélectionne la 1re variable de cette catégorie (réutilise la logique `checkDefaultLevel` / `levelGroupSelected` de `variable-selection.svelte`). Un `＋` ouvre la liste catégorisée complète (popover desktop / sheet mobile) reprenant le `Command` existant. Le sous-sélecteur de niveau de pression (`variable-selection.svelte:395-480`) s'affiche quand `$levelGroupSelected` est défini.
@@ -452,8 +459,8 @@ Onglets par catégorie (de `CATEGORIES`) construits à partir de `$metaJson.vari
 	import { metaJson } from '$lib/stores/time';
 	import { selectedVariable, variable } from '$lib/stores/variables';
 
-	import { CATEGORIES, type CategoryKey, categorize } from '$lib/variable-categories';
 	import { translateVariableLabel } from '$lib/i18n/variables-fr';
+	import { CATEGORIES, type CategoryKey, categorize } from '$lib/variable-categories';
 
 	// Variables disponibles dans le modèle courant, groupées par catégorie.
 	const byCategory = $derived.by(() => {
@@ -513,6 +520,7 @@ git commit -m "feat(ui): onglets de variables imagés par catégorie"
 ### Task 6 : TopBar (desktop) et MobileDock (mobile)
 
 **Files:**
+
 - Create: `src/lib/components/chrome/top-bar.svelte`
 - Create: `src/lib/components/chrome/mobile-dock.svelte`
 - Create: `src/lib/components/chrome/app-chrome.svelte`
@@ -522,10 +530,10 @@ git commit -m "feat(ui): onglets de variables imagés par catégorie"
 ```svelte
 <!-- src/lib/components/chrome/top-bar.svelte -->
 <script lang="ts">
-	import type { Snippet } from 'svelte';
-
 	import ModelSelector from './model-selector.svelte';
 	import VariableTabs from './variable-tabs.svelte';
+
+	import type { Snippet } from 'svelte';
 
 	interface Props {
 		capture?: Snippet;
@@ -558,10 +566,10 @@ git commit -m "feat(ui): onglets de variables imagés par catégorie"
 ```svelte
 <!-- src/lib/components/chrome/mobile-dock.svelte -->
 <script lang="ts">
-	import type { Snippet } from 'svelte';
-
 	import ModelSelector from './model-selector.svelte';
 	import VariableTabs from './variable-tabs.svelte';
+
+	import type { Snippet } from 'svelte';
 
 	interface Props {
 		capture?: Snippet;
@@ -690,6 +698,7 @@ git commit -m "feat(ui): TopBar, MobileDock, AppChrome + stubs avancé/capture"
 ### Task 7 : Brancher AppChrome dans +page.svelte (remplacer SiteHeader + VariableSelection)
 
 **Files:**
+
 - Modify: `src/routes/+page.svelte`
 
 - [ ] **Step 1 : Remplacer les imports et le montage**
@@ -735,6 +744,7 @@ git commit -m "feat(ui): brancher AppChrome (remplace SiteHeader + VariableSelec
 ### Task 8 : Restyle légende + barre de temps
 
 **Files:**
+
 - Modify: `src/lib/components/scale/scale.svelte`
 - Modify: `src/lib/components/time/time-selector.svelte`
 
@@ -772,6 +782,7 @@ git commit -m "style(ui): harmoniser légende + barre de temps au chrome verre"
 ### Task 9 : Composant de ligne toggle réutilisable
 
 **Files:**
+
 - Create: `src/lib/components/chrome/layer-toggle.svelte`
 
 - [ ] **Step 1 : Créer le composant**
@@ -779,9 +790,9 @@ git commit -m "style(ui): harmoniser légende + barre de temps au chrome verre"
 ```svelte
 <!-- src/lib/components/chrome/layer-toggle.svelte -->
 <script lang="ts">
-	import type { Snippet } from 'svelte';
-
 	import { Switch } from '$lib/components/ui/switch';
+
+	import type { Snippet } from 'svelte';
 
 	interface Props {
 		label: string;
@@ -816,6 +827,7 @@ git commit -m "feat(ui): composant LayerToggle réutilisable"
 ### Task 10 : Convertir les ex-IControl en toggles store
 
 **Files:**
+
 - Modify: `src/lib/components/chrome/advanced-panel.svelte`
 - Référence (logique à reprendre) : `src/lib/components/buttons/index.ts`
 
@@ -844,23 +856,24 @@ Structure (rail desktop / feuille mobile via store `desktop`), 3 sections. Réut
 	import { DEFAULT_SHOW_LABELS, showLabels } from '$lib/stores/labels';
 	import { advancedOpen, desktop, helpOpen, preferences } from '$lib/stores/preferences';
 
-	import * as Sheet from '$lib/components/ui/sheet';
-	import LayerToggle from './layer-toggle.svelte';
-	import OpacitySetting from '$lib/components/settings/opacity-setting.svelte';
-	import UnitSettings from '$lib/components/settings/unit-settings.svelte';
-	import GridSettings from '$lib/components/settings/grid-settings.svelte';
-	import ArrowsSettings from '$lib/components/settings/arrows-settings.svelte';
-	import ContourSettings from '$lib/components/settings/contour-settings.svelte';
-	import PopupSettings from '$lib/components/settings/popup-settings.svelte';
-	import TileSizeSettings from '$lib/components/settings/tile-size-settings.svelte';
-	import SoundingSettings from '$lib/components/settings/sounding-settings.svelte';
-	import CacheSettings from '$lib/components/settings/cache-settings.svelte';
-	import StateSettings from '$lib/components/settings/state-settings.svelte';
 	import SecondaryLayerPanel from '$lib/components/secondary-layer/secondary-layer-panel.svelte';
+	import ArrowsSettings from '$lib/components/settings/arrows-settings.svelte';
+	import CacheSettings from '$lib/components/settings/cache-settings.svelte';
+	import ContourSettings from '$lib/components/settings/contour-settings.svelte';
+	import GridSettings from '$lib/components/settings/grid-settings.svelte';
+	import OpacitySetting from '$lib/components/settings/opacity-setting.svelte';
+	import PopupSettings from '$lib/components/settings/popup-settings.svelte';
+	import SoundingSettings from '$lib/components/settings/sounding-settings.svelte';
+	import StateSettings from '$lib/components/settings/state-settings.svelte';
+	import TileSizeSettings from '$lib/components/settings/tile-size-settings.svelte';
+	import UnitSettings from '$lib/components/settings/unit-settings.svelte';
+	import * as Sheet from '$lib/components/ui/sheet';
 	import WindOverlayPanel from '$lib/components/wind-overlay/wind-overlay-panel.svelte';
 
 	import { addHillshadeLayer, reloadStyles } from '$lib/map-controls';
 	import { updateUrl } from '$lib/url';
+
+	import LayerToggle from './layer-toggle.svelte';
 
 	function toggleLabels(next: boolean) {
 		showLabels.set(next);
@@ -883,9 +896,23 @@ Structure (rail desktop / feuille mobile via store `desktop`), 3 sections. Réut
 		<WindOverlayPanel />
 		<ArrowsSettings />
 		<ContourSettings />
-		<LayerToggle label="Valeurs sur la carte" checked={$showLabels} onCheckedChange={toggleLabels} />
-		<LayerToggle label="Départements" checked={$showDepartments} onCheckedChange={toggleDepartments} />
-		<LayerToggle label="Relief ombré" checked={$preferences.hillshade} onCheckedChange={(v) => {/* toggleHillshade */}} />
+		<LayerToggle
+			label="Valeurs sur la carte"
+			checked={$showLabels}
+			onCheckedChange={toggleLabels}
+		/>
+		<LayerToggle
+			label="Départements"
+			checked={$showDepartments}
+			onCheckedChange={toggleDepartments}
+		/>
+		<LayerToggle
+			label="Relief ombré"
+			checked={$preferences.hillshade}
+			onCheckedChange={(v) => {
+				/* toggleHillshade */
+			}}
+		/>
 		<SecondaryLayerPanel />
 		<OpacitySetting />
 	</section>
@@ -896,20 +923,30 @@ Structure (rail desktop / feuille mobile via store `desktop`), 3 sections. Réut
 		<PopupSettings />
 		<TileSizeSettings />
 		<SoundingSettings />
-		<LayerToggle label="Mode sombre" checked={mode.current === 'dark'} onCheckedChange={toggleDark} />
+		<LayerToggle
+			label="Mode sombre"
+			checked={mode.current === 'dark'}
+			onCheckedChange={toggleDark}
+		/>
 		<CacheSettings />
 		<StateSettings />
 	</section>
 	<section>
 		<h4 class="text-muted-foreground mb-1 mt-4 text-xs font-semibold uppercase">Outils</h4>
-		<button type="button" class="py-1.5 text-sm" onclick={() => clippingPanelOpen.set(!get(clippingPanelOpen))}>✂ Découpe pays</button>
+		<button
+			type="button"
+			class="py-1.5 text-sm"
+			onclick={() => clippingPanelOpen.set(!get(clippingPanelOpen))}>✂ Découpe pays</button
+		>
 		<button type="button" class="py-1.5 text-sm" onclick={() => helpOpen.set(true)}>Aide</button>
 	</section>
 {/snippet}
 
 {#if desktop.current}
 	{#if $advancedOpen}
-		<aside class="bg-glass/55 fixed right-2.5 top-16 z-60 max-h-[80vh] w-64 overflow-y-auto rounded-xl border border-white/15 p-3 text-white shadow-lg backdrop-blur-md">
+		<aside
+			class="bg-glass/55 fixed right-2.5 top-16 z-60 max-h-[80vh] w-64 overflow-y-auto rounded-xl border border-white/15 p-3 text-white shadow-lg backdrop-blur-md"
+		>
 			{@render body()}
 		</aside>
 	{/if}
@@ -956,6 +993,7 @@ git commit -m "feat(ui): panneau avancé Calques/Réglages/Outils (rail + feuill
 ### Task 11 : Retirer les addControl + supprimer les IControl morts + ancien Settings sheet
 
 **Files:**
+
 - Modify: `src/routes/+page.svelte`
 - Modify: `src/lib/components/buttons/index.ts`
 - Modify: `src/lib/components/settings/settings.svelte` (suppression du montage)
@@ -996,6 +1034,7 @@ git commit -m "refactor(ui): retirer les IControl MapLibre au profit du chrome S
 ### Task 12 : Flux capture complet avec partage
 
 **Files:**
+
 - Modify: `src/lib/components/capture/capture-flow.svelte`
 - Référence : `src/lib/png-export.ts`, `src/lib/share.ts`, store `exportFrameVisible`
 
@@ -1017,7 +1056,9 @@ Le bouton ouvre le cadrage (`exportFrameVisible.set(true)`). Une fois cadré, l'
 	import { captureWatermarkedPng, downloadBlob } from '$lib/png-export';
 	import { shareOrDownload } from '$lib/share';
 
-	interface Props { variant?: 'bar' | 'fab'; }
+	interface Props {
+		variant?: 'bar' | 'fab';
+	}
 	let { variant = 'bar' }: Props = $props();
 
 	async function capture() {
@@ -1066,6 +1107,7 @@ git commit -m "feat(ui): flux capture → partage (Web Share + fallback download
 ### Task 13 : Transitions et reduced-motion
 
 **Files:**
+
 - Modify: composants `chrome/*` (ajout transitions)
 - Modify: `src/styles.css` (au besoin, classe utilitaire reduced-motion)
 
@@ -1092,6 +1134,7 @@ git commit -m "polish(ui): transitions 150-300ms + prefers-reduced-motion"
 ### Task 14 : Audit accessibilité + contraste + parité dark
 
 **Files:**
+
 - Modify: composants `chrome/*` (aria-labels, focus, contraste)
 
 - [ ] **Step 1 : Vérifier les critères**

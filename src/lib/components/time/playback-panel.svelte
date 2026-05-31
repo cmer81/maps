@@ -33,6 +33,7 @@
 
 	import * as Select from '$lib/components/ui/select';
 
+	import { playSeriesEnd, playSeriesStart, playShutter } from '$lib/capture-sound';
 	import {
 		PLAYBACK_FPS_OPTIONS,
 		PLAYBACK_WEBP_QUALITY,
@@ -40,7 +41,6 @@
 		PRERENDER_MAX_FAILURE_RATIO,
 		type PlaybackFps
 	} from '$lib/constants';
-	import { playSeriesEnd, playSeriesStart, playShutter } from '$lib/capture-sound';
 	import { changeOMfileURL } from '$lib/layers';
 	import {
 		MapInteractionLock,
