@@ -9,7 +9,6 @@
 	import {
 		playbackCurrentIndex,
 		playbackEnd,
-		playbackExportProgress,
 		playbackFps,
 		playbackFrames,
 		playbackMode,
@@ -89,7 +88,6 @@
 		playbackStatus.set('idle');
 		playbackPrefetchProgress.set(null);
 		playbackPrerenderProgress.set(null);
-		playbackExportProgress.set(null);
 		playbackStart.set(undefined);
 		playbackEnd.set(undefined);
 	};
@@ -118,7 +116,6 @@
 		if (
 			status === 'prefetching' ||
 			status === 'prerendering' ||
-			status === 'exporting' ||
 			status === 'playing'
 		)
 			return;
@@ -292,7 +289,6 @@
 			s === 'playing' ||
 			s === 'prefetching' ||
 			s === 'prerendering' ||
-			s === 'exporting' ||
 			s === 'paused'
 		) {
 			stopPlayback();
