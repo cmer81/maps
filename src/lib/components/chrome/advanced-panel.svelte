@@ -2,7 +2,7 @@
 	import { cubicIn, cubicOut } from 'svelte/easing';
 	import { MediaQuery } from 'svelte/reactivity';
 	import { get } from 'svelte/store';
-	import { fade, fly } from 'svelte/transition';
+	import { fly } from 'svelte/transition';
 
 	import SettingsIcon from '@lucide/svelte/icons/settings-2';
 	import { mode, setMode } from 'mode-watcher';
@@ -68,6 +68,17 @@
 
 	// Respecte prefers-reduced-motion : neutralise la transition JS du rail desktop.
 	const reduceMotion = new MediaQuery('(prefers-reduced-motion: reduce)');
+
+	// Porte le rail sur <body> : un backdrop-filter imbriqué dans celui de la barre
+	// haute est neutralisé par le navigateur, donc le flou ne s'appliquerait pas.
+	function portal(node: HTMLElement) {
+		document.body.appendChild(node);
+		return {
+			destroy() {
+				node.parentNode?.removeChild(node);
+			}
+		};
+	}
 </script>
 
 {#snippet body()}
@@ -126,16 +137,11 @@
 
 {#if desktop.current}
 	{#if $advancedOpen}
-		<!-- Voile flouté plein écran : brouille la carte derrière le panneau, clic = fermer -->
-		<button
-			type="button"
-			aria-label="Fermer le panneau"
-			onclick={() => advancedOpen.set(false)}
-			class="fixed inset-x-0 bottom-0 top-16 z-50 cursor-default bg-black/10 backdrop-blur-md"
-			transition:fade={{ duration: reduceMotion.current ? 0 : 150 }}
-		></button>
+		<!-- use:portal → rendu sur <body> pour que le backdrop-blur s'applique vraiment
+		     (même voile que la barre haute). -->
 		<div
-			class="bg-glass/85 fixed top-16 right-2.5 z-60 max-h-[80vh] w-72 overflow-y-auto rounded-xl border border-white/15 p-3 text-white shadow-lg backdrop-blur-xl"
+			use:portal
+			class="bg-glass/45 fixed top-16 right-2.5 z-60 max-h-[80vh] w-72 overflow-y-auto rounded-xl border border-white/15 p-3 text-white shadow-lg backdrop-blur-md"
 			in:fly={{ x: 16, duration: reduceMotion.current ? 0 : 200, easing: cubicOut }}
 			out:fly={{ x: 16, duration: reduceMotion.current ? 0 : 150, easing: cubicIn }}
 		>
