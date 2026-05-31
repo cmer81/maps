@@ -1,7 +1,7 @@
 <script lang="ts">
+	import { cubicIn, cubicOut } from 'svelte/easing';
 	import { MediaQuery } from 'svelte/reactivity';
 	import { get } from 'svelte/store';
-	import { cubicIn, cubicOut } from 'svelte/easing';
 	import { fly } from 'svelte/transition';
 
 	import SettingsIcon from '@lucide/svelte/icons/settings-2';
@@ -99,14 +99,14 @@
 		<h3 class="text-xs font-semibold tracking-wide text-white/60 uppercase">Outils</h3>
 		<button
 			type="button"
-			class="hover:bg-white/10 flex w-full items-center rounded-md px-2 py-1.5 text-left text-sm"
+			class="hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 flex min-h-11 md:min-h-0 w-full items-center rounded-md px-2 py-3 md:py-1.5 text-left text-sm"
 			onclick={() => clippingPanelOpen.set(!get(clippingPanelOpen))}
 		>
 			Découpe pays
 		</button>
 		<button
 			type="button"
-			class="hover:bg-white/10 flex w-full items-center rounded-md px-2 py-1.5 text-left text-sm"
+			class="hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 flex min-h-11 md:min-h-0 w-full items-center rounded-md px-2 py-3 md:py-1.5 text-left text-sm"
 			onclick={() => helpOpen.set(true)}
 		>
 			Aide
@@ -118,9 +118,9 @@
 	type="button"
 	onclick={() => advancedOpen.update((v) => !v)}
 	aria-label="Calques et réglages"
-	class="bg-glass/40 hover:bg-glass/60 flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-white/20 px-2.5 text-sm text-white backdrop-blur-md"
+	class="bg-glass/40 hover:bg-glass/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 flex h-11 md:h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-white/20 px-2.5 text-sm text-white backdrop-blur-md"
 >
-	<SettingsIcon class="size-4" />
+	<SettingsIcon class="size-4" aria-hidden="true" />
 	<span class="hidden sm:inline">Calques &amp; réglages</span>
 </button>
 

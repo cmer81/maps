@@ -176,7 +176,7 @@
 			{@const Icon = ICONS[cat.key]}
 			<button
 				type="button"
-				class="bg-glass/75 backdrop-blur-sm shadow-md hover:bg-glass/95 transition-colors duration-200 flex h-7.25 cursor-pointer items-center gap-1.5 rounded px-2.5 text-xs text-white {activeCategory ===
+				class="bg-glass/75 backdrop-blur-sm shadow-md hover:bg-glass/95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 transition-colors duration-200 flex h-11 md:h-7.25 cursor-pointer items-center gap-1.5 rounded px-2.5 text-xs text-white {activeCategory ===
 				cat.key
 					? 'bg-glass/95! ring-1 ring-white/40'
 					: ''}"
@@ -184,7 +184,7 @@
 				aria-label={cat.label}
 				onclick={() => selectVariable(first)}
 			>
-				<Icon class="size-4" />
+				<Icon class="size-4" aria-hidden="true" />
 				<span class="hidden sm:inline">{cat.label}</span>
 			</button>
 		{/each}
@@ -203,12 +203,12 @@
 						variant="outline"
 						class="bg-glass/75 dark:bg-glass/75 backdrop-blur-sm shadow-md {variableSelectionOpen
 							? 'bg-glass/95!'
-							: ''} hover:bg-glass/95! h-7.25 w-7.25 cursor-pointer items-center justify-center rounded border-none p-0! text-white"
+							: ''} hover:bg-glass/95! focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 h-11 w-11 md:h-7.25 md:w-7.25 cursor-pointer items-center justify-center rounded border-none p-0! text-white"
 						role="combobox"
 						aria-expanded={variableSelectionOpen}
 						aria-label="Toutes les variables"
 					>
-						<PlusIcon class="size-4" />
+						<PlusIcon class="size-4" aria-hidden="true" />
 					</Button>
 				{/snippet}
 			</Popover.Trigger>
@@ -314,14 +314,14 @@
 							variant="outline"
 							class="bg-glass/75 dark:bg-glass/75 backdrop-blur-sm shadow-md {pressureLevelSelectionOpen
 								? 'bg-glass/95!'
-								: ''} hover:bg-glass/95! h-7.25 cursor-pointer justify-between gap-1.5 rounded border-none px-2.5 text-xs text-white"
+								: ''} hover:bg-glass/95! focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 h-11 md:h-7.25 cursor-pointer justify-between gap-1.5 rounded border-none px-2.5 text-xs text-white"
 							role="combobox"
 							aria-expanded={pressureLevelSelectionOpen}
 						>
 							<span class="truncate">
 								{$level && $unit ? `${$level} ${$unit}` : 'Choisir un niveau…'}
 							</span>
-							<ChevronsUpDownIcon class="size-4 shrink-0 opacity-50" />
+							<ChevronsUpDownIcon class="size-4 shrink-0 opacity-50" aria-hidden="true" />
 						</Button>
 					{/snippet}
 				</Popover.Trigger>
