@@ -170,9 +170,21 @@
    ============================================================================= */
 
 @layer base {
+	html {
+		height: 100%;
+	}
+
 	body {
 		margin: 0;
-		max-height: 100%;
+		/* Épingle l'app à la zone réellement visible. `100dvh` suit la hauteur du
+		   viewport dynamique (barre d'URL iOS/Android qui apparaît/disparaît) ;
+		   `100vh` est le fallback pour les navigateurs sans `dvh`. `overflow:hidden`
+		   + `overscroll-behavior:none` empêchent le scroll/rubber-band qui faisait
+		   « sortir » l'app du plein écran et déborder la barre de temps en bas. */
+		height: 100vh;
+		height: 100dvh;
+		overflow: hidden;
+		overscroll-behavior: none;
 	}
 }
 
