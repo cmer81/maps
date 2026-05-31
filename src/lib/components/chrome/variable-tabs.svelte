@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import { get } from 'svelte/store';
 
 	import CheckIcon from '@lucide/svelte/icons/check';
@@ -109,14 +110,16 @@
 	});
 
 	let variableSelectionOpen = $state(get(vSO));
-	vSO.subscribe((vO) => {
+	const unsubVSO = vSO.subscribe((vO) => {
 		variableSelectionOpen = vO;
 	});
+	onDestroy(unsubVSO);
 
 	let pressureLevelSelectionOpen = $state(get(pLSO));
-	pLSO.subscribe((plO) => {
+	const unsubPLSO = pLSO.subscribe((plO) => {
 		pressureLevelSelectionOpen = plO;
 	});
+	onDestroy(unsubPLSO);
 
 	const checkDefaultLevel = (value: string) => {
 		if (levelGroupsList && $levelGroupSelected) {

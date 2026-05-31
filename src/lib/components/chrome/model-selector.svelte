@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import { get } from 'svelte/store';
 
 	import CheckIcon from '@lucide/svelte/icons/check';
@@ -21,7 +22,8 @@
 	);
 
 	let open = $state(get(dSO));
-	dSO.subscribe((v) => (open = v));
+	const unsub = dSO.subscribe((v) => (open = v));
+	onDestroy(unsub);
 </script>
 
 <Popover.Root bind:open onOpenChange={(e) => dSO.set(e)}>

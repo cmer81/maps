@@ -11,7 +11,7 @@
 		omProtocolSettings,
 		standardColorScales
 	} from '$lib/stores/om-protocol-settings';
-	import { opacity, preferences } from '$lib/stores/preferences';
+	import { bottomChromeHeight, opacity, preferences } from '$lib/stores/preferences';
 	import {
 		convertValue,
 		getDisplayUnit,
@@ -132,10 +132,12 @@
 
 {#if $preferences.showScale}
 	<div
-		class="absolute z-60 {!desktop.current
-			? 'bottom-22.5'
-			: 'bottom-2.5'} duration-500 left-2.5 z-10 select-none rounded-lg"
-		style="max-height: {totalHeight + 100}px;"
+		class="absolute z-60 {desktop.current
+			? 'bottom-2.5'
+			: ''} duration-500 left-2.5 z-10 select-none rounded-lg"
+		style="max-height: {totalHeight + 100}px;{!desktop.current
+			? ` bottom: calc(${$bottomChromeHeight}px + 4.5rem);`
+			: ''}"
 	>
 		<div class="flex flex-col-reverse shadow-md">
 			<div class="flex flex-col-reverse bg-glass/45 backdrop-blur-md rounded-b-lg">
