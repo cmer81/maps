@@ -21,14 +21,23 @@ export const setMapControlSettings = () => {
 	// Attribution en mode compact (bouton « i », texte au tap) pour ne pas encombrer
 	// le chrome ; l'attribution auto est désactivée dans les options de la carte.
 	map.addControl(new maplibregl.AttributionControl({ compact: true }));
-	// MapLibre l'ouvre au chargement : c'est un <details open> avec la classe
-	// `maplibregl-compact-show`. On retire les deux pour ne montrer que le « i »
-	// (sinon l'attribut `open` natif garde le contenu visible).
-	requestAnimationFrame(() => {
-		const attrib = document.querySelector('.maplibregl-ctrl-attrib.maplibregl-compact');
-		attrib?.classList.remove('maplibregl-compact-show');
-		attrib?.removeAttribute('open');
-	});
+	// MapLibre ouvre l'attribution compacte dès que les attributions sont chargées
+	// (plus tard que la création de la carte) : c'est un <details open> avec la classe
+	// `maplibregl-compact-show`. On observe le conteneur et on la replie pile au moment
+	// où elle s'ouvre, puis on se débranche pour laisser l'ouverture au tap.
+	const attribEl = document.querySelector('.maplibregl-ctrl-attrib');
+	if (attribEl) {
+		const collapse = (obs?: MutationObserver) => {
+			if (attribEl.hasAttribute('open') || attribEl.classList.contains('maplibregl-compact-show')) {
+				attribEl.classList.remove('maplibregl-compact-show');
+				attribEl.removeAttribute('open');
+				obs?.disconnect();
+			}
+		};
+		collapse();
+		const observer = new MutationObserver((_, obs) => collapse(obs));
+		observer.observe(attribEl, { attributes: true, attributeFilter: ['open', 'class'] });
+	}
 	map.addControl(
 		new maplibregl.NavigationControl({ visualizePitch: true, showZoom: true, showCompass: true })
 	);
