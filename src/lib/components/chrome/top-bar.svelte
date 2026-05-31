@@ -15,7 +15,7 @@
 </script>
 
 <div
-	class="bg-glass/45 fixed inset-x-2.5 top-2.5 z-60 flex h-12 items-center gap-2.5 rounded-xl border border-white/15 px-3 shadow-lg backdrop-blur-md"
+	class="bg-glass/45 fixed top-2.5 left-1/2 z-60 flex h-12 max-w-[calc(100vw-1.25rem)] -translate-x-1/2 items-center gap-2.5 overflow-x-auto rounded-xl border border-white/15 px-3 whitespace-nowrap shadow-lg backdrop-blur-md"
 >
 	<a href={SITE_URL} title="Infoclimat" rel="noopener" class="shrink-0">
 		<img src={LOGO_URL} alt="Infoclimat" class="h-6 w-auto" crossorigin="anonymous" />
@@ -23,7 +23,8 @@
 	<ModelSelector />
 	<div class="h-5 w-px bg-white/20"></div>
 	<VariableTabs />
-	<div class="ml-auto flex items-center gap-2">
+	<div class="h-5 w-px bg-white/20"></div>
+	<div class="flex items-center gap-2">
 		{@render capture?.()}
 		{@render advanced?.()}
 	</div>
