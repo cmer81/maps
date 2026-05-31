@@ -1,5 +1,14 @@
 import { writable } from 'svelte/store';
 
+import { persisted } from 'svelte-persisted-store';
+
+/**
+ * Affiche le bouton « Sondage vertical » dans le popup. Persisté (réglages).
+ * Le bouton reste de toute façon masqué sur les domaines sans niveaux de pression
+ * (cf. isSoundingDomain) — ce toggle permet en plus de le désactiver côté AROME.
+ */
+export const soundingButtonEnabled = persisted('sounding_button_enabled', true);
+
 export type SoundingTab = 'skewt' | 'hodograph' | 'indices';
 
 export interface SoundingState {

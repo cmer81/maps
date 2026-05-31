@@ -101,6 +101,13 @@ export const SOUNDING_LEVELS_BY_DOMAIN: Readonly<Record<string, readonly number[
 export const soundingLevelsForDomain = (domain: string): readonly number[] =>
 	SOUNDING_LEVELS_BY_DOMAIN[domain] ?? SOUNDING_PRESSURE_LEVELS_HPA;
 
+// Un domaine ne supporte le sondage vertical que s'il diffuse des niveaux de
+// pression — c.-à-d. s'il est explicitement listé dans SOUNDING_LEVELS_BY_DOMAIN
+// (actuellement AROME 0,025° ; la Réunion s'ajoutera ici). Sert à n'afficher le
+// bouton « Sondage vertical » que sur ces modèles.
+export const isSoundingDomain = (domain: string): boolean =>
+	Object.prototype.hasOwnProperty.call(SOUNDING_LEVELS_BY_DOMAIN, domain);
+
 // Préset Infoclimat : sous-ensemble de modèles exposés dans le sélecteur de
 // domaine. Le reste de l'app (résolution d'URLs partagées, métadonnées) reste
 // indépendant — c'est purement un filtre d'affichage.

@@ -48,6 +48,8 @@ The departments contour file is bundled (`static/departements.geojson`) to avoid
 
 La couche lecture est source-agnostique : `SOUNDING_LEVELS_BY_DOMAIN` dans `src/lib/constants.ts` mappe chaque domaine vers ses niveaux de pression disponibles ; le domaine `arome_om_reunion` (Réunion) est anticipé dans la table mais pas encore exposé dans l'UI. Ajouter un nouveau domaine ne nécessite de modifier que cette constante et `soundingLevelsForDomain()`.
 
+Le bouton « Sondage vertical » du popup n'est affiché que si `isSoundingDomain(domaine)` (domaine listé dans `SOUNDING_LEVELS_BY_DOMAIN`, donc seuls les modèles à niveaux de pression — AROME 0,025° aujourd'hui) **et** si le toggle persisté `soundingButtonEnabled` (réglages → `sounding-settings.svelte`) est activé. Sur les autres modèles le bouton est masqué (`display:none` dans `updatePopupContent`).
+
 ## infoclimat-om-worker integration
 
 The worker URL (`getOmWorkerUrl()`, read from `VITE_OM_WORKER_URL` at build time or `/runtime-config.js` for Docker runtime templating) backs two features: the basemap tile-proxy (`map-controls.ts`) and the labels overlay (`labels-layer.ts`, per-viewport numeric value fetches). When the URL is unset, those features are disabled.

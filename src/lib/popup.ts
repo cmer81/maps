@@ -13,10 +13,12 @@ import { mode } from 'mode-watcher';
 
 import { map as m, popup as p, popupMode } from '$lib/stores/map';
 import { omProtocolSettings } from '$lib/stores/om-protocol-settings';
-import { sounding } from '$lib/stores/sounding';
+import { sounding, soundingButtonEnabled } from '$lib/stores/sounding';
 import { convertValue, getDisplayUnit, unitPreferences } from '$lib/stores/units';
 import { selectedDomain, variable as v } from '$lib/stores/variables';
 import { windOverlayEnabled } from '$lib/stores/vector';
+
+import { isSoundingDomain } from '$lib/constants';
 
 import { textWhite } from './helpers';
 import { rasterManager, vectorManager } from './layers';
@@ -86,6 +88,14 @@ const initPopupDiv = (): void => {
 /** Update the popup content for the given coordinates without moving the marker. */
 const updatePopupContent = async (coordinates: maplibregl.LngLat): Promise<void> => {
 	lastCoords = coordinates;
+
+	// Le bouton « Sondage vertical » n'apparaît que sur les modèles à niveaux de
+	// pression (AROME 0,025°) et si l'option est activée dans les réglages.
+	if (soundingBtn) {
+		const enabled = isSoundingDomain(get(selectedDomain).value) && get(soundingButtonEnabled);
+		soundingBtn.style.display = enabled ? '' : 'none';
+	}
+
 	if (!el || !contentDiv || !valueSpan || !unitSpan || !windSpan || !elevationSpan) return;
 
 	const map = get(m);
