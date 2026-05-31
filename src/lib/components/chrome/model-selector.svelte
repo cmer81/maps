@@ -42,7 +42,24 @@
 			</Button>
 		{/snippet}
 	</Popover.Trigger>
-	<Popover.Content class="bg-glass/60 z-80 w-72 rounded-lg border-none p-0 backdrop-blur-xl">
+	<Popover.Content
+		tabindex={0}
+		onOpenAutoFocus={(e) => {
+			// Empêche l'autofocus de l'input de recherche : sur mobile il ferait monter
+			// le clavier virtuel, qui compresse la liste et capte le geste de scroll.
+			// On focus plutôt le modèle actif (centré), comme le sélecteur de variable.
+			e.preventDefault();
+			const query = document.querySelector(
+				'[data-value="' + $selectedDomain?.value + '"]'
+			) as HTMLElement | null;
+			if (query) {
+				query.scrollIntoView({ block: 'center' });
+				query.setAttribute('tabindex', '0');
+				query.focus();
+			}
+		}}
+		class="bg-glass/60 z-80 w-72 rounded-lg border-none p-0 backdrop-blur-xl"
+	>
 		<Command.Root class="bg-transparent">
 			<Command.Input placeholder="Rechercher un modèle…" class="border-none ring-0" />
 			<Command.List>

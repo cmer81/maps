@@ -295,6 +295,19 @@
 				</Popover.Trigger>
 				<Popover.Content
 					tabindex={0}
+					onOpenAutoFocus={(e) => {
+						// Empêche l'autofocus de l'input (clavier mobile qui casse le scroll) ;
+						// focus plutôt le niveau actif, centré. Cf. sélecteur de variable/modèle.
+						e.preventDefault();
+						const query = document.querySelector(
+							'[data-value="' + $variable + '"]'
+						) as HTMLElement | null;
+						if (query) {
+							query.scrollIntoView({ block: 'center' });
+							query.setAttribute('tabindex', '0');
+							query.focus();
+						}
+					}}
 					class="bg-glass/60 z-80 w-62.5 rounded-lg border-none p-0 backdrop-blur-xl"
 				>
 					<Command.Root class="bg-transparent text-white">
