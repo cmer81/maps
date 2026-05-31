@@ -44,4 +44,13 @@ describe('shareOrDownload', () => {
 		expect(download).not.toHaveBeenCalled();
 		expect(result).toBe('cancelled');
 	});
+
+	it('retombe sur le téléchargement si navigator.share lève une erreur inattendue', async () => {
+		const share = vi.fn().mockRejectedValue(new Error('NotAllowedError'));
+		const nav = { canShare: () => true, share } as unknown as Navigator;
+		const download = vi.fn();
+		const result = await shareOrDownload(nav, pngFile(), download);
+		expect(download).toHaveBeenCalledOnce();
+		expect(result).toBe('downloaded');
+	});
 });

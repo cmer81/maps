@@ -1,8 +1,7 @@
 export type ShareResult = 'shared' | 'downloaded' | 'cancelled';
 
 export function canShareFiles(nav: Navigator, file: File): boolean {
-	const n = nav as Navigator & { canShare?: (data: ShareData) => boolean };
-	return typeof n.canShare === 'function' && n.canShare({ files: [file] });
+	return typeof nav.canShare === 'function' && nav.canShare({ files: [file] });
 }
 
 /**
@@ -16,7 +15,7 @@ export async function shareOrDownload(
 ): Promise<ShareResult> {
 	if (canShareFiles(nav, file)) {
 		try {
-			await (nav as Navigator).share({ files: [file], title: 'Infoclimat — Modèles' });
+			await nav.share({ files: [file], title: 'Infoclimat — Modèles' });
 			return 'shared';
 		} catch (err) {
 			if (err instanceof DOMException && err.name === 'AbortError') return 'cancelled';
