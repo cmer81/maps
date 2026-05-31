@@ -111,7 +111,7 @@
 		onclick={onClick}
 		disabled={busy}
 		aria-label={label}
-		class="bg-primary flex size-11 cursor-pointer items-center justify-center rounded-full text-white shadow-lg ring-1 ring-white/20 transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+		class="flex size-11 cursor-pointer items-center justify-center rounded-full bg-[#0d47a1]/85 text-white shadow-lg ring-1 ring-white/20 backdrop-blur-md transition-transform duration-150 hover:bg-[#0d47a1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
 	>
 		<CameraIcon class="size-5" aria-hidden="true" />
 	</button>
@@ -121,7 +121,7 @@
 		onclick={onClick}
 		disabled={busy}
 		aria-label={label}
-		class="bg-primary flex h-11 md:h-8 cursor-pointer items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-white shadow-md ring-1 ring-white/20 transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+		class="flex h-11 md:h-8 cursor-pointer items-center gap-1.5 rounded-lg bg-[#0d47a1]/85 px-3 text-sm font-semibold text-white shadow-md ring-1 ring-white/20 backdrop-blur-md transition-transform duration-150 hover:bg-[#0d47a1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
 	>
 		<CameraIcon class="size-4" aria-hidden="true" />
 		{framing ? 'Exporter' : 'Capturer'}
