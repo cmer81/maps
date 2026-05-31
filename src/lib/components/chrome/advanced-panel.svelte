@@ -2,13 +2,11 @@
 	import { get } from 'svelte/store';
 
 	import SettingsIcon from '@lucide/svelte/icons/settings-2';
-	import maplibregl from 'maplibre-gl';
 	import { mode, setMode } from 'mode-watcher';
 
 	import { clippingPanelOpen } from '$lib/stores/clipping';
 	import { DEFAULT_SHOW_DEPARTMENTS, showDepartments } from '$lib/stores/departments';
 	import { DEFAULT_SHOW_LABELS, showLabels } from '$lib/stores/labels';
-	import { map } from '$lib/stores/map';
 	import {
 		advancedOpen,
 		defaultPreferences,
@@ -31,7 +29,8 @@
 	import * as Sheet from '$lib/components/ui/sheet';
 	import WindOverlayPanel from '$lib/components/wind-overlay/wind-overlay-panel.svelte';
 
-	import { addHillshadeLayer, reloadStyles, terrainHandler } from '$lib/map-controls';
+	import { setHillshadeEnabled } from '$lib/hillshade';
+	import { reloadStyles } from '$lib/map-controls';
 	import { updateUrl } from '$lib/url';
 
 	import LayerToggle from './layer-toggle.svelte';
@@ -41,38 +40,6 @@
 	const departmentsOn = $derived($showDepartments);
 	const hillshadeOn = $derived($preferences.hillshade);
 	const darkOn = $derived(mode.current === 'dark');
-
-	// --- Terrain control lifecycle (ported from HillshadeButton) ---
-	let terrainControl: maplibregl.TerrainControl | undefined;
-
-	function addTerrainControl() {
-		const m = get(map);
-		if (!m || terrainControl) return;
-
-		terrainControl = new maplibregl.TerrainControl({
-			source: 'terrainSource2',
-			exaggeration: 1
-		});
-
-		m.addControl(terrainControl);
-
-		terrainControl._terrainButton.addEventListener('click', () => terrainHandler());
-
-		if (get(preferences).terrain) {
-			m.setTerrain({ source: 'terrainSource2' });
-		}
-	}
-
-	function removeTerrainControl() {
-		const m = get(map);
-		if (!m || !terrainControl) return;
-
-		if (m.hasControl(terrainControl)) {
-			m.removeControl(terrainControl);
-		}
-		terrainControl = undefined;
-		m.setTerrain(null);
-	}
 
 	// --- IControl behaviors ported to plain handlers ---
 	function toggleLabels(next: boolean) {
@@ -91,24 +58,8 @@
 	}
 
 	function toggleHillshade(next: boolean) {
-		const m = get(map);
 		preferences.update((p) => ({ ...p, hillshade: next }));
-
-		if (next) {
-			addHillshadeLayer();
-
-			m?.once('styledata', () => {
-				setTimeout(() => addTerrainControl(), 50);
-			});
-		} else {
-			if (m?.getLayer('hillshadeLayer')) {
-				m.removeLayer('hillshadeLayer');
-			}
-
-			m?.once('styledata', () => {
-				setTimeout(() => removeTerrainControl(), 50);
-			});
-		}
+		setHillshadeEnabled(next);
 		updateUrl('hillshade', String(next), String(defaultPreferences.hillshade));
 	}
 </script>

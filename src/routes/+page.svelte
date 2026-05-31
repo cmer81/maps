@@ -39,7 +39,6 @@
 		DarkModeButton,
 		DepartmentsButton,
 		HelpButton,
-		HillshadeButton,
 		LabelsButton,
 		SettingsButton
 	} from '$lib/components/buttons';
@@ -58,6 +57,7 @@
 	import { DOMAIN_DEFAULT_VIEWS } from '$lib/constants';
 	import { ensureDepartmentsLayer, refreshDepartments } from '$lib/departments-layer';
 	import { checkHighDefinition } from '$lib/helpers';
+	import { initHillshadeFromPrefs } from '$lib/hillshade';
 	import { ensureLabelsLayer, refreshLabels } from '$lib/labels-layer';
 	import { addOmFileLayers, changeOMfileURL } from '$lib/layers';
 	import { addTerrainSource, getStyle, setMapControlSettings } from '$lib/map-controls';
@@ -139,7 +139,7 @@
 
 			addTerrainSource($map);
 			addTerrainSource($map, 'terrainSource2');
-			$map.addControl(new HillshadeButton());
+			initHillshadeFromPrefs();
 			$map.addControl(new LabelsButton());
 			$map.addControl(new DepartmentsButton());
 			clippingPanel?.initTerraDraw();
