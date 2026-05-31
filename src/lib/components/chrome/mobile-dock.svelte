@@ -25,7 +25,7 @@
 
 <!-- Dock bas : onglets variables défilants + accès avancé -->
 <div
-	class="bg-glass/45 fixed left-1/2 z-60 flex w-max max-w-[calc(100vw-1.25rem)] -translate-x-1/2 items-center gap-2 rounded-xl border border-white/15 px-3 py-2 shadow-lg backdrop-blur-md"
+	class="fixed left-1/2 z-60 flex w-max max-w-[calc(100vw-1.25rem)] -translate-x-1/2 items-center gap-2"
 	style="bottom: calc({$bottomChromeHeight}px + 0.5rem)"
 >
 	<VariableTabs />
