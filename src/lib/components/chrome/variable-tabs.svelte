@@ -200,7 +200,7 @@
 						query.focus();
 					}
 				}}
-				class="bg-glass/85 z-80 w-62.5 rounded-lg border-none p-0 backdrop-blur-md"
+				class="bg-glass/60 z-80 w-62.5 rounded-lg border-none p-0 backdrop-blur-xl"
 			>
 				<Command.Root class="bg-transparent text-white">
 					<Command.Input class="border-none ring-0" placeholder="Rechercher une variable…" />
@@ -295,7 +295,7 @@
 				</Popover.Trigger>
 				<Popover.Content
 					tabindex={0}
-					class="bg-glass/85 z-80 w-62.5 rounded-lg border-none p-0 backdrop-blur-md"
+					class="bg-glass/60 z-80 w-62.5 rounded-lg border-none p-0 backdrop-blur-xl"
 				>
 					<Command.Root class="bg-transparent text-white">
 						<Command.Input class="border-none ring-0" placeholder="Rechercher un niveau…" />

@@ -42,7 +42,7 @@
 			</Button>
 		{/snippet}
 	</Popover.Trigger>
-	<Popover.Content class="bg-glass/85 z-80 w-72 rounded-lg border-none p-0 backdrop-blur-md">
+	<Popover.Content class="bg-glass/60 z-80 w-72 rounded-lg border-none p-0 backdrop-blur-xl">
 		<Command.Root class="bg-transparent">
 			<Command.Input placeholder="Rechercher un modèle…" class="border-none ring-0" />
 			<Command.List>
