@@ -42,6 +42,9 @@ export default ({ mode }: { mode: string }) => {
 			exclude: ['@openmeteo/file-reader', '@openmeteo/file-format-wasm']
 		},
 		server: {
+			// Hostnames autorisés à atteindre le dev server (reverse proxy /
+			// tunnel pour tester sur mobile, p. ex. map.home.cmer.fr).
+			allowedHosts: ['.home.cmer.fr'],
 			fs: {
 				// Allow serving files from one level up to the project root
 				allow: ['..']
