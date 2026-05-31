@@ -421,3 +421,21 @@
 	border: none !important;
 	background: none !important;
 }
+
+/* =============================================================================
+   Reduced motion
+   ============================================================================= */
+
+/* Neutralise les transitions/animations CSS (et Svelte CSS) pour les
+   utilisateurs qui préfèrent moins de mouvement. Les transitions Svelte JS
+   (fly) sont gérées séparément via MediaQuery côté composant. */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}

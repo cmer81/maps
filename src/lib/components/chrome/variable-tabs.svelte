@@ -176,7 +176,7 @@
 			{@const Icon = ICONS[cat.key]}
 			<button
 				type="button"
-				class="bg-glass/75 backdrop-blur-sm shadow-md hover:bg-glass/95 duration-200 flex h-7.25 cursor-pointer items-center gap-1.5 rounded px-2.5 text-xs text-white {activeCategory ===
+				class="bg-glass/75 backdrop-blur-sm shadow-md hover:bg-glass/95 transition-colors duration-200 flex h-7.25 cursor-pointer items-center gap-1.5 rounded px-2.5 text-xs text-white {activeCategory ===
 				cat.key
 					? 'bg-glass/95! ring-1 ring-white/40'
 					: ''}"

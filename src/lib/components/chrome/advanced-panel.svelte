@@ -1,5 +1,8 @@
 <script lang="ts">
+	import { MediaQuery } from 'svelte/reactivity';
 	import { get } from 'svelte/store';
+	import { cubicIn, cubicOut } from 'svelte/easing';
+	import { fly } from 'svelte/transition';
 
 	import SettingsIcon from '@lucide/svelte/icons/settings-2';
 	import { mode, setMode } from 'mode-watcher';
@@ -62,6 +65,9 @@
 		setHillshadeEnabled(next);
 		updateUrl('hillshade', String(next), String(defaultPreferences.hillshade));
 	}
+
+	// Respecte prefers-reduced-motion : neutralise la transition JS du rail desktop.
+	const reduceMotion = new MediaQuery('(prefers-reduced-motion: reduce)');
 </script>
 
 {#snippet body()}
@@ -122,6 +128,8 @@
 	{#if $advancedOpen}
 		<div
 			class="bg-glass/55 fixed top-16 right-2.5 z-60 max-h-[80vh] w-72 overflow-y-auto rounded-xl border border-white/15 p-3 text-white shadow-lg backdrop-blur-md"
+			in:fly={{ x: 16, duration: reduceMotion.current ? 0 : 200, easing: cubicOut }}
+			out:fly={{ x: 16, duration: reduceMotion.current ? 0 : 150, easing: cubicIn }}
 		>
 			<div class="flex flex-col gap-6">
 				{@render body()}
