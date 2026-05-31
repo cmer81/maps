@@ -9,9 +9,11 @@ import {
 	COMPLETE_DEFAULT_VALUES,
 	DEFAULT_CACHE_BLOCK_SIZE_KB,
 	DEFAULT_CACHE_MAX_BYTES_MB,
+	DEFAULT_DOMAIN,
 	DEFAULT_OPACITY,
 	DEFAULT_PREFERENCES,
-	DEFAULT_TILE_SIZE
+	DEFAULT_TILE_SIZE,
+	DEFAULT_VARIABLE
 } from '$lib/constants';
 import { getInitialMetaData, getMetaData } from '$lib/metadata';
 
@@ -102,8 +104,8 @@ export const resetStates = async () => {
 	now.set(new Date());
 	time.set(new Date(currentTimeStep));
 
-	domain.set('dwd_icon');
-	variable.set('temperature_2m');
+	domain.set(DEFAULT_DOMAIN);
+	variable.set(DEFAULT_VARIABLE);
 
 	domainSelectionOpen.set(false);
 	variableSelectionOpen.set(false);
@@ -124,6 +126,7 @@ export const resetStates = async () => {
 	windSpeedUnit.set(DEFAULT_WIND_SPEED_UNIT);
 
 	helpOpen.set(false);
+	scaleCollapsed.set(true);
 
 	setMode('system');
 
