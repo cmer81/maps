@@ -12,9 +12,8 @@ describe('registerAromeFranceConvectionDomain', () => {
 
 	it('registers a dedicated selector group so the domain is shown', async () => {
 		vi.stubEnv('VITE_MODELS_BUCKET_URL', 'https://bucket.test');
-		const { registerAromeFranceConvectionDomain } = await import(
-			'$lib/arome-france-convection-domain'
-		);
+		const { registerAromeFranceConvectionDomain } =
+			await import('$lib/arome-france-convection-domain');
 		registerAromeFranceConvectionDomain();
 		expect(domainGroups.filter((g) => g.value === 'arome_france_convection').length).toBe(1);
 		expect('arome_france_convection'.startsWith('arome_france_convection')).toBe(true);
@@ -22,9 +21,8 @@ describe('registerAromeFranceConvectionDomain', () => {
 
 	it('pushes arome_france_convection with the producer grid dimensions', async () => {
 		vi.stubEnv('VITE_MODELS_BUCKET_URL', 'https://bucket.test');
-		const { registerAromeFranceConvectionDomain } = await import(
-			'$lib/arome-france-convection-domain'
-		);
+		const { registerAromeFranceConvectionDomain } =
+			await import('$lib/arome-france-convection-domain');
 		registerAromeFranceConvectionDomain();
 		const d = domainOptions.find((x) => x.value === 'arome_france_convection');
 		expect(d).toBeDefined();
@@ -44,9 +42,8 @@ describe('registerAromeFranceConvectionDomain', () => {
 
 	it('is idempotent (no duplicate push)', async () => {
 		vi.stubEnv('VITE_MODELS_BUCKET_URL', 'https://bucket.test');
-		const { registerAromeFranceConvectionDomain } = await import(
-			'$lib/arome-france-convection-domain'
-		);
+		const { registerAromeFranceConvectionDomain } =
+			await import('$lib/arome-france-convection-domain');
 		registerAromeFranceConvectionDomain();
 		registerAromeFranceConvectionDomain();
 		expect(domainOptions.filter((x) => x.value === 'arome_france_convection').length).toBe(1);
@@ -54,9 +51,8 @@ describe('registerAromeFranceConvectionDomain', () => {
 
 	it('does not push when bucket URL is empty', async () => {
 		vi.stubEnv('VITE_MODELS_BUCKET_URL', '');
-		const { registerAromeFranceConvectionDomain } = await import(
-			'$lib/arome-france-convection-domain'
-		);
+		const { registerAromeFranceConvectionDomain } =
+			await import('$lib/arome-france-convection-domain');
 		registerAromeFranceConvectionDomain();
 		expect(domainOptions.find((x) => x.value === 'arome_france_convection')).toBeUndefined();
 	});
