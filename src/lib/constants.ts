@@ -11,12 +11,25 @@ export const ANOMALY_VARIABLE = 'temperature_2m_anomaly';
  *  produit par le pipeline `arome-om-forecast`). */
 export const AROME_OM_REUNION_DOMAIN = 'arome_om_reunion';
 
+/** Pseudo-domaine AROME France métropole orienté convection/orage (servi depuis
+ *  le bucket R2, produit par le pipeline `arome-france-forecast`). Distinct du
+ *  `arome_france` général d'Open-Meteo (le suffixe `_convection` lève la collision). */
+export const AROME_FRANCE_CONVECTION_DOMAIN = 'arome_france_convection';
+
 /** Vue de carte recommandée par domaine — appliquée via `flyTo` quand l'utilisateur
  *  bascule manuellement sur le domaine. Utile pour les pseudo-domaines régionaux
  *  dont le centre de grille tombe sur une zone océan/peu lisible.
  *  Format MapLibre : `{ center: [lon, lat], zoom }`. */
 export const DOMAIN_DEFAULT_VIEWS: Record<string, { center: [number, number]; zoom: number }> = {
-	[AROME_OM_REUNION_DOMAIN]: { center: [50.2, -15.97], zoom: 4.47 }
+	[AROME_OM_REUNION_DOMAIN]: { center: [50.2, -15.97], zoom: 4.47 },
+	[AROME_FRANCE_CONVECTION_DOMAIN]: { center: [2.3, 46.6], zoom: 5 }
+};
+
+/** Variable affichée par défaut quand l'utilisateur bascule sur un domaine et que
+ *  la variable courante n'existe pas dans son meta.json. Consulté par
+ *  `matchVariableOrFirst()` avant le fallback `variables[0]`. */
+export const DOMAIN_DEFAULT_VARIABLES: Record<string, string> = {
+	[AROME_FRANCE_CONVECTION_DOMAIN]: 'radar_reflectivity'
 };
 
 // Vector options defaults
@@ -121,6 +134,9 @@ export const DOMAIN_ALLOWLIST: readonly string[] = [
 	// AROME-OM Outre-Mer (pseudo-domaine, visible seulement si le bucket est configuré)
 	'arome_om_reunion',
 
+	// AROME Convection France (pseudo-domaine, visible seulement si le bucket est configuré)
+	'arome_france_convection',
+
 	// Cœur français
 	'meteofrance_arome_france_hd',
 	'meteofrance_arome_france0025',
@@ -160,6 +176,8 @@ export const DOMAIN_ALLOWLIST: readonly string[] = [
 export const MODEL_DESCRIPTIONS: Record<string, string> = {
 	anomaly_europe: 'Écart à la température normale 1991–2020 · Europe',
 	arome_om_reunion: 'Météo-France · Outre-mer, La Réunion · haute résolution',
+	arome_france_convection:
+		'Infoclimat · 0,025° (~2,5 km), France métropole · convection / orage · ~51 h',
 	meteofrance_arome_france_hd:
 		'Météo-France · ~1,5 km, France · détaille les phénomènes locaux · échéance ~2 j',
 	meteofrance_arome_france0025:
