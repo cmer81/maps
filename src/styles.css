@@ -148,7 +148,9 @@
 		ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
 		'Noto Color Emoji';
 
-	color-scheme: light dark;
+	/* Dark mode forcé sur toute l'app : on fige color-scheme en dark (scrollbars,
+	   inputs natifs…) et on ne suit plus prefers-color-scheme de l'OS. */
+	color-scheme: dark;
 	color: rgba(255, 255, 255, 0.87);
 	background-color: rgb(2, 8, 23);
 
@@ -156,13 +158,6 @@
 	text-rendering: optimizeLegibility;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
-}
-
-@media (prefers-color-scheme: light) {
-	:root {
-		color: #213547;
-		background-color: #ffffff;
-	}
 }
 
 /* =============================================================================

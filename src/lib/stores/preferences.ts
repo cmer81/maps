@@ -130,7 +130,7 @@ export const resetStates = async () => {
 	helpOpen.set(false);
 	scaleCollapsed.set(true);
 
-	setMode('system');
+	setMode('dark');
 
 	await clearBlockCache();
 };

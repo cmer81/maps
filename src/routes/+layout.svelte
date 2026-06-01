@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
 
-	import { ModeWatcher } from 'mode-watcher';
+	import { ModeWatcher, setMode } from 'mode-watcher';
 
 	import { now } from '$lib/stores/time';
 
@@ -15,6 +15,10 @@
 	let metaDataInterval: ReturnType<typeof setInterval>;
 	let updateNowInterval: ReturnType<typeof setTimeout> | undefined;
 	onMount(() => {
+		// Dark mode forcé : écrase toute préférence claire persistée (mode-watcher@1.1.0
+		// n'a pas de prop « forced » ; defaultMode ne s'applique qu'au premier chargement).
+		setMode('dark');
+
 		if (metaDataInterval) clearInterval(metaDataInterval);
 		metaDataInterval = setInterval(() => {
 			getInitialMetaData();
@@ -39,4 +43,4 @@
 />
 
 {@render children()}
-<ModeWatcher />
+<ModeWatcher defaultMode="dark" track={false} />

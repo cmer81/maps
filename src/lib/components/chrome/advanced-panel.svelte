@@ -5,7 +5,6 @@
 	import { fly } from 'svelte/transition';
 
 	import SettingsIcon from '@lucide/svelte/icons/settings-2';
-	import { mode, setMode } from 'mode-watcher';
 
 	import { clippingPanelOpen } from '$lib/stores/clipping';
 	import { DEFAULT_SHOW_DEPARTMENTS, showDepartments } from '$lib/stores/departments';
@@ -33,7 +32,6 @@
 	import WindOverlayPanel from '$lib/components/wind-overlay/wind-overlay-panel.svelte';
 
 	import { setHillshadeEnabled } from '$lib/hillshade';
-	import { reloadStyles } from '$lib/map-controls';
 	import { updateUrl } from '$lib/url';
 
 	import LayerToggle from './layer-toggle.svelte';
@@ -42,7 +40,6 @@
 	const labelsOn = $derived($showLabels);
 	const departmentsOn = $derived($showDepartments);
 	const hillshadeOn = $derived($preferences.hillshade);
-	const darkOn = $derived(mode.current === 'dark');
 
 	// --- IControl behaviors ported to plain handlers ---
 	function toggleLabels(next: boolean) {
@@ -53,11 +50,6 @@
 	function toggleDepartments(next: boolean) {
 		showDepartments.set(next);
 		updateUrl('departments', String(next), String(DEFAULT_SHOW_DEPARTMENTS));
-	}
-
-	function toggleDark(next: boolean) {
-		setMode(next ? 'dark' : 'light');
-		reloadStyles();
 	}
 
 	function toggleHillshade(next: boolean) {
@@ -101,7 +93,6 @@
 		<PopupSettings />
 		<TileSizeSettings />
 		<SoundingSettings />
-		<LayerToggle label="Mode sombre" checked={darkOn} onCheckedChange={toggleDark} />
 		<CacheSettings />
 		<StateSettings />
 	</section>
