@@ -10,9 +10,17 @@ import { persisted } from 'svelte-persisted-store';
 
 import { browser } from '$app/environment';
 
+import { brightnessTemperatureScale } from '$lib/color-scales/brightness-temperature';
+import { brightnessTemperatureWvScale } from '$lib/color-scales/brightness-temperature-wv';
+import { capeScale } from '$lib/color-scales/cape';
+import { convectiveInhibitionScale } from '$lib/color-scales/convective-inhibition';
 import { infoclimatTemperatureScale } from '$lib/color-scales/infoclimat-temperature';
+import { lightningDensityScale } from '$lib/color-scales/lightning-density';
 import { precipitationSumScale } from '$lib/color-scales/precipitation-sum';
+import { precipitationTypeScale } from '$lib/color-scales/precipitation-type';
+import { radarReflectivityScale } from '$lib/color-scales/radar-reflectivity';
 import { temperatureAnomalyScale } from '$lib/color-scales/temperature-anomaly';
+import { visibilityScale } from '$lib/color-scales/visibility';
 import {
 	ANOMALY_DOMAIN,
 	ANOMALY_VARIABLE,
@@ -91,7 +99,20 @@ export const standardColorScales = {
 	// Clé exacte `precipitation_sum` : prioritaire sur la résolution par famille
 	// du package (qui mapperait sinon vers l'échelle `precipitation` saturant à
 	// 30 mm). Voir color-scales/precipitation-sum.ts.
-	precipitation_sum: precipitationSumScale
+	precipitation_sum: precipitationSumScale,
+
+	// Domaine arome_france_convection — clés exactes (priment sur les défauts package
+	// et la résolution par préfixe). `precipitation_type` et `precipitation_type_severe`
+	// partagent la même colormap catégorielle.
+	radar_reflectivity: radarReflectivityScale,
+	brightness_temperature: brightnessTemperatureScale,
+	brightness_temperature_wv: brightnessTemperatureWvScale,
+	cape: capeScale,
+	convective_inhibition: convectiveInhibitionScale,
+	visibility: visibilityScale,
+	lightning_density: lightningDensityScale,
+	precipitation_type: precipitationTypeScale,
+	precipitation_type_severe: precipitationTypeScale
 };
 
 export const omProtocolSettings: Writable<OmProtocolSettings> = writable({
