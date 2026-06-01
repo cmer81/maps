@@ -176,7 +176,8 @@
 						{@const a = entry.color[3] ?? 1}
 						<div
 							style="background: rgb({entry.color[0]}, {entry.color[1]}, {entry
-								.color[2]}); opacity: {(a * $opacity) / 100}; width: 16px; height: {collapsedBlockHeight}px;"
+								.color[2]}); opacity: {(a * $opacity) /
+								100}; width: 16px; height: {collapsedBlockHeight}px;"
 						></div>
 					{/each}
 				{:else}
