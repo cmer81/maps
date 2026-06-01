@@ -47,6 +47,12 @@ describe('continuous convection color scales', () => {
 		expect((capeScale.colors as number[][])[0][3]).toBe(0);
 		expect((lightningDensityScale.colors as number[][])[0][3]).toBe(0);
 	});
+
+	it('lightning density uses flash-density units and scales to several tens', () => {
+		expect(lightningDensityScale.unit).toBe('km⁻² day⁻¹');
+		// Cellule orageuse : plusieurs dizaines de km⁻²·jour⁻¹ → la borne haute ≥ 50.
+		expect(lightningDensityScale.breakpoints.at(-1)).toBeGreaterThanOrEqual(50);
+	});
 });
 
 describe('precipitation_type categorical scale', () => {

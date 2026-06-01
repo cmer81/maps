@@ -49,7 +49,7 @@ const EXPLICIT: Record<string, string> = {
 	'k Index': 'Indice K',
 	'Latent Heat Flux': 'Flux de chaleur latente',
 	'Lifted Index': 'Indice de soulèvement (LI)',
-	'Lightning Density': 'Densité de foudre',
+	'Lightning Density': 'Densité de foudre (moy. 3 h)',
 	'Lightning Potential': 'Potentiel orageux',
 	'Mass Density': 'Densité massique',
 	Methane: 'Méthane',
