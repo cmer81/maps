@@ -24,9 +24,13 @@ export function isCategorical(
  * (l'appelant décide de l'afficher ou non).
  */
 export function categoricalLegendEntries(scale: CategoricalColorScale): CategoricalLegendEntry[] {
-	const colors = scale.colors as RGBA[];
+	if (scale.colors.length !== scale.categories.length) {
+		throw new Error(
+			`CategoricalColorScale mal formée : colors.length (${scale.colors.length}) ≠ categories.length (${scale.categories.length})`
+		);
+	}
 	return scale.categories.map((cat, index) => ({
-		color: colors[index],
+		color: scale.colors[index],
 		label: cat.label,
 		code: cat.code,
 		index

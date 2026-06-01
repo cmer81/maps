@@ -24,4 +24,20 @@ describe('categoricalLegendEntries', () => {
 		expect(hail?.index).toBe(hailIdx);
 		expect(hail?.color).toEqual((precipitationTypeScale.colors as number[][])[hailIdx]);
 	});
+
+	it('produces a defined RGBA color for every entry', () => {
+		const entries = categoricalLegendEntries(precipitationTypeScale);
+		for (const e of entries) {
+			expect(Array.isArray(e.color)).toBe(true);
+			expect(e.color.length).toBe(4);
+		}
+	});
+
+	it('throws when colors and categories lengths diverge', () => {
+		const broken = {
+			...precipitationTypeScale,
+			categories: [...precipitationTypeScale.categories, { code: 999, label: 'Oups' }]
+		};
+		expect(() => categoricalLegendEntries(broken)).toThrow();
+	});
 });
