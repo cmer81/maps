@@ -41,4 +41,13 @@ describe('matchVariableOrFirst', () => {
 		matchVariableOrFirst();
 		expect(get(v)).toBe('precipitation');
 	});
+
+	it('falls back to variables[0] when the domain default is not published in meta', () => {
+		// domaine = arome_france_convection (a un défaut radar_reflectivity) MAIS le meta
+		// ne le publie pas (ex. variable absente d'une échéance) → fallback variables[0].
+		v.set('temperature_2m');
+		mJ.set(meta(['cape', 'visibility']));
+		matchVariableOrFirst();
+		expect(get(v)).toBe('cape');
+	});
 });

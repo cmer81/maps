@@ -1,6 +1,5 @@
-import type { RGBA } from '$lib/color';
 import type { CategoricalColorScale } from './types';
-import type { ColorScale, RenderableColorScale } from '@openmeteo/weather-map-layer';
+import type { ColorScale, RGBA, RenderableColorScale } from '@openmeteo/weather-map-layer';
 
 export interface CategoricalLegendEntry {
 	color: RGBA;

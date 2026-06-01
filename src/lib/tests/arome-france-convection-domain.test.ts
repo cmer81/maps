@@ -47,6 +47,7 @@ describe('registerAromeFranceConvectionDomain', () => {
 		registerAromeFranceConvectionDomain();
 		registerAromeFranceConvectionDomain();
 		expect(domainOptions.filter((x) => x.value === 'arome_france_convection').length).toBe(1);
+		expect(domainGroups.filter((g) => g.value === 'arome_france_convection').length).toBe(1);
 	});
 
 	it('does not push when bucket URL is empty', async () => {
