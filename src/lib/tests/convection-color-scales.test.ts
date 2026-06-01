@@ -84,4 +84,33 @@ describe('precipitation_type categorical scale', () => {
 	it('maps a non-existent intermediate integer to the nearest lower code color', () => {
 		expect(getColor(scale, 50)).toEqual(colors[scale.breakpoints.indexOf(12)]);
 	});
+
+	it('shares base RGB with reduced alpha for intermittent/melting variants', () => {
+		// 193 neige fondante & 206 neige humide interm. dérivent de 6 (neige humide).
+		// 201 pluie interm. dérive de 1 (pluie). 205 neige sèche interm. dérive de 5.
+		// 207 pluie+neige interm. dérive de 7. Même RGB, alpha strictement plus faible.
+		const variants: [number, number][] = [
+			[201, 1],
+			[205, 5],
+			[206, 6],
+			[207, 7],
+			[193, 6]
+		];
+		for (const [variant, base] of variants) {
+			const v = colors[scale.breakpoints.indexOf(variant)];
+			const b = colors[scale.breakpoints.indexOf(base)];
+			expect(v.slice(0, 3)).toEqual(b.slice(0, 3));
+			expect(v[3]).toBeLessThan(b[3]);
+		}
+	});
+
+	it('labels the key categories correctly', () => {
+		const labelOf = (code: number) => scale.categories.find((c) => c.code === code)?.label;
+		expect(labelOf(0)).toBe('Aucune');
+		expect(labelOf(1)).toBe('Pluie');
+		expect(labelOf(3)).toBe('Pluie verglaçante');
+		expect(labelOf(5)).toBe('Neige sèche');
+		expect(labelOf(10)).toBe('Grêle');
+		expect(labelOf(193)).toBe('Neige fondante');
+	});
 });
