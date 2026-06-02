@@ -22,6 +22,7 @@ import {
 	tileSize as tS,
 	url as u
 } from '$lib/stores/preferences';
+import { DEFAULT_SHOW_STATIONS, showStations } from '$lib/stores/stations';
 import { metaJson as mJ, modelRun as mR, modelRunLocked as mRL, time } from '$lib/stores/time';
 import { domain as d, layer2Enabled, variable as v, variable2 } from '$lib/stores/variables';
 import { vectorOptions as vO, windOverlayEnabled, windOverlayLevel } from '$lib/stores/vector';
@@ -185,6 +186,13 @@ export const urlParamsToPreferences = () => {
 		showDepartments.set(departmentsRaw === 'true');
 	} else if (get(showDepartments) !== DEFAULT_SHOW_DEPARTMENTS) {
 		url.searchParams.set('departments', String(get(showDepartments)));
+	}
+
+	const stationsRaw = params.get('stations');
+	if (stationsRaw !== null) {
+		showStations.set(stationsRaw === 'true');
+	} else if (get(showStations) !== DEFAULT_SHOW_STATIONS) {
+		url.searchParams.set('stations', String(get(showStations)));
 	}
 
 	const clipCountries = parseClipCountriesParam(params.get(CLIP_COUNTRIES_PARAM));
