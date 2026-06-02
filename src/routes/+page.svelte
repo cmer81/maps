@@ -29,6 +29,7 @@
 		tileSizeSet,
 		url
 	} from '$lib/stores/preferences';
+	import { showStations } from '$lib/stores/stations';
 	import { metaJson, modelRun, time } from '$lib/stores/time';
 	import { domain, selectedDomain, selectedVariable, variable } from '$lib/stores/variables';
 	import { windOverlayEnabled, windOverlayLevel } from '$lib/stores/vector';
@@ -52,6 +53,7 @@
 	import { addTerrainSource, getStyle, setMapControlSettings } from '$lib/map-controls';
 	import { getInitialMetaData, getMetaData, matchVariableOrFirst } from '$lib/metadata';
 	import { addPopup } from '$lib/popup';
+	import { ensureStationsLayer, refreshStations } from '$lib/stations-layer';
 	import { formatISOWithoutTimezone } from '$lib/time-format';
 	import { findTimeStep } from '$lib/time-utils';
 	import { updateUrl, urlParamsToPreferences } from '$lib/url';
@@ -135,6 +137,8 @@
 
 			ensureDepartmentsLayer();
 			refreshDepartments();
+			ensureStationsLayer();
+			refreshStations();
 		});
 	});
 
@@ -204,6 +208,10 @@
 
 	$effect(() => {
 		refreshDepartments([$showDepartments]);
+	});
+
+	$effect(() => {
+		refreshStations([$showStations]);
 	});
 
 	// Ferme le cadre d'export quand l'utilisateur clique hors du carré sur la carte.
