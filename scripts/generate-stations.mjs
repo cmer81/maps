@@ -59,6 +59,7 @@ const main = async () => {
 	const res = await fetch(SOURCE_URL);
 	if (!res.ok) throw new Error(`Infoclimat HTTP ${res.status}`);
 	const rows = await res.json();
+	if (!Array.isArray(rows)) throw new Error('Réponse Infoclimat inattendue (tableau attendu)');
 	const fc = buildFeatureCollection(rows, new Date());
 	const out = join(
 		dirname(fileURLToPath(import.meta.url)),

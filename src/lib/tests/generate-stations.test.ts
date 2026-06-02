@@ -15,6 +15,12 @@ describe('isRecentlyActive', () => {
 	it('rejette une activité de plus de 30 jours', () => {
 		expect(isRecentlyActive('2026-03-01 09:00:00', NOW)).toBe(false);
 	});
+	it('accepte une activité exactement à la limite des 30 jours', () => {
+		expect(isRecentlyActive('2026-05-03 12:00:00', NOW)).toBe(true);
+	});
+	it('rejette une activité juste au-delà de la limite', () => {
+		expect(isRecentlyActive('2026-05-03 11:59:59', NOW)).toBe(false);
+	});
 	it('rejette la date nulle Infoclimat', () => {
 		expect(isRecentlyActive('0000-00-00 00:00:00', NOW)).toBe(false);
 	});
