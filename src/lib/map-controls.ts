@@ -10,7 +10,9 @@ import minimalDark from '$lib/basemap/minimal-dark.json';
 import minimalLight from '$lib/basemap/minimal-light.json';
 import { BEFORE_LAYER_RASTER, HILLSHADE_LAYER } from '$lib/constants';
 
+import { ensureDepartmentsLayer, refreshDepartments } from './departments-layer';
 import { addOmFileLayers } from './layers';
+import { ensureStationsLayer, refreshStations } from './stations-layer';
 import { updateUrl } from './url';
 
 export const setMapControlSettings = () => {
@@ -135,6 +137,14 @@ export const reloadStyles = () => {
 					addHillshadeLayer();
 				}
 				addOmFileLayers();
+
+				// Les overlays GeoJSON (sources/layers custom) sont effacés par setStyle :
+				// les réinscrire ici, sinon ils disparaissent silencieusement après un
+				// changement d'opacité / rechargement d'état (le $effect ne re-fire pas).
+				ensureDepartmentsLayer();
+				refreshDepartments();
+				ensureStationsLayer();
+				refreshStations();
 			}, 50);
 		});
 	});
