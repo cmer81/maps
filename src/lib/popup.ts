@@ -18,7 +18,7 @@ import { convertValue, getDisplayUnit, unitPreferences } from '$lib/stores/units
 import { selectedDomain, variable as v } from '$lib/stores/variables';
 import { windOverlayEnabled } from '$lib/stores/vector';
 
-import { isSoundingDomain } from '$lib/constants';
+import { STATIONS_LAYER_ID, isSoundingDomain } from '$lib/constants';
 
 import { textWhite } from './helpers';
 import { rasterManager, vectorManager } from './layers';
@@ -243,6 +243,15 @@ export const addPopup = (): void => {
 
 	map.on('click', async (e: maplibregl.MapLayerMouseEvent) => {
 		if (!map || get(terraDrawActive)) return;
+
+		// Un clic sur un marqueur de station ouvre le popup station (stations-layer),
+		// pas le popup de valeur du modèle.
+		if (
+			map.getLayer(STATIONS_LAYER_ID) &&
+			map.queryRenderedFeatures(e.point, { layers: [STATIONS_LAYER_ID] }).length > 0
+		) {
+			return;
+		}
 
 		switchPopupMode();
 
