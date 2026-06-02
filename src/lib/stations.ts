@@ -51,7 +51,7 @@ const escapeHtml = (s: string): string =>
 export const buildStationPopupHtml = (p: StationProps): string => {
 	const name = escapeHtml(p.name);
 	const dept = escapeHtml(p.dept);
-	const url = buildStationUrl(p.id, p.name);
+	const url = escapeHtml(buildStationUrl(p.id, p.name));
 	const last = formatLastReport(p.last);
 	const lastLine = last ? `<div class="om-station-last">Dernière donnée : ${last}</div>` : '';
 	return `<div class="om-station-popup">

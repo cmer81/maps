@@ -59,4 +59,15 @@ describe('buildStationPopupHtml', () => {
 		expect(evil).not.toContain('<img src=x>');
 		expect(evil).toContain('&lt;img');
 	});
+	it('échappe le HTML du département', () => {
+		const evil = buildStationPopupHtml({
+			id: 'x',
+			name: 'Station',
+			dept: '<b>',
+			alt: 0,
+			last: ''
+		});
+		expect(evil).not.toContain('<b>');
+		expect(evil).toContain('&lt;b&gt;');
+	});
 });
