@@ -30,6 +30,10 @@ Single page app: `src/routes/+page.svelte` is the entry; `+layout.ts` opts out o
 
 The departments contour file is bundled (`static/departements.geojson`) to avoid CORS issues with third-party CDNs.
 
+Le calque **Stations Infoclimat** suit le même pattern dans `src/lib/stations-layer.ts` : un `geojson` source + un layer `circle` placé **au-dessus** du raster (cliquable, contrairement aux départements qui passent sous `BEFORE_LAYER_VECTOR`), togglé par le store persisté `showStations` (OFF par défaut). Les marqueurs apparaissent progressivement au zoom (`circle-opacity` interpolée entre `STATIONS_FADE_MIN_ZOOM` et `STATIONS_FADE_MAX_ZOOM`). Au clic, un popup affiche les métadonnées + un lien vers la fiche Infoclimat (`buildStationPopupHtml` dans `stations.ts`). Le handler global de `popup.ts` ignore les clics tombant sur une station (garde `queryRenderedFeatures`). `reloadStyles()` (`map-controls.ts`) réinscrit les overlays départements + stations après un `setStyle()`, sinon ils disparaîtraient au changement d'opacité.
+
+Le snapshot `static/infoclimat-stations.geojson` est **généré** (stations actives < 30 j) par `node scripts/generate-stations.mjs` (ou `npm run generate:stations`) puis commité — bundlé pour éviter le CORS de `infoclimat.fr` (l'endpoint `stations_xhr.php` n'expose pas `Access-Control-Allow-Origin`). Régénérer ce fichier pour rafraîchir la liste.
+
 ## Playback (diaporama) — retiré
 
 Le player d'animation pré-rendu a été retiré (à reconstruire dans un module propre). Vestiges conservés :
