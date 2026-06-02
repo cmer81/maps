@@ -41,7 +41,10 @@ export const DOMAIN_DEFAULT_VARIABLES: Record<string, string> = {
  *  bilinéaire des données → halos de catégorie parasite en lisière, valeurs non
  *  entières au survol ; aucun mode nearest-neighbor exposé). Masquées en attendant
  *  une refacto / un correctif amont du package. Suivi : issue #35. */
-export const HIDDEN_VARIABLES: readonly string[] = ['precipitation_type', 'precipitation_type_severe'];
+export const HIDDEN_VARIABLES: readonly string[] = [
+	'precipitation_type',
+	'precipitation_type_severe'
+];
 
 // Vector options defaults
 export const DEFAULT_VECTOR_OPTIONS = {
@@ -101,6 +104,16 @@ export const COMPLETE_DEFAULT_VALUES: { [key: string]: boolean | string | number
 // Contours administratifs FR — GeoJSON simplifié (~550 KB / ~80 KB gzip),
 // licence ODbL, bundlé depuis `gregoiredavid/france-geojson`.
 export const DEPARTMENTS_GEOJSON_URL = '/departements.geojson';
+
+// --- Stations Infoclimat (calque de repérage) ---
+export const STATIONS_GEOJSON_URL = '/infoclimat-stations.geojson';
+export const STATIONS_SOURCE_ID = 'omStationsSource';
+export const STATIONS_LAYER_ID = 'omStationsLayer';
+// Base d'URL des fiches station (le slug est cosmétique, Infoclimat résout par id).
+export const STATION_FICHE_BASE = 'https://www.infoclimat.fr/observations-meteo/temps-reel';
+// Apparition progressive : opacité 0 sous MIN, plein à partir de MAX.
+export const STATIONS_FADE_MIN_ZOOM = 6;
+export const STATIONS_FADE_MAX_ZOOM = 7.5;
 
 // Niveaux iso-pression exposés dans le sélecteur (hPa). Les niveaux non listés
 // restent fonctionnels via URL partagée — c'est purement un filtre d'affichage.
