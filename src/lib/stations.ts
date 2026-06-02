@@ -58,6 +58,6 @@ export const buildStationPopupHtml = (p: StationProps): string => {
 	<div class="om-station-name">${name}</div>
 	<div class="om-station-meta">${p.alt} m · dép. ${dept}</div>
 	${lastLine}
-	<a class="om-station-link" href="${url}" target="_blank" rel="noopener">Voir sur Infoclimat ↗</a>
+	<a class="om-station-link" href="${url}" target="_blank" rel="noopener noreferrer">Voir sur Infoclimat ↗</a>
 </div>`;
 };

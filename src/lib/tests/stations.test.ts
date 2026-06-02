@@ -46,7 +46,7 @@ describe('buildStationPopupHtml', () => {
 	});
 	it('contient le lien Infoclimat en nouvelle fenêtre', () => {
 		expect(html).toContain(buildStationUrl('00002', 'Le Vigan'));
-		expect(html).toContain('rel="noopener"');
+		expect(html).toContain('rel="noopener noreferrer"');
 	});
 	it('échappe le HTML du nom', () => {
 		const evil = buildStationPopupHtml({

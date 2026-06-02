@@ -59,7 +59,12 @@ const wireHandlers = (map: maplibregl.Map): void => {
 		if (!feature) return;
 		const props = feature.properties as StationProps;
 		const [lng, lat] = (feature.geometry as GeoJSON.Point).coordinates;
-		popup ??= new maplibregl.Popup({ closeButton: true, offset: 8, maxWidth: '240px' });
+		popup ??= new maplibregl.Popup({
+			closeButton: true,
+			offset: 8,
+			maxWidth: '240px',
+			className: 'om-station'
+		});
 		popup.setLngLat([lng, lat]).setHTML(buildStationPopupHtml(props)).addTo(map);
 	});
 };

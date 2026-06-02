@@ -98,7 +98,8 @@ export const COMPLETE_DEFAULT_VALUES: { [key: string]: boolean | string | number
 	wind_overlay: 'false',
 	wind_overlay_level: '10m',
 	labels: 'false',
-	departments: 'true'
+	departments: 'true',
+	stations: 'false'
 };
 
 // Contours administratifs FR — GeoJSON simplifié (~550 KB / ~80 KB gzip),

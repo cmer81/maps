@@ -18,7 +18,7 @@ import { convertValue, getDisplayUnit, unitPreferences } from '$lib/stores/units
 import { selectedDomain, variable as v } from '$lib/stores/variables';
 import { windOverlayEnabled } from '$lib/stores/vector';
 
-import { STATIONS_LAYER_ID, isSoundingDomain } from '$lib/constants';
+import { STATIONS_FADE_MIN_ZOOM, STATIONS_LAYER_ID, isSoundingDomain } from '$lib/constants';
 
 import { textWhite } from './helpers';
 import { rasterManager, vectorManager } from './layers';
@@ -244,9 +244,12 @@ export const addPopup = (): void => {
 	map.on('click', async (e: maplibregl.MapLayerMouseEvent) => {
 		if (!map || get(terraDrawActive)) return;
 
-		// Un clic sur un marqueur de station ouvre le popup station (stations-layer),
-		// pas le popup de valeur du modèle.
+		// Un clic sur un marqueur de station VISIBLE ouvre le popup station
+		// (stations-layer), pas le popup de valeur du modèle. En dessous du seuil
+		// de fondu, les cercles sont transparents mais restent hit-testés : on
+		// n'intercepte donc le clic que lorsque les stations sont réellement visibles.
 		if (
+			map.getZoom() >= STATIONS_FADE_MIN_ZOOM &&
 			map.getLayer(STATIONS_LAYER_ID) &&
 			map.queryRenderedFeatures(e.point, { layers: [STATIONS_LAYER_ID] }).length > 0
 		) {
