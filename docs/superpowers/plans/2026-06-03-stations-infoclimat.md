@@ -16,27 +16,28 @@
 
 ## File Structure
 
-| Fichier | Rôle | Statut |
-| --- | --- | --- |
-| `src/lib/stations.ts` | Helpers purs runtime : `slugify`, `buildStationUrl`, `formatLastReport`, `buildStationPopupHtml`, types | Créer |
-| `scripts/generate-stations.mjs` | Génération du snapshot : fetch + filtre actifs<30j + conversion GeoJSON. Helpers purs exportés. | Créer |
-| `static/infoclimat-stations.geojson` | Snapshot bundlé (généré, commité) | Créer (généré) |
-| `src/lib/stores/stations.ts` | Store persisté `showStations` (OFF par défaut) | Créer |
-| `src/lib/stations-layer.ts` | Source/layer MapLibre + popup au clic + curseur. Pattern `departments-layer.ts`. | Créer |
-| `src/lib/tests/stations.test.ts` | Tests des helpers purs runtime | Créer |
-| `src/lib/tests/generate-stations.test.ts` | Tests des helpers purs du générateur | Créer |
-| `src/lib/constants.ts` | Constantes : URLs, IDs source/layer, seuils de zoom | Modifier |
-| `src/lib/popup.ts` | Garde « clic sur station » dans le handler global | Modifier |
-| `src/lib/components/chrome/advanced-panel.svelte` | Toggle « Stations » | Modifier |
-| `src/lib/url.ts` | Sync URL ↔ store (param `stations`) | Modifier |
-| `src/routes/+page.svelte` | Câblage `ensureStationsLayer` / `refreshStations` + `$effect` | Modifier |
-| `.claude/rules/architecture.md` | Doc overlay + commande de régénération | Modifier |
+| Fichier                                           | Rôle                                                                                                    | Statut         |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | -------------- |
+| `src/lib/stations.ts`                             | Helpers purs runtime : `slugify`, `buildStationUrl`, `formatLastReport`, `buildStationPopupHtml`, types | Créer          |
+| `scripts/generate-stations.mjs`                   | Génération du snapshot : fetch + filtre actifs<30j + conversion GeoJSON. Helpers purs exportés.         | Créer          |
+| `static/infoclimat-stations.geojson`              | Snapshot bundlé (généré, commité)                                                                       | Créer (généré) |
+| `src/lib/stores/stations.ts`                      | Store persisté `showStations` (OFF par défaut)                                                          | Créer          |
+| `src/lib/stations-layer.ts`                       | Source/layer MapLibre + popup au clic + curseur. Pattern `departments-layer.ts`.                        | Créer          |
+| `src/lib/tests/stations.test.ts`                  | Tests des helpers purs runtime                                                                          | Créer          |
+| `src/lib/tests/generate-stations.test.ts`         | Tests des helpers purs du générateur                                                                    | Créer          |
+| `src/lib/constants.ts`                            | Constantes : URLs, IDs source/layer, seuils de zoom                                                     | Modifier       |
+| `src/lib/popup.ts`                                | Garde « clic sur station » dans le handler global                                                       | Modifier       |
+| `src/lib/components/chrome/advanced-panel.svelte` | Toggle « Stations »                                                                                     | Modifier       |
+| `src/lib/url.ts`                                  | Sync URL ↔ store (param `stations`)                                                                     | Modifier       |
+| `src/routes/+page.svelte`                         | Câblage `ensureStationsLayer` / `refreshStations` + `$effect`                                           | Modifier       |
+| `.claude/rules/architecture.md`                   | Doc overlay + commande de régénération                                                                  | Modifier       |
 
 ---
 
 ## Task 1 : Helpers purs runtime (`stations.ts`)
 
 **Files:**
+
 - Create: `src/lib/stations.ts`
 - Create: `src/lib/tests/stations.test.ts`
 - Modify: `src/lib/constants.ts`
@@ -64,12 +65,7 @@ Create `src/lib/tests/stations.test.ts` :
 ```ts
 import { describe, expect, it } from 'vitest';
 
-import {
-	buildStationPopupHtml,
-	buildStationUrl,
-	formatLastReport,
-	slugify
-} from '$lib/stations';
+import { buildStationPopupHtml, buildStationUrl, formatLastReport, slugify } from '$lib/stations';
 
 describe('slugify', () => {
 	it('met en minuscules, retire les accents, remplace les espaces', () => {
@@ -223,6 +219,7 @@ git commit -m "feat(stations): helpers purs (slug, url fiche, popup HTML) + cons
 ## Task 2 : Générateur de snapshot + GeoJSON bundlé
 
 **Files:**
+
 - Create: `scripts/generate-stations.mjs`
 - Create: `src/lib/tests/generate-stations.test.ts`
 - Create (généré): `static/infoclimat-stations.geojson`
@@ -286,8 +283,24 @@ describe('buildFeatureCollection', () => {
 	it('filtre les inactives et renvoie une FeatureCollection', () => {
 		const fc = buildFeatureCollection(
 			[
-				{ id: 'a', libelle: 'Active', departement: '01', latitude: 1, longitude: 2, altitude: 10, derniere_activite: '2026-06-01 00:00:00' },
-				{ id: 'b', libelle: 'Morte', departement: '02', latitude: 3, longitude: 4, altitude: 20, derniere_activite: '2007-09-02 09:10:00' }
+				{
+					id: 'a',
+					libelle: 'Active',
+					departement: '01',
+					latitude: 1,
+					longitude: 2,
+					altitude: 10,
+					derniere_activite: '2026-06-01 00:00:00'
+				},
+				{
+					id: 'b',
+					libelle: 'Morte',
+					departement: '02',
+					latitude: 3,
+					longitude: 4,
+					altitude: 20,
+					derniere_activite: '2007-09-02 09:10:00'
+				}
 			],
 			NOW
 		);
@@ -360,7 +373,12 @@ const main = async () => {
 	if (!res.ok) throw new Error(`Infoclimat HTTP ${res.status}`);
 	const rows = await res.json();
 	const fc = buildFeatureCollection(rows, new Date());
-	const out = join(dirname(fileURLToPath(import.meta.url)), '..', 'static', 'infoclimat-stations.geojson');
+	const out = join(
+		dirname(fileURLToPath(import.meta.url)),
+		'..',
+		'static',
+		'infoclimat-stations.geojson'
+	);
 	writeFileSync(out, JSON.stringify(fc));
 	console.log(`Écrit ${fc.features.length} stations actives → ${out}`);
 };
@@ -400,6 +418,7 @@ git commit -m "feat(stations): générateur de snapshot + GeoJSON bundlé"
 ## Task 3 : Store persisté `showStations`
 
 **Files:**
+
 - Create: `src/lib/stores/stations.ts`
 
 - [ ] **Step 1: Implémenter le store**
@@ -431,6 +450,7 @@ git commit -m "feat(stations): store persisté showStations (OFF par défaut)"
 ## Task 4 : Module de rendu `stations-layer.ts`
 
 **Files:**
+
 - Create: `src/lib/stations-layer.ts`
 
 > Note : pas de test unitaire ici — le rendu MapLibre (canvas) et les handlers d'évènement ne sont pas couverts par Vitest, cohérent avec `departments-layer.ts` (sans test). La logique pure (popup HTML, URL) est déjà testée en Task 1. Vérification manuelle en Task 8.
@@ -448,8 +468,8 @@ import { get } from 'svelte/store';
 
 import maplibregl from 'maplibre-gl';
 
-import { showStations } from '$lib/stores/stations';
 import { map as mStore } from '$lib/stores/map';
+import { showStations } from '$lib/stores/stations';
 
 import {
 	STATIONS_FADE_MAX_ZOOM,
@@ -458,7 +478,7 @@ import {
 	STATIONS_LAYER_ID,
 	STATIONS_SOURCE_ID
 } from './constants';
-import { buildStationPopupHtml, type StationProps } from './stations';
+import { type StationProps, buildStationPopupHtml } from './stations';
 
 type StationsFeatureCollection = GeoJSON.FeatureCollection<GeoJSON.Point>;
 
@@ -594,6 +614,7 @@ git commit -m "feat(stations): module de rendu MapLibre (circle + popup au clic)
 ## Task 5 : Garde « clic sur station » dans `popup.ts`
 
 **Files:**
+
 - Modify: `src/lib/popup.ts` (handler `map.on('click', …)` dans `addPopup`, ~ligne 244)
 
 - [ ] **Step 1: Ajouter l'import de la constante**
@@ -611,14 +632,14 @@ import { STATIONS_LAYER_ID } from './constants';
 Dans `src/lib/popup.ts`, au début du callback de `map.on('click', async (e) => { … })`, juste après la ligne `if (!map || get(terraDrawActive)) return;`, ajouter :
 
 ```ts
-		// Un clic sur un marqueur de station ouvre le popup station (stations-layer),
-		// pas le popup de valeur du modèle.
-		if (
-			map.getLayer(STATIONS_LAYER_ID) &&
-			map.queryRenderedFeatures(e.point, { layers: [STATIONS_LAYER_ID] }).length > 0
-		) {
-			return;
-		}
+// Un clic sur un marqueur de station ouvre le popup station (stations-layer),
+// pas le popup de valeur du modèle.
+if (
+	map.getLayer(STATIONS_LAYER_ID) &&
+	map.queryRenderedFeatures(e.point, { layers: [STATIONS_LAYER_ID] }).length > 0
+) {
+	return;
+}
 ```
 
 - [ ] **Step 3: Vérifier le typecheck**
@@ -638,6 +659,7 @@ git commit -m "fix(stations): le clic sur une station n'ouvre pas le popup de va
 ## Task 6 : Toggle UI + sync URL
 
 **Files:**
+
 - Modify: `src/lib/components/chrome/advanced-panel.svelte`
 - Modify: `src/lib/url.ts` (après le bloc `departments`, ~ligne 188)
 
@@ -646,12 +668,12 @@ git commit -m "fix(stations): le clic sur une station n'ouvre pas le popup de va
 Dans `src/lib/url.ts`, juste après le bloc `departments` (qui se termine ligne ~188), ajouter :
 
 ```ts
-	const stationsRaw = params.get('stations');
-	if (stationsRaw !== null) {
-		showStations.set(stationsRaw === 'true');
-	} else if (get(showStations) !== DEFAULT_SHOW_STATIONS) {
-		url.searchParams.set('stations', String(get(showStations)));
-	}
+const stationsRaw = params.get('stations');
+if (stationsRaw !== null) {
+	showStations.set(stationsRaw === 'true');
+} else if (get(showStations) !== DEFAULT_SHOW_STATIONS) {
+	url.searchParams.set('stations', String(get(showStations)));
+}
 ```
 
 Et ajouter l'import en tête de `url.ts` :
@@ -667,28 +689,28 @@ Dans `src/lib/components/chrome/advanced-panel.svelte` :
 a) Ajouter l'import (près de l'import `departments`) :
 
 ```ts
-	import { DEFAULT_SHOW_STATIONS, showStations } from '$lib/stores/stations';
+import { DEFAULT_SHOW_STATIONS, showStations } from '$lib/stores/stations';
 ```
 
 b) Après `const departmentsOn = $derived($showDepartments);`, ajouter :
 
 ```ts
-	const stationsOn = $derived($showStations);
+const stationsOn = $derived($showStations);
 ```
 
 c) Après la fonction `toggleDepartments`, ajouter :
 
 ```ts
-	function toggleStations(next: boolean) {
-		showStations.set(next);
-		updateUrl('stations', String(next), String(DEFAULT_SHOW_STATIONS));
-	}
+function toggleStations(next: boolean) {
+	showStations.set(next);
+	updateUrl('stations', String(next), String(DEFAULT_SHOW_STATIONS));
+}
 ```
 
 d) Dans le `{#snippet body()}`, sous la ligne `<LayerToggle label="Départements" … />`, ajouter :
 
 ```svelte
-		<LayerToggle label="Stations" checked={stationsOn} onCheckedChange={toggleStations} />
+<LayerToggle label="Stations" checked={stationsOn} onCheckedChange={toggleStations} />
 ```
 
 - [ ] **Step 3: Vérifier le typecheck**
@@ -708,6 +730,7 @@ git commit -m "feat(stations): toggle Stations dans les réglages + sync URL"
 ## Task 7 : Câblage dans `+page.svelte`
 
 **Files:**
+
 - Modify: `src/routes/+page.svelte` (imports ~ligne 48 ; init ~ligne 136-137 ; `$effect` ~ligne 205-207)
 
 - [ ] **Step 1: Ajouter les imports**
@@ -717,6 +740,7 @@ Dans `src/routes/+page.svelte`, près de l'import `departments-layer` (ligne ~48
 ```ts
 import { ensureStationsLayer, refreshStations } from '$lib/stations-layer';
 ```
+
 ```ts
 import { showStations } from '$lib/stores/stations';
 ```
@@ -726,15 +750,15 @@ import { showStations } from '$lib/stores/stations';
 Dans le bloc d'init de la carte, juste après les lignes :
 
 ```ts
-			ensureDepartmentsLayer();
-			refreshDepartments();
+ensureDepartmentsLayer();
+refreshDepartments();
 ```
 
 ajouter :
 
 ```ts
-			ensureStationsLayer();
-			refreshStations();
+ensureStationsLayer();
+refreshStations();
 ```
 
 - [ ] **Step 3: Ajouter le `$effect` réactif**
@@ -742,17 +766,17 @@ ajouter :
 Juste après le bloc :
 
 ```ts
-	$effect(() => {
-		refreshDepartments([$showDepartments]);
-	});
+$effect(() => {
+	refreshDepartments([$showDepartments]);
+});
 ```
 
 ajouter :
 
 ```ts
-	$effect(() => {
-		refreshStations([$showStations]);
-	});
+$effect(() => {
+	refreshStations([$showStations]);
+});
 ```
 
 - [ ] **Step 4: Vérifier le typecheck**
@@ -772,6 +796,7 @@ git commit -m "feat(stations): câblage du calque stations dans la page carte"
 ## Task 8 : Documentation + vérification finale
 
 **Files:**
+
 - Modify: `.claude/rules/architecture.md`
 
 - [ ] **Step 1: Documenter dans `architecture.md`**
@@ -798,6 +823,7 @@ Expected: aucune erreur. Si `prettier --check` échoue, lancer `npm run format` 
 
 Run: `npm run dev` puis ouvrir l'app.
 Vérifier :
+
 1. Réglages → toggle **« Stations »** présent, **OFF** par défaut, carte épurée à l'échelle France.
 2. Activer le toggle puis **zoomer** sur une région → les marqueurs (point slate + liseré blanc) **apparaissent en fondu** au-delà du zoom ~6–7.5, lisibles sur raster coloré clair ET en dark mode.
 3. **Cliquer** une station → popup nom · altitude · dép. · dernière donnée + lien « Voir sur Infoclimat ↗ » (ouvre la fiche dans un nouvel onglet). Le popup de valeur modèle **ne s'ouvre pas** en même temps.

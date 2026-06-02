@@ -13,14 +13,14 @@ observation — ce qui cadre exactement avec un calque de repérage opt-in.
 
 ## Décisions de cadrage (brainstorming)
 
-| Question | Décision |
-| --- | --- |
-| Interaction au clic | Popup métadonnées + lien vers la fiche Infoclimat |
-| Livraison de la donnée (contrainte CORS) | **Snapshot statique bundlé** (comme `departements.geojson`) |
-| Périmètre des stations | **Actives récentes uniquement** (`derniere_activite` < 30 j), tous pays |
-| Style de marqueur | **« C »** : cœur slate `#1e293b` + liseré blanc (contraste clair/sombre sans changer de teinte) |
-| Densité / zoom | **Apparition progressive** : masqué dézoomé, fondu à l'approche régionale |
-| Toggle par défaut | **OFF** (overlay dense → opt-in), contrairement aux départements (ON) |
+| Question                                 | Décision                                                                                        |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Interaction au clic                      | Popup métadonnées + lien vers la fiche Infoclimat                                               |
+| Livraison de la donnée (contrainte CORS) | **Snapshot statique bundlé** (comme `departements.geojson`)                                     |
+| Périmètre des stations                   | **Actives récentes uniquement** (`derniere_activite` < 30 j), tous pays                         |
+| Style de marqueur                        | **« C »** : cœur slate `#1e293b` + liseré blanc (contraste clair/sombre sans changer de teinte) |
+| Densité / zoom                           | **Apparition progressive** : masqué dézoomé, fondu à l'approche régionale                       |
+| Toggle par défaut                        | **OFF** (overlay dense → opt-in), contrairement aux départements (ON)                           |
 
 ### Contrainte CORS (justification du snapshot)
 
@@ -81,7 +81,7 @@ Suit le pattern de `src/lib/departments-layer.ts` :
 - `circle-stroke-color` : `#ffffff`.
 - `circle-stroke-width` : ~`1.5`.
 - `circle-radius` : interpolé sur le zoom, ex. `['interpolate', ['linear'],
-  ['zoom'], 6, 3, 10, 5]`.
+['zoom'], 6, 3, 10, 5]`.
 - **Apparition progressive** : `circle-opacity` et `circle-stroke-opacity`
   interpolés — `0` sous `z≈6`, fondu `z6→z7.5`, plein au-delà. Seuil ajustable
   via constante (`STATIONS_FADE_*`).
@@ -89,12 +89,16 @@ Suit le pattern de `src/lib/departments-layer.ts` :
 ### 3. État (store) + UI réglages
 
 - `src/lib/stores/stations.ts` :
+
   ```ts
   import { persisted } from 'svelte-persisted-store';
+
   export const DEFAULT_SHOW_STATIONS = false;
   export const showStations = persisted('show_stations', DEFAULT_SHOW_STATIONS);
   ```
+
   **OFF par défaut** (overlay dense → opt-in).
+
 - Toggle ajouté dans `src/lib/components/chrome/advanced-panel.svelte`, à côté du
   toggle « départements » (`showDepartments`), même présentation.
 
@@ -132,14 +136,14 @@ Suit le pattern de `src/lib/departments-layer.ts` :
 
 ## Découpage (unités à responsabilité unique)
 
-| Unité | Rôle | Dépend de |
-| --- | --- | --- |
-| `generate-stations.mjs` | Fetch + filtre + écriture GeoJSON | réseau (hors runtime app) |
-| `filterActiveStations` (pure) | Sélection actives < 30 j | — |
-| `slugify` + `buildStationUrl` (pure) | URL fiche Infoclimat | — |
-| `stations-layer.ts` | Source/layer MapLibre, fetch paresseux, popup | store `showStations`, `map` |
-| `stores/stations.ts` | État persisté du toggle | — |
-| `advanced-panel.svelte` | UI du toggle | store |
+| Unité                                | Rôle                                          | Dépend de                   |
+| ------------------------------------ | --------------------------------------------- | --------------------------- |
+| `generate-stations.mjs`              | Fetch + filtre + écriture GeoJSON             | réseau (hors runtime app)   |
+| `filterActiveStations` (pure)        | Sélection actives < 30 j                      | —                           |
+| `slugify` + `buildStationUrl` (pure) | URL fiche Infoclimat                          | —                           |
+| `stations-layer.ts`                  | Source/layer MapLibre, fetch paresseux, popup | store `showStations`, `map` |
+| `stores/stations.ts`                 | État persisté du toggle                       | —                           |
+| `advanced-panel.svelte`              | UI du toggle                                  | store                       |
 
 ## Tests (Vitest, `src/lib/tests/`)
 
@@ -153,6 +157,7 @@ Suit le pattern de `src/lib/departments-layer.ts` :
 ## Fichiers
 
 **Nouveaux**
+
 - `scripts/generate-stations.mjs`
 - `static/infoclimat-stations.geojson` (généré, commité)
 - `src/lib/stations-layer.ts`
@@ -160,6 +165,7 @@ Suit le pattern de `src/lib/departments-layer.ts` :
 - `src/lib/tests/stations.test.ts`
 
 **Modifiés**
+
 - `src/routes/+page.svelte` — câblage `ensure`/`refresh` + `$effect`
 - `src/lib/popup.ts` — garde « clic sur station » dans le handler global
 - `src/lib/components/chrome/advanced-panel.svelte` — toggle
