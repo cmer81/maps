@@ -4,13 +4,15 @@ import { get } from 'svelte/store';
 import {
 	GridFactory,
 	WeatherMapLayerFileReader,
+	domainOptions,
 	getRanges,
 	normalizeLon
 } from '@openmeteo/weather-map-layer';
 
 import { omProtocolSettings } from '$lib/stores/om-protocol-settings';
 
-import { soundingLevelsForDomain } from '$lib/constants';
+import { soundingLevelsForDomain, soundingSourceDomain } from '$lib/constants';
+import { buildSoundingOmUrl, getBaseUri } from '$lib/helpers';
 import { getOMUrlFor } from '$lib/url';
 
 import { time as timeStore } from '../stores/time';
@@ -141,20 +143,34 @@ async function doFetchColumn(
 	signal?: AbortSignal
 ): Promise<ColumnProfile> {
 	const settings = get(omProtocolSettings);
-	const domainName = get(domainStore);
-	const grid = get(selectedDomain).grid;
-	const validTime = get(timeStore).toISOString();
-	const levels = soundingLevelsForDomain(domainName);
+	const displayedDomain = get(domainStore);
+	const sourceDomain = soundingSourceDomain(displayedDomain);
+	const selectedTime = get(timeStore);
+	const validTime = selectedTime.toISOString();
+	const levels = soundingLevelsForDomain(displayedDomain);
 
-	// URL `.om` de base : on dérive de getOMUrlFor (qui sait construire le chemin
-	// run/temps courant) en retirant la query `?variable=...`. C'est ce que
-	// setToOmFile attend (le baseUrl sans paramètre de variable — cf. prefetch.ts
-	// qui passe juste `<...>.om`).
-	const sampleUrl = getOMUrlFor('temperature_1000hPa');
-	if (!sampleUrl) {
-		throw new Error('fetchColumn: URL .om indisponible (run inconnu ?)');
+	// Domaine affiché vs domaine source du sondage : sur `arome_france` (surface,
+	// bucket maison) la carte montre un champ surface mais la colonne verticale est
+	// lue sur l'AROME 0025 d'Open-Meteo (même grille 1121×717 @ 0,025°, niveaux
+	// iso-pression). Quand la source diffère, on résout SON run (latest.json) et on
+	// lit SA grille — le store `modelRun` ne porte que le run du domaine affiché.
+	let omUrl: string;
+	let grid;
+	if (sourceDomain === displayedDomain) {
+		// Domaine = sa propre source : on dérive de getOMUrlFor (chemin run/temps
+		// courant) en retirant la query `?variable=...` — ce que setToOmFile attend
+		// (baseUrl nu, cf. prefetch.ts).
+		const sampleUrl = getOMUrlFor('temperature_1000hPa');
+		if (!sampleUrl) {
+			throw new Error('fetchColumn: URL .om indisponible (run inconnu ?)');
+		}
+		omUrl = sampleUrl.split('?')[0];
+		grid = get(selectedDomain).grid;
+	} else {
+		const sourceRun = await fetchSoundingSourceRun(sourceDomain);
+		omUrl = buildSoundingOmUrl(sourceDomain, sourceRun, selectedTime);
+		grid = soundingSourceGrid(sourceDomain) ?? get(selectedDomain).grid;
 	}
-	const omUrl = sampleUrl.split('?')[0];
 
 	// Reader unique réutilisé (partage le cache de blocs ; pas de `dispose` entre
 	// appels pour ne pas casser une lecture concurrente sérialisée juste après).
@@ -226,6 +242,29 @@ async function doFetchColumn(
 		surface,
 		read: boundedRead
 	});
+}
+
+/**
+ * Run le plus récent du domaine source du sondage, lu depuis son `latest.json`.
+ * Nécessaire quand la source diffère du domaine affiché : le store `modelRun` ne
+ * porte que le run de l'affiché, et la source (ex. AROME 0025 OM) a sa propre
+ * cadence de publication — réutiliser le run de l'affiché produirait un 404.
+ */
+async function fetchSoundingSourceRun(domain: string): Promise<Date> {
+	const res = await fetch(`${getBaseUri(domain)}/data_spatial/${domain}/latest.json`);
+	if (!res.ok) {
+		throw new Error(`fetchColumn: latest.json indisponible pour ${domain} (HTTP ${res.status})`);
+	}
+	const meta = (await res.json()) as { reference_time?: string };
+	if (!meta.reference_time) {
+		throw new Error(`fetchColumn: reference_time absent du latest.json de ${domain}`);
+	}
+	return new Date(meta.reference_time);
+}
+
+/** Grille du domaine source (identique à l'affiché pour arome_france ↔ 0025). */
+function soundingSourceGrid(domain: string) {
+	return domainOptions.find((d) => d.value === domain)?.grid;
 }
 
 /** Limiteur de concurrence minimal (file d'attente FIFO). */

@@ -26,6 +26,16 @@ export const fmtModelRun = (modelRun: Date): string =>
 export const fmtSelectedTime = (t: Date): string =>
 	`${t.getUTCFullYear()}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())}T${pad(t.getUTCHours())}${pad(t.getUTCMinutes())}`;
 
+/**
+ * URL `.om` path-style (sans query) pour une lecture de sondage : domaine + run +
+ * temps valide arbitraires, indépendamment des stores globaux. Permet de lire la
+ * colonne verticale sur un domaine source distinct du domaine affiché (cf.
+ * `soundingSourceDomain`). Le `omProtocol` strip la query-string — on n'en ajoute
+ * donc pas ici (le reader attend la base nue, comme prefetch.ts).
+ */
+export const buildSoundingOmUrl = (domain: string, modelRun: Date, validTime: Date): string =>
+	`${getBaseUri(domain)}/data_spatial/${domain}/${fmtModelRun(modelRun)}/${fmtSelectedTime(validTime)}.om`;
+
 export const getBaseUri = (domainValue: string): string => {
 	if (BUCKET_DOMAINS.has(domainValue)) {
 		return getModelsBucketUrl().replace(/\/$/, '');

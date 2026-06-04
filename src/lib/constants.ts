@@ -133,15 +133,30 @@ export const SOUNDING_LEVELS_BY_DOMAIN: Readonly<Record<string, readonly number[
 	meteofrance_arome_france0025: SOUNDING_PRESSURE_LEVELS_HPA
 };
 
-export const soundingLevelsForDomain = (domain: string): readonly number[] =>
-	SOUNDING_LEVELS_BY_DOMAIN[domain] ?? SOUNDING_PRESSURE_LEVELS_HPA;
+// Certains domaines affichés ne diffusent pas eux-mêmes les niveaux de pression
+// nécessaires au sondage : la carte montre un champ surface, mais la colonne
+// verticale est lue depuis un AUTRE domaine sur la MÊME grille. C'est le cas du
+// pseudo-domaine surface `arome_france` (bucket maison Infoclimat, 12 variables
+// surface uniquement) → le sondage lit l'AROME 0,025° d'Open-Meteo, qui partage
+// exactement la grille (1121×717 @ 0,025°) et publie les 24 niveaux iso-pression.
+// Non listé = le domaine est sa propre source (lecture sur place).
+export const SOUNDING_SOURCE_BY_DOMAIN: Readonly<Record<string, string>> = {
+	arome_france: 'meteofrance_arome_france0025'
+};
 
-// Un domaine ne supporte le sondage vertical que s'il diffuse des niveaux de
-// pression — c.-à-d. s'il est explicitement listé dans SOUNDING_LEVELS_BY_DOMAIN
-// (actuellement AROME 0,025° ; la Réunion s'ajoutera ici). Sert à n'afficher le
-// bouton « Sondage vertical » que sur ces modèles.
+// Domaine effectif où lire la colonne de sondage pour un domaine affiché.
+export const soundingSourceDomain = (domain: string): string =>
+	SOUNDING_SOURCE_BY_DOMAIN[domain] ?? domain;
+
+export const soundingLevelsForDomain = (domain: string): readonly number[] =>
+	SOUNDING_LEVELS_BY_DOMAIN[soundingSourceDomain(domain)] ?? SOUNDING_PRESSURE_LEVELS_HPA;
+
+// Un domaine supporte le sondage vertical si sa SOURCE diffuse des niveaux de
+// pression — c.-à-d. si le domaine source est listé dans SOUNDING_LEVELS_BY_DOMAIN
+// (AROME 0,025° directement, ou `arome_france` via sa redirection vers l'OM 0025).
+// Sert à n'afficher le bouton « Sondage vertical » que sur ces modèles.
 export const isSoundingDomain = (domain: string): boolean =>
-	Object.prototype.hasOwnProperty.call(SOUNDING_LEVELS_BY_DOMAIN, domain);
+	Object.prototype.hasOwnProperty.call(SOUNDING_LEVELS_BY_DOMAIN, soundingSourceDomain(domain));
 
 // Préset Infoclimat : sous-ensemble de modèles exposés dans le sélecteur de
 // domaine. Le reste de l'app (résolution d'URLs partagées, métadonnées) reste
@@ -162,11 +177,17 @@ export const DOMAIN_ALLOWLIST: readonly string[] = [
 	// AROME France surface (pseudo-domaine, visible seulement si le bucket est configuré)
 	'arome_france',
 
-	// Cœur français — AROME France servi par le modèle infoclimat maison
-	// (`arome_france` + `arome_france_convection`), donc l'AROME d'Open-Meteo
-	// (HD 1,5 km + 0025 2,5 km) est débranché du sélecteur. Les URLs partagées
-	// ciblant ces domaines OM résolvent toujours (l'allowlist ne filtre que
-	// l'affichage du sélecteur, pas le routing).
+	// AROME France HD (1,5 km, Open-Meteo) — conservé dans le sélecteur à la
+	// demande d'utilisateurs qui l'apprécient. Surface uniquement côté OM (pas de
+	// niveaux iso-pression → aucun bouton « Sondage vertical », cf.
+	// `SOUNDING_LEVELS_BY_DOMAIN`).
+	'meteofrance_arome_france_hd',
+
+	// Cœur français — l'AROME France maison (`arome_france` + `arome_france_convection`)
+	// couvre le 2,5 km, donc l'AROME 0025 d'Open-Meteo reste débranché du sélecteur
+	// (il sert encore de source au sondage vertical de `arome_france`, cf.
+	// `SOUNDING_SOURCE_BY_DOMAIN`). Les URLs partagées ciblant les domaines OM non
+	// listés résolvent toujours (l'allowlist ne filtre que l'affichage, pas le routing).
 	'meteofrance_arpege_europe',
 
 	// Référence globale + Europe
