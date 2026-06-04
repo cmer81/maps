@@ -37,7 +37,9 @@ Le player d'animation pré-rendu a été retiré (à reconstruire dans un module
 - `src/lib/playback-renderer.ts` ne contient plus que `waitForIdle(map, timeoutMs, signal?)`, utilisé par `capture-flow.svelte` pour attendre la mise au repos de la carte avant la capture PNG du canvas (`preserveDrawingBuffer` reste activé sur la map — voir `+page.svelte`).
 - `src/lib/slot-events.ts` continue d'émettre `commit`/`error` depuis le slot manager (`layers.ts`), mais plus aucun consommateur n'écoute ce bus — émission inoffensive, conservée pour le futur module d'animation.
 
-Supprimés : `src/lib/stores/playback.ts`, `src/lib/prefetch.ts`, les composants `playback-panel.svelte` / `prefetch-button.svelte`, et les exports `PlaybackOverlay` / `MapInteractionLock` / `captureFrame` / `decodeFrames` / `computeFrameIntervalMs` / `estimatePrerenderMs` / `isFailureRateExceeded` / `waitForCommit` de `playback-renderer.ts`.
+Supprimés : `src/lib/stores/playback.ts`, le composant `playback-panel.svelte`, et les exports `PlaybackOverlay` / `MapInteractionLock` / `captureFrame` / `decodeFrames` / `computeFrameIntervalMs` / `estimatePrerenderMs` / `isFailureRateExceeded` / `waitForCommit` de `playback-renderer.ts`.
+
+**Préchargement (prefetch) — réintroduit seul.** `src/lib/prefetch.ts` + `src/lib/components/time/prefetch-button.svelte` ont été restaurés (sans le player d'animation). Le bouton vit dans la barre de run (`time-selector.svelte`, dans le `<div>` `-top-4.5` à côté du sélecteur de run) : un `Select` de mode (Aujourd'hui / 24 h suivantes / 24 h précédentes / Run complet) + un bouton télécharger qui appelle `prefetchData()`. `getDateRangeForMode()` traduit le mode en plage `[startDate, endDate]`, `prefetchData()` filtre les `valid_times` du `metaJson` dans cette plage et précharge chaque pas via `omFileReader.prefetchVariable()` (8 workers concurrents, annulable via `AbortController`). Sans `metaJson`/`modelRun` chargés, un toast d'avertissement s'affiche.
 
 ## Domain allowlist (Infoclimat preset)
 
