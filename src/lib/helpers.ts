@@ -3,6 +3,7 @@ import { browser, dev } from '$app/environment';
 import {
 	ANOMALY_DOMAIN,
 	AROME_FRANCE_CONVECTION_DOMAIN,
+	AROME_FRANCE_DOMAIN,
 	AROME_OM_REUNION_DOMAIN
 } from '$lib/constants';
 import { getModelsBucketUrl } from '$lib/runtime-env';
@@ -10,7 +11,8 @@ import { getModelsBucketUrl } from '$lib/runtime-env';
 const BUCKET_DOMAINS: ReadonlySet<string> = new Set([
 	ANOMALY_DOMAIN,
 	AROME_OM_REUNION_DOMAIN,
-	AROME_FRANCE_CONVECTION_DOMAIN
+	AROME_FRANCE_CONVECTION_DOMAIN,
+	AROME_FRANCE_DOMAIN
 ]);
 
 /**

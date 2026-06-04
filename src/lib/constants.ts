@@ -16,6 +16,12 @@ export const AROME_OM_REUNION_DOMAIN = 'arome_om_reunion';
  *  `arome_france` général d'Open-Meteo (le suffixe `_convection` lève la collision). */
 export const AROME_FRANCE_CONVECTION_DOMAIN = 'arome_france_convection';
 
+/** Pseudo-domaine AROME France métropole **surface** (12 variables standard
+ *  Open-Meteo), servi depuis le bucket maison par le pipeline `arome-france-forecast`.
+ *  Distinct de `arome_france_convection` (orienté convection/orage) et des AROME
+ *  d'Open-Meteo (`meteofrance_arome_france*`). */
+export const AROME_FRANCE_DOMAIN = 'arome_france';
+
 /** Vue de carte recommandée par domaine — appliquée via `flyTo` quand l'utilisateur
  *  bascule manuellement sur le domaine. Utile pour les pseudo-domaines régionaux
  *  dont le centre de grille tombe sur une zone océan/peu lisible.
