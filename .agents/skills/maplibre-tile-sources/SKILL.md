@@ -46,14 +46,14 @@ For many use cases you don't need a tile service. MapLibre can render points, li
 
 ```javascript
 map.addSource('my-data', {
-  type: 'geojson',
-  data: '/path/to/data.geojson' // or an inline GeoJSON object
+	type: 'geojson',
+	data: '/path/to/data.geojson' // or an inline GeoJSON object
 });
 map.addLayer({
-  id: 'my-layer',
-  type: 'fill',
-  source: 'my-data',
-  paint: { 'fill-color': '#0080ff', 'fill-opacity': 0.5 }
+	id: 'my-layer',
+	type: 'fill',
+	source: 'my-data',
+	paint: { 'fill-color': '#0080ff', 'fill-opacity': 0.5 }
 });
 ```
 
@@ -118,14 +118,14 @@ Sources can be composited in a custom style sheet or at run-time. Be aware that 
 ```javascript
 // Start with any basemap style URL, then add your own data below labels
 map.on('load', () => {
-  // Find the first symbol (label) layer to insert below
-  const firstSymbolId = map.getStyle().layers.find((l) => l.type === 'symbol')?.id;
+	// Find the first symbol (label) layer to insert below
+	const firstSymbolId = map.getStyle().layers.find((l) => l.type === 'symbol')?.id;
 
-  map.addSource('my-data', { type: 'geojson', data: '/path/to/data.geojson' });
-  map.addLayer(
-    { id: 'my-layer', type: 'circle', source: 'my-data' },
-    firstSymbolId // insert before labels; omit to append above everything
-  );
+	map.addSource('my-data', { type: 'geojson', data: '/path/to/data.geojson' });
+	map.addLayer(
+		{ id: 'my-layer', type: 'circle', source: 'my-data' },
+		firstSymbolId // insert before labels; omit to append above everything
+	);
 });
 ```
 
@@ -239,10 +239,10 @@ When no TileJSON endpoint exists — for example, a raw raster tile service that
 
 ```json
 {
-  "type": "vector",
-  "tiles": ["https://example.com/tiles/{z}/{x}/{y}.pbf"],
-  "minzoom": 0,
-  "maxzoom": 14
+	"type": "vector",
+	"tiles": ["https://example.com/tiles/{z}/{x}/{y}.pbf"],
+	"minzoom": 0,
+	"maxzoom": 14
 }
 ```
 
@@ -250,8 +250,8 @@ When no TileJSON endpoint exists — for example, a raw raster tile service that
 
 ```json
 {
-  "type": "vector",
-  "url": "https://example.com/tiles.json"
+	"type": "vector",
+	"url": "https://example.com/tiles.json"
 }
 ```
 

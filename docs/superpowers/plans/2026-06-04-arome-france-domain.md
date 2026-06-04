@@ -28,6 +28,7 @@
 ## Task 1 : Routing bucket + constante de domaine
 
 **Files:**
+
 - Modify: `src/lib/constants.ts`
 - Modify: `src/lib/helpers.ts`
 - Test: `src/lib/tests/get-base-uri.test.ts`
@@ -143,6 +144,7 @@ git commit -m "feat(arome_france): route le domaine arome_france vers le bucket 
 ## Task 2 : Module de domaine + groupe partagé
 
 **Files:**
+
 - Create: `src/lib/arome-france-domain.ts`
 - Test: `src/lib/tests/arome-france-domain.test.ts`
 
@@ -290,6 +292,7 @@ git commit -m "feat(arome_france): module d'enregistrement du domaine + groupe p
 ## Task 3 : Convection rejoint le groupe partagé
 
 **Files:**
+
 - Modify: `src/lib/arome-france-convection-domain.ts`
 - Test: `src/lib/tests/arome-france-convection-domain.test.ts`
 
@@ -434,6 +437,7 @@ git commit -m "refactor(arome_france): convection rejoint le groupe partagé ARO
 ## Task 4 : Câblage + constantes d'affichage
 
 **Files:**
+
 - Modify: `src/lib/stores/variables.ts`
 - Modify: `src/lib/constants.ts`
 
@@ -542,6 +546,7 @@ Run: `npm run dev`
 - [ ] **Step 3 : Vérifier dans l'app**
 
 Ouvrir l'app, ouvrir le sélecteur de modèle :
+
 - « AROME France (Infoclimat) » apparaît comme groupe unique, contenant **AROME France** et **AROME Convection France** (chacun une seule fois, pas de doublon).
 - Sélectionner **AROME France** : la carte rend `temperature_2m` ; les variables `relative_humidity_2m`, `dew_point_2m`, `wind_u_component_10m` (rendu vitesse + flèches), `wind_gusts_10m`, `pressure_msl`, `cloud_cover_low/mid/high`, `precipitation`, `precipitation_sum` sont sélectionnables ; `wind_v_component_10m` est absent du sélecteur.
 - Vérifier dans l'onglet réseau que les requêtes `.om` ciblent `{BASE}/data_spatial/arome_france/{YYYY}/{MM}/{DD}/{HHMM}Z/{valid_time}.om` (format temps `%Y-%m-%dT%H%M`, sans `Z` ni secondes).

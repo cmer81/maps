@@ -1,23 +1,23 @@
 {
-  "version": 1,
-  "skills": {
-    "maplibre-pmtiles-patterns": {
-      "source": "maplibre/maplibre-agent-skills",
-      "sourceType": "github",
-      "skillPath": "skills/maplibre-pmtiles-patterns/SKILL.md",
-      "computedHash": "75d810713b862308b7552fe62897128532fd01a47a1f8f88e75921597593932b"
-    },
-    "maplibre-tile-sources": {
-      "source": "maplibre/maplibre-agent-skills",
-      "sourceType": "github",
-      "skillPath": "skills/maplibre-tile-sources/SKILL.md",
-      "computedHash": "3a54ecb94144f640b88f35a2b3d03e17090d4d07f4dc87a5cc26221885f39d31"
-    },
-    "svelte-code-writer": {
-      "source": "sveltejs/ai-tools",
-      "sourceType": "github",
-      "skillPath": "plugins/claude/svelte/skills/svelte-code-writer/SKILL.md",
-      "computedHash": "c0e2cce9855f8e312cbb0a05aef164b4659c672d7723e4e598ffa6bc94890542"
-    }
-  }
+	"version": 1,
+	"skills": {
+		"maplibre-pmtiles-patterns": {
+			"source": "maplibre/maplibre-agent-skills",
+			"sourceType": "github",
+			"skillPath": "skills/maplibre-pmtiles-patterns/SKILL.md",
+			"computedHash": "75d810713b862308b7552fe62897128532fd01a47a1f8f88e75921597593932b"
+		},
+		"maplibre-tile-sources": {
+			"source": "maplibre/maplibre-agent-skills",
+			"sourceType": "github",
+			"skillPath": "skills/maplibre-tile-sources/SKILL.md",
+			"computedHash": "3a54ecb94144f640b88f35a2b3d03e17090d4d07f4dc87a5cc26221885f39d31"
+		},
+		"svelte-code-writer": {
+			"source": "sveltejs/ai-tools",
+			"sourceType": "github",
+			"skillPath": "plugins/claude/svelte/skills/svelte-code-writer/SKILL.md",
+			"computedHash": "c0e2cce9855f8e312cbb0a05aef164b4659c672d7723e4e598ffa6bc94890542"
+		}
+	}
 }

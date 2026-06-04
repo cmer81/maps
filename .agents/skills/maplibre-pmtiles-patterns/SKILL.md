@@ -48,42 +48,42 @@ npm install pmtiles
 **Register the protocol and use in a style:**
 
 ```javascript
-import * as pmtiles from 'pmtiles';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import * as pmtiles from 'pmtiles';
 
 // Add PMTiles protocol so sources can reference .pmtiles URLs
 const protocol = new pmtiles.Protocol();
 maplibregl.addProtocol('pmtiles', protocol.tile);
 
 const map = new maplibregl.Map({
-  container: 'map',
-  style: {
-    version: 8,
-    sources: {
-      tiles: {
-        type: 'vector',
-        url: 'pmtiles://https://example.com/data.pmtiles'
-      }
-    },
-    layers: [
-      {
-        id: 'background',
-        type: 'background',
-        paint: { 'background-color': '#f8f4f0' }
-      },
-      {
-        id: 'water',
-        type: 'fill',
-        source: 'tiles',
-        'source-layer': 'water',
-        paint: { 'fill-color': '#a0c8f0' }
-      }
-      // add more layers as needed — each uses the same source, different 'source-layer'
-    ]
-  },
-  center: [0, 0],
-  zoom: 2
+	container: 'map',
+	style: {
+		version: 8,
+		sources: {
+			tiles: {
+				type: 'vector',
+				url: 'pmtiles://https://example.com/data.pmtiles'
+			}
+		},
+		layers: [
+			{
+				id: 'background',
+				type: 'background',
+				paint: { 'background-color': '#f8f4f0' }
+			},
+			{
+				id: 'water',
+				type: 'fill',
+				source: 'tiles',
+				'source-layer': 'water',
+				paint: { 'fill-color': '#a0c8f0' }
+			}
+			// add more layers as needed — each uses the same source, different 'source-layer'
+		]
+	},
+	center: [0, 0],
+	zoom: 2
 });
 
 // Optional: remove protocol on map teardown

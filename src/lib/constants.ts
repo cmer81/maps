@@ -1,5 +1,5 @@
 // Domain and variable defaults
-export const DEFAULT_DOMAIN = 'meteofrance_arome_france0025';
+export const DEFAULT_DOMAIN = 'arome_france';
 export const DEFAULT_VARIABLE = 'temperature_2m';
 
 /** Pseudo-domaine des anomalies de température (servi depuis le bucket R2). */
@@ -162,9 +162,11 @@ export const DOMAIN_ALLOWLIST: readonly string[] = [
 	// AROME France surface (pseudo-domaine, visible seulement si le bucket est configuré)
 	'arome_france',
 
-	// Cœur français
-	'meteofrance_arome_france_hd',
-	'meteofrance_arome_france0025',
+	// Cœur français — AROME France servi par le modèle infoclimat maison
+	// (`arome_france` + `arome_france_convection`), donc l'AROME d'Open-Meteo
+	// (HD 1,5 km + 0025 2,5 km) est débranché du sélecteur. Les URLs partagées
+	// ciblant ces domaines OM résolvent toujours (l'allowlist ne filtre que
+	// l'affichage du sélecteur, pas le routing).
 	'meteofrance_arpege_europe',
 
 	// Référence globale + Europe

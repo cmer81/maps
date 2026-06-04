@@ -1,10 +1,11 @@
-import type { Domain } from '@openmeteo/weather-map-layer';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { modelRun as mR, time } from '$lib/stores/time';
 import { domain as d, variable as v } from '$lib/stores/variables';
 
 import { getNextOmUrls, getOMUrl, getOMUrlFor } from '$lib/url';
+
+import type { Domain } from '@openmeteo/weather-map-layer';
 
 describe('getOMUrlFor', () => {
 	beforeEach(() => {
