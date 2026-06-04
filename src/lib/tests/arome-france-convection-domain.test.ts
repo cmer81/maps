@@ -1,6 +1,9 @@
 import { domainGroups, domainOptions } from '@openmeteo/weather-map-layer';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { AROME_FRANCE_GROUP } from '$lib/arome-france-domain';
+import { AROME_FRANCE_CONVECTION_DOMAIN } from '$lib/constants';
+
 describe('registerAromeFranceConvectionDomain', () => {
 	beforeEach(() => {
 		const idx = domainOptions.findIndex((d) => d.value === 'arome_france_convection');
@@ -21,7 +24,9 @@ describe('registerAromeFranceConvectionDomain', () => {
 		expect(domainGroups.filter((g) => g.value === 'arome_france').length).toBe(1);
 		// Plus de groupe propre `arome_france_convection` (évite le doublon dans le menu).
 		expect(domainGroups.find((g) => g.value === 'arome_france_convection')).toBeUndefined();
-		expect('arome_france_convection'.startsWith('arome_france')).toBe(true);
+		// Invariant de groupement du sélecteur : la convection doit commencer par la
+		// valeur du groupe partagé (sinon elle n'apparaîtrait pas sous ce groupe).
+		expect(AROME_FRANCE_CONVECTION_DOMAIN.startsWith(AROME_FRANCE_GROUP.value)).toBe(true);
 	});
 
 	it('pousse arome_france_convection avec la grille producteur', async () => {
