@@ -7,7 +7,10 @@ import { getModelsBucketUrl } from '$lib/runtime-env';
  *  sélecteur range un domaine sous un groupe si `domain.value.startsWith(group.value)`
  *  — ce groupe capture donc `arome_france` ET `arome_france_convection`, mais aucun
  *  domaine d'Open-Meteo (préfixés `meteofrance`). */
-export const AROME_FRANCE_GROUP = { value: 'arome_france', label: 'AROME France (Infoclimat)' };
+export const AROME_FRANCE_GROUP: { value: string; label: string } = {
+	value: 'arome_france',
+	label: 'AROME France (Infoclimat)'
+};
 
 /** Garantit (idempotent) la présence du groupe partagé dans `domainGroups`.
  *  Appelé par les modules `arome_france` et `arome_france_convection`. */

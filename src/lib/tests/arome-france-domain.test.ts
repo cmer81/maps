@@ -16,7 +16,9 @@ describe('registerAromeFranceDomain', () => {
 		const { registerAromeFranceDomain } = await import('$lib/arome-france-domain');
 		registerAromeFranceDomain();
 		expect(domainGroups.filter((g) => g.value === 'arome_france').length).toBe(1);
-		expect('arome_france'.startsWith('arome_france')).toBe(true);
+		expect(domainGroups.find((g) => g.value === 'arome_france')?.label).toBe(
+			'AROME France (Infoclimat)'
+		);
 	});
 
 	it('pousse arome_france avec la grille producteur', async () => {
