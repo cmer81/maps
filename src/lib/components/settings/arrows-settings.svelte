@@ -1,4 +1,5 @@
 <script lang="ts">
+	import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
 	import { toast } from 'svelte-sonner';
 
 	import { metaJson } from '$lib/stores/time';
@@ -20,8 +21,6 @@
 		parseRgbaOpacity,
 		rgbaStringToHex
 	} from '$lib/vector-styles';
-
-	import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
 
 	// Niveau du vent dessiné par les flèches :
 	//  - DISPLAYED → suit la variable affichée (overlay off, comportement historique)
@@ -86,14 +85,13 @@
 		changeOMfileURL();
 	}
 
-	let editing: { index: number; field: 'lightColor' | 'darkColor'; rect: DOMRect } | null =
-		$state(null);
+	let editing: { index: number; rect: DOMRect } | null = $state(null);
 
-	function setColor(index: number, field: 'lightColor' | 'darkColor', hex: string, alpha: number) {
+	function setColor(index: number, hex: string, alpha: number) {
 		arrowStyle.update((s) => ({
 			...s,
 			levels: s.levels.map((l, i) =>
-				i === index ? { ...l, [field]: hexToRgbaString(hex, alpha) } : l
+				i === index ? { ...l, darkColor: hexToRgbaString(hex, alpha) } : l
 			)
 		}));
 		reloadVectorStyle();
@@ -168,48 +166,20 @@
 					<div class="relative">
 						<button
 							type="button"
-							aria-label={`Couleur (clair) ${level.label}`}
-							class="size-5 cursor-pointer rounded border border-white/20"
-							style="background: {level.lightColor};"
-							onclick={(e) =>
-								(editing = {
-									index: i,
-									field: 'lightColor',
-									rect: e.currentTarget.getBoundingClientRect()
-								})}
-						></button>
-						{#if editing?.index === i && editing.field === 'lightColor'}
-							<ColorPicker
-								color={rgbaStringToHex(level.lightColor)}
-								alpha={parseRgbaOpacity(level.lightColor)}
-								onchange={(hex, alpha) => setColor(i, 'lightColor', hex, alpha)}
-								onclose={() => (editing = null)}
-								portalToBody
-								anchorRect={editing.rect}
-							/>
-						{/if}
-					</div>
-					<div class="relative">
-						<button
-							type="button"
-							aria-label={`Couleur (sombre) ${level.label}`}
+							aria-label={`Couleur ${level.label}`}
 							class="size-5 cursor-pointer rounded border border-white/20"
 							style="background: {level.darkColor};"
 							onclick={(e) =>
-								(editing = {
-									index: i,
-									field: 'darkColor',
-									rect: e.currentTarget.getBoundingClientRect()
-								})}
+								(editing = { index: i, rect: e.currentTarget.getBoundingClientRect() })}
 						></button>
-						{#if editing?.index === i && editing.field === 'darkColor'}
+						{#if editing?.index === i}
 							<ColorPicker
-								color={rgbaStringToHex(level.darkColor)}
-								alpha={parseRgbaOpacity(level.darkColor)}
-								onchange={(hex, alpha) => setColor(i, 'darkColor', hex, alpha)}
-								onclose={() => (editing = null)}
 								portalToBody
 								anchorRect={editing.rect}
+								color={rgbaStringToHex(level.darkColor)}
+								alpha={parseRgbaOpacity(level.darkColor)}
+								onchange={(hex, alpha) => setColor(i, hex, alpha)}
+								onclose={() => (editing = null)}
 							/>
 						{/if}
 					</div>
