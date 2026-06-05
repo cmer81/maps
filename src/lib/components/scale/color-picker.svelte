@@ -14,9 +14,11 @@
 		onchange: (color: string, alpha: number) => void;
 		onclose: () => void;
 		alpha?: number;
+		portalToBody?: boolean;
+		anchorRect?: DOMRect;
 	}
 
-	let { color, onchange, onclose, alpha = 1 }: Props = $props();
+	let { color, onchange, onclose, alpha = 1, portalToBody = false, anchorRect }: Props = $props();
 
 	let hue = $state(0);
 	let saturation = $state(100);
@@ -129,6 +131,43 @@
 		onclose();
 	};
 
+	// Portal action — attache le nœud directement sur <body> pour échapper
+	// aux contextes overflow:hidden du drawer. Passe `enabled` comme paramètre
+	// pour pouvoir toujours appliquer use:portal sans branchement dans le template.
+	function portal(node: HTMLElement, enabled: boolean) {
+		if (!enabled) return {};
+		document.body.appendChild(node);
+		return {
+			destroy() {
+				node.parentNode?.removeChild(node);
+			}
+		};
+	}
+
+	// Référence sur le panneau pour calculer la position fixed.
+	let panelEl: HTMLDivElement | undefined = $state();
+
+	// En mode portal, on positionne le panneau en fixed par rapport à l'ancre.
+	// Le panneau s'ouvre à GAUCHE de l'ancre (vers la carte, sans risque de clip).
+	$effect(() => {
+		if (!portalToBody || !anchorRect || !panelEl) return;
+		const panelW = panelEl.offsetWidth || 240;
+		const panelH = panelEl.offsetHeight || 400;
+		const margin = 8;
+
+		// Aligner les bords bas : top = anchorRect.bottom - panelH
+		let top = anchorRect.bottom - panelH;
+		// Ouvrir à gauche de l'ancre
+		let left = anchorRect.left - panelW - margin;
+
+		// Clamp pour rester dans la fenêtre
+		top = Math.max(margin, Math.min(top, window.innerHeight - panelH - margin));
+		left = Math.max(margin, Math.min(left, window.innerWidth - panelW - margin));
+
+		panelEl.style.top = `${top}px`;
+		panelEl.style.left = `${left}px`;
+	});
+
 	const handleClickOutside = (e: MouseEvent) => {
 		const target = e.target as HTMLElement;
 		if (!target.closest('.color-picker-content')) {
@@ -147,7 +186,11 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-	class="color-picker-content absolute left-full bottom-0 ml-2 bg-glass backdrop-blur-sm border border-border rounded-lg shadow-xl p-3 w-60"
+	bind:this={panelEl}
+	use:portal={portalToBody}
+	class="color-picker-content bg-glass backdrop-blur-sm border border-border rounded-lg shadow-xl p-3 w-60 {portalToBody
+		? 'fixed z-[200]'
+		: 'absolute left-full bottom-0 ml-2'}"
 	onclick={(e) => e.stopPropagation()}
 	onkeydown={(e) => e.key === 'Escape' && onclose()}
 >

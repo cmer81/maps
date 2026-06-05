@@ -54,6 +54,14 @@ export interface SlotManagerOptions {
 	clearOnError?: boolean;
 	slowLoadWarningMs?: number;
 	onSlowLoad?: () => void;
+	/**
+	 * Si `true`, le manager ne committe PAS automatiquement quand les tuiles sont
+	 * chargées : il appelle `onReady()` et attend un `commitNow()` explicite. Sert
+	 * à synchroniser le fade-in de plusieurs managers (cf. layers.ts).
+	 */
+	deferCommit?: boolean;
+	/** Appelé quand les tuiles sont chargées et prêtes à committer (mode `deferCommit`). */
+	onReady?: () => void;
 }
 
 export class SlotManager {
@@ -64,6 +72,8 @@ export class SlotManager {
 	private cleanupListener: (() => void) | null = null;
 	/** Tracks which layers were actually added per slot for correct removal. */
 	private slotLayers: Record<Slot, SlotLayer[]> = { A: [], B: [] };
+	/** En mode deferCommit, mémorise l'état prêt-à-committer. */
+	private deferredCommit: { nextSlot: Slot; previousSlot: Slot | null } | null = null;
 
 	constructor(map: maplibregl.Map, opts: SlotManagerOptions) {
 		this.map = map;
@@ -81,9 +91,23 @@ export class SlotManager {
 		this.opts.beforeLayer = beforeLayer;
 	}
 
+	/** Force un commit différé en attente (fade-in synchronisé avec d'autres managers). */
+	commitNow(): void {
+		if (!this.deferredCommit) return;
+		const { nextSlot, previousSlot } = this.deferredCommit;
+		this.deferredCommit = null;
+		this.executeCommit(nextSlot, previousSlot);
+	}
+
+	/** `true` quand les tuiles sont chargées mais le commit est en attente (mode différé). */
+	isReady(): boolean {
+		return this.deferredCommit !== null;
+	}
+
 	update(sourceUrl: string): void {
 		this.cleanupListener?.();
 		this.cleanupListener = null;
+		this.deferredCommit = null;
 
 		// Abandon stale pending slot
 		if (this.pendingSlot !== null && this.pendingSlot !== this.activeSlot) {
@@ -106,6 +130,9 @@ export class SlotManager {
 			}
 			this.activeSlot = null;
 			this.pendingSlot = null;
+			// La source n'a pas pu être enregistrée : signaler l'échec pour que le
+			// coordinateur retire ce manager du groupe (sinon `loading` reste bloqué).
+			this.opts.onError?.();
 			return;
 		}
 
@@ -119,6 +146,7 @@ export class SlotManager {
 		this.forceRemoveSlot('B');
 		this.activeSlot = null;
 		this.pendingSlot = null;
+		this.deferredCommit = null;
 	}
 
 	private sourceId(slot: Slot): string {
@@ -198,6 +226,16 @@ export class SlotManager {
 	}
 
 	private commit(nextSlot: Slot, previousSlot: Slot | null): void {
+		if (this.opts.deferCommit) {
+			// assigné avant onReady pour que isReady() soit déjà true dans le callback
+			this.deferredCommit = { nextSlot, previousSlot };
+			this.opts.onReady?.();
+			return;
+		}
+		this.executeCommit(nextSlot, previousSlot);
+	}
+
+	private executeCommit(nextSlot: Slot, previousSlot: Slot | null): void {
 		this.activeSlot = nextSlot;
 		this.pendingSlot = null;
 

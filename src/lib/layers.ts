@@ -9,6 +9,7 @@ import { loading, opacity, opacity2, preferences as p } from '$lib/stores/prefer
 import { metaJson as mJ, time } from '$lib/stores/time';
 import { domain as d, layer2Enabled, variable2 } from '$lib/stores/variables';
 import { vectorOptions as vO } from '$lib/stores/vector';
+import { arrowStyle, contourStyle } from '$lib/stores/vector-styles';
 
 import {
 	ANOMALY_DOMAIN,
@@ -20,6 +21,14 @@ import {
 } from '$lib/constants';
 import { SLOT_EVENT_COMMIT, SLOT_EVENT_ERROR, slotEvents } from '$lib/slot-events';
 import { type SlotLayer, SlotManager } from '$lib/slot-manager';
+import {
+	type ArrowStyle,
+	type ContourStyle,
+	buildArrowColorExpr,
+	buildArrowWidthExpr,
+	buildContourColorExpr,
+	buildContourWidthExpr
+} from '$lib/vector-styles';
 
 import { refreshPopup } from './popup';
 import { currentOmUrl, currentOmUrl2 } from './stores/om-url';
@@ -46,79 +55,9 @@ const getRasterOpacity = (): number => {
 	return base;
 };
 
-const makeArrowColor = (): maplibregl.ExpressionSpecification => {
-	let expr: maplibregl.ExpressionSpecification = [
-		'literal',
-		lightOrDark('rgba(0,0,0, 0.2)', 'rgba(255,255,255, 0.2)')
-	];
-	const thresholds: [number, string, string][] = [
-		[2, 'rgba(0,0,0, 0.3)', 'rgba(255,255,255, 0.3)'],
-		[3, 'rgba(0,0,0, 0.4)', 'rgba(255,255,255, 0.4)'],
-		[4, 'rgba(0,0,0, 0.5)', 'rgba(255,255,255, 0.5)'],
-		[5, 'rgba(0,0,0, 0.6)', 'rgba(255,255,255, 0.6)'],
-		[10, 'rgba(0,0,0, 0.7)', 'rgba(255,255,255, 0.7)']
-	];
-	for (const [threshold, light, dark] of [...thresholds]) {
-		expr = [
-			'case',
-			['boolean', ['>', ['to-number', ['get', 'value']], threshold], false],
-			lightOrDark(light, dark),
-			expr
-		];
-	}
-	return expr;
-};
-
-const makeArrowWidth = (): maplibregl.ExpressionSpecification => [
-	'case',
-	['boolean', ['>', ['to-number', ['get', 'value']], 20], false],
-	2.8,
-	[
-		'case',
-		['boolean', ['>', ['to-number', ['get', 'value']], 10], false],
-		2.2,
-		[
-			'case',
-			['boolean', ['>', ['to-number', ['get', 'value']], 5], false],
-			2,
-			[
-				'case',
-				['boolean', ['>', ['to-number', ['get', 'value']], 3], false],
-				1.8,
-				['case', ['boolean', ['>', ['to-number', ['get', 'value']], 2], false], 1.6, 1.5]
-			]
-		]
-	]
-];
-
-const makeContourColor = (): maplibregl.ExpressionSpecification => [
-	'case',
-	['boolean', ['==', ['%', ['to-number', ['get', 'value']], 100], 0], false],
-	lightOrDark('rgba(0,0,0, 0.6)', 'rgba(255,255,255, 0.8)'),
-	[
-		'case',
-		['boolean', ['==', ['%', ['to-number', ['get', 'value']], 50], 0], false],
-		lightOrDark('rgba(0,0,0, 0.5)', 'rgba(255,255,255, 0.7)'),
-		[
-			'case',
-			['boolean', ['==', ['%', ['to-number', ['get', 'value']], 10], 0], false],
-			lightOrDark('rgba(0,0,0, 0.4)', 'rgba(255,255,255, 0.6)'),
-			lightOrDark('rgba(0,0,0, 0.3)', 'rgba(255,255,255, 0.5)')
-		]
-	]
-];
-
-const makeContourWidth = (): maplibregl.ExpressionSpecification => [
-	'case',
-	['boolean', ['==', ['%', ['to-number', ['get', 'value']], 100], 0], false],
-	3,
-	[
-		'case',
-		['boolean', ['==', ['%', ['to-number', ['get', 'value']], 50], 0], false],
-		2.5,
-		['case', ['boolean', ['==', ['%', ['to-number', ['get', 'value']], 10], 0], false], 2, 1]
-	]
-];
+// Accesseurs de style lisant les stores persistés.
+const getArrowStyle = (): ArrowStyle => get(arrowStyle);
+const getContourStyle = (): ContourStyle => get(contourStyle);
 
 // =============================================================================
 // Layer definitions
@@ -185,8 +124,8 @@ const vectorArrowLayer = (): SlotLayer => ({
 				paint: {
 					'line-opacity': 0,
 					'line-opacity-transition': { duration: 200, delay: 0 },
-					'line-color': makeArrowColor(),
-					'line-width': makeArrowWidth()
+					'line-color': buildArrowColorExpr(getArrowStyle(), isDark()),
+					'line-width': buildArrowWidthExpr(getArrowStyle())
 				},
 				layout: { 'line-cap': 'round' }
 			},
@@ -236,8 +175,8 @@ const vectorContourLayer = (): SlotLayer => ({
 				paint: {
 					'line-opacity': 0,
 					'line-opacity-transition': { duration: 200, delay: 0 },
-					'line-color': makeContourColor(),
-					'line-width': makeContourWidth()
+					'line-color': buildContourColorExpr(getContourStyle(), isDark()),
+					'line-width': buildContourWidthExpr(getContourStyle())
 				}
 			},
 			beforeLayer
@@ -278,6 +217,52 @@ const vectorContourLabelsLayer = (): SlotLayer => ({
 });
 
 // =============================================================================
+// Coordinateur de commit : fade-in synchronisé des couches actives
+// =============================================================================
+
+/** Managers dont on attend le commit groupé pour le tick courant. */
+let commitGroup: Set<SlotManager> | null = null;
+
+/** Démarre un nouveau groupe : appeler AVANT les `update()` correspondants. */
+const beginCommitGroup = (managers: SlotManager[]): void => {
+	commitGroup = managers.length > 0 ? new Set(managers) : null;
+	if (!commitGroup) loading.set(false);
+};
+
+/** Appelé par chaque manager (onReady) : committe tout le groupe quand tous sont prêts. */
+const tryFlushGroup = (): void => {
+	if (!commitGroup) return;
+	const members = [...commitGroup];
+	if (members.every((mgr) => mgr.isReady())) {
+		for (const mgr of members) mgr.commitNow();
+		commitGroup = null;
+		loading.set(false);
+		refreshPopup();
+	}
+};
+
+/** Ajoute un manager au groupe de commit courant, ou démarre un groupe s'il n'y en a pas. */
+const addToCommitGroup = (mgr: SlotManager): void => {
+	if (commitGroup) commitGroup.add(mgr);
+	else commitGroup = new Set([mgr]);
+};
+
+/** Appelé par un manager en erreur : on le retire du groupe pour ne pas bloquer les autres. */
+const dropFromGroup = (mgr: SlotManager): void => {
+	if (!commitGroup) {
+		loading.set(false);
+		return;
+	}
+	commitGroup.delete(mgr);
+	if (commitGroup.size === 0) {
+		commitGroup = null;
+		loading.set(false);
+		return;
+	}
+	tryFlushGroup();
+};
+
+// =============================================================================
 // Manager instances
 // =============================================================================
 
@@ -296,8 +281,10 @@ const buildRasterManager2 = (map: maplibregl.Map): SlotManager =>
 		// (ex. arome_france_convection → 404), on efface la couche au lieu de
 		// laisser celle du modèle précédent figée. Cf. vectorManager.
 		clearOnError: true,
-		onCommit: () => refreshPopup(),
-		onError: () => {},
+		deferCommit: true,
+		onReady: tryFlushGroup,
+		onCommit: () => {},
+		onError: () => dropFromGroup(rasterManager2!),
 		slowLoadWarningMs: 10000,
 		onSlowLoad: () => {}
 	});
@@ -329,13 +316,11 @@ export const createManagers = (): void => {
 		}),
 		removeDelayMs: 300,
 		// Both raster and vector fire commit on slotEvents (bus conservé, sans consommateur actuel).
-		onCommit: () => {
-			loading.set(false);
-			refreshPopup();
-			slotEvents.dispatchEvent(new Event(SLOT_EVENT_COMMIT));
-		},
+		deferCommit: true,
+		onReady: tryFlushGroup,
+		onCommit: () => slotEvents.dispatchEvent(new Event(SLOT_EVENT_COMMIT)),
 		onError: () => {
-			loading.set(false);
+			dropFromGroup(rasterManager!);
 			slotEvents.dispatchEvent(new Event(SLOT_EVENT_ERROR));
 		},
 		slowLoadWarningMs: 10000,
@@ -362,8 +347,13 @@ export const createManagers = (): void => {
 		// comme arome_france_convection → 404), on efface les flèches au lieu de
 		// laisser celles du modèle précédent figées à l'écran.
 		clearOnError: true,
+		deferCommit: true,
+		onReady: tryFlushGroup,
 		onCommit: () => slotEvents.dispatchEvent(new Event(SLOT_EVENT_COMMIT)),
-		onError: () => slotEvents.dispatchEvent(new Event(SLOT_EVENT_ERROR))
+		onError: () => {
+			dropFromGroup(vectorManager!);
+			slotEvents.dispatchEvent(new Event(SLOT_EVENT_ERROR));
+		}
 	});
 };
 
@@ -376,18 +366,28 @@ export const addOmFileLayers = (): void => {
 	if (!map) return;
 	const omUrl = getOMUrl();
 	createManagers();
-	if (omUrl) rasterManager?.update('om://' + omUrl);
-	if (omUrl) {
-		const windUrl = getWindOverlayUrl();
-		vectorManager?.update('om://' + (windUrl ?? omUrl));
-	}
+	if (!omUrl) return;
+
+	const group: SlotManager[] = [];
+	if (rasterManager) group.push(rasterManager);
+	if (vectorManager) group.push(vectorManager);
+
+	const windUrl = getWindOverlayUrl();
+	let raster2Url: string | undefined;
 	if (get(layer2Enabled)) {
 		const omUrl2 = getOMUrlFor(get(variable2));
 		if (omUrl2) {
 			currentOmUrl2.set(omUrl2);
-			rasterManager2?.update('om://' + omUrl2);
+			raster2Url = omUrl2;
+			if (rasterManager2) group.push(rasterManager2);
 		}
 	}
+
+	loading.set(true);
+	beginCommitGroup(group);
+	rasterManager?.update('om://' + omUrl);
+	vectorManager?.update('om://' + (windUrl ?? omUrl));
+	if (raster2Url) rasterManager2?.update('om://' + raster2Url);
 };
 
 export const changeOMfileURL = (vectorOnly = false, rasterOnly = false): void => {
@@ -395,36 +395,46 @@ export const changeOMfileURL = (vectorOnly = false, rasterOnly = false): void =>
 	if (!map) return;
 
 	const omUrl = getOMUrl();
-	if (get(currentOmUrl) == omUrl || !omUrl) return;
-	currentOmUrl.set(omUrl);
+	if (!omUrl) return;
 
-	loading.set(true);
+	// Le primaire (raster + vecteur) ne se recharge que si SON URL a changé. On ne
+	// court-circuite plus toute la fonction ici : la couche 2 a sa propre
+	// déduplication (`currentOmUrl2 !== omUrl2`) plus bas et doit pouvoir se
+	// rafraîchir même quand seul l'overlay change (variable/activation) — sinon il
+	// reste figé sur l'ancienne donnée jusqu'au prochain changement de pas de temps.
+	const primaryChanged = get(currentOmUrl) !== omUrl;
 
-	const preferences = get(p);
-	vectorManager?.setBeforeLayer(resolveVectorBeforeLayer(map, preferences.clipWater));
-	rasterManager?.setBeforeLayer(preferences.hillshade ? HILLSHADE_LAYER : BEFORE_LAYER_RASTER);
+	const group: SlotManager[] = [];
+	let rasterUrl: string | undefined;
+	let vectorUrl: string | undefined;
+	let raster2Url: string | undefined;
 
-	if (!vectorOnly) rasterManager?.update('om://' + omUrl);
-	if (!rasterOnly) {
-		const windUrl = getWindOverlayUrl();
-		if (windUrl) {
-			vectorManager?.update('om://' + windUrl);
-		} else {
-			// Legacy behavior: vector is rendered if the primary variable is itself a wind variable.
-			vectorManager?.update('om://' + omUrl);
+	if (primaryChanged) {
+		currentOmUrl.set(omUrl);
+
+		const preferences = get(p);
+		vectorManager?.setBeforeLayer(resolveVectorBeforeLayer(map, preferences.clipWater));
+		rasterManager?.setBeforeLayer(preferences.hillshade ? HILLSHADE_LAYER : BEFORE_LAYER_RASTER);
+
+		if (!vectorOnly && rasterManager) {
+			rasterUrl = omUrl;
+			group.push(rasterManager);
+		}
+		if (!rasterOnly && vectorManager) {
+			const windUrl = getWindOverlayUrl();
+			vectorUrl = windUrl ?? omUrl;
+			group.push(vectorManager);
 		}
 	}
 
 	if (!vectorOnly) {
 		if (get(layer2Enabled)) {
-			const map = get(m);
-			if (map && !rasterManager2) {
-				rasterManager2 = buildRasterManager2(map);
-			}
+			if (!rasterManager2) rasterManager2 = buildRasterManager2(map);
 			const omUrl2 = getOMUrlFor(get(variable2));
 			if (omUrl2 && get(currentOmUrl2) !== omUrl2) {
 				currentOmUrl2.set(omUrl2);
-				rasterManager2?.update('om://' + omUrl2);
+				raster2Url = omUrl2;
+				if (rasterManager2) group.push(rasterManager2);
 			}
 		} else {
 			rasterManager2?.destroy();
@@ -432,4 +442,34 @@ export const changeOMfileURL = (vectorOnly = false, rasterOnly = false): void =>
 			currentOmUrl2.set('');
 		}
 	}
+
+	// Rien à recharger (ni primaire ni overlay) : on s'arrête sans toucher au spinner.
+	if (group.length === 0) return;
+
+	loading.set(true);
+	beginCommitGroup(group);
+	if (rasterUrl) rasterManager?.update('om://' + rasterUrl);
+	if (vectorUrl) vectorManager?.update('om://' + vectorUrl);
+	if (raster2Url) rasterManager2?.update('om://' + raster2Url);
+};
+
+/**
+ * Réapplique le style vecteur courant en reconstruisant les couches vecteur en
+ * place (le layerFactory relit `getContourStyle()`/`getArrowStyle()`). Utilisé
+ * par le drawer réglages quand l'utilisateur édite un style. Tuiles en cache →
+ * coût réseau quasi nul ; fade-in via le commit différé.
+ */
+export const reloadVectorStyle = (): void => {
+	// Edge connu : pendant un changeOMfileURL en vol, getActiveSourceUrl() renvoie
+	// l'URL du slot ACTIF (ancien pas de temps), pas celle en cours de chargement.
+	// Éditer un style à cet instant peut faire un fondu vecteur sur l'ancien pas
+	// pendant que le raster passe au nouveau (décalage d'une frame, auto-résorbé au
+	// tick suivant). Suivi : lire l'URL du slot pending. Cf. issue de suivi.
+	const url = vectorManager?.getActiveSourceUrl();
+	if (!url || !vectorManager) return;
+	loading.set(true);
+	// Fusionne dans un éventuel groupe en vol (ne pas écraser : sinon raster/raster2
+	// resteraient différés indéfiniment, figés sur l'ancienne donnée).
+	addToCommitGroup(vectorManager);
+	vectorManager.update(url);
 };
