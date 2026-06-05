@@ -9,6 +9,7 @@ import { loading, opacity, opacity2, preferences as p } from '$lib/stores/prefer
 import { metaJson as mJ, time } from '$lib/stores/time';
 import { domain as d, layer2Enabled, variable2 } from '$lib/stores/variables';
 import { vectorOptions as vO } from '$lib/stores/vector';
+import { arrowStyle, contourStyle } from '$lib/stores/vector-styles';
 
 import {
 	ANOMALY_DOMAIN,
@@ -26,9 +27,7 @@ import {
 	buildArrowColorExpr,
 	buildArrowWidthExpr,
 	buildContourColorExpr,
-	buildContourWidthExpr,
-	defaultArrowStyle,
-	defaultContourStyle
+	buildContourWidthExpr
 } from '$lib/vector-styles';
 
 import { refreshPopup } from './popup';
@@ -56,9 +55,9 @@ const getRasterOpacity = (): number => {
 	return base;
 };
 
-// Accesseurs de style (Task 5 les fera lire depuis les stores persistés).
-const getArrowStyle = (): ArrowStyle => defaultArrowStyle;
-const getContourStyle = (): ContourStyle => defaultContourStyle;
+// Accesseurs de style lisant les stores persistés.
+const getArrowStyle = (): ArrowStyle => get(arrowStyle);
+const getContourStyle = (): ContourStyle => get(contourStyle);
 
 // =============================================================================
 // Layer definitions
@@ -433,4 +432,18 @@ export const changeOMfileURL = (vectorOnly = false, rasterOnly = false): void =>
 	if (rasterUrl) rasterManager?.update('om://' + rasterUrl);
 	if (vectorUrl) vectorManager?.update('om://' + vectorUrl);
 	if (raster2Url) rasterManager2?.update('om://' + raster2Url);
+};
+
+/**
+ * Réapplique le style vecteur courant en reconstruisant les couches vecteur en
+ * place (le layerFactory relit `getContourStyle()`/`getArrowStyle()`). Utilisé
+ * par le drawer réglages quand l'utilisateur édite un style. Tuiles en cache →
+ * coût réseau quasi nul ; fade-in via le commit différé.
+ */
+export const reloadVectorStyle = (): void => {
+	const url = vectorManager?.getActiveSourceUrl();
+	if (!url || !vectorManager) return;
+	loading.set(true);
+	beginCommitGroup([vectorManager]);
+	vectorManager.update(url);
 };
