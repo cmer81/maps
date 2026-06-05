@@ -18,7 +18,7 @@ On extrait donc **trois apports**, branchés sur l'existant du fork :
 
 - **Style global, pas par variable.** Le PR keye les styles par variable (`customContourStyles[variable]`) parce qu'il rend N sources en même temps. Le fork n'a **qu'une seule couche vecteur active à la fois** (`vectorManager` : contours OU vent), donc un style global unique (`contourStyle`, `arrowStyle`) suffit et colle au modèle mental d'un panneau de réglages. `rasterManager2` est du raster, non concerné.
 - **Nommage `vector-styles`**, pas `chart-styles` : le fork n'a aucun concept « chart ».
-- **Coordination toujours active** : à chaque mise à jour, toutes les couches *réellement mises à jour ce tick* commit ensemble.
+- **Coordination toujours active** : à chaque mise à jour, toutes les couches _réellement mises à jour ce tick_ commit ensemble.
 - **Persistance** via `svelte-persisted-store` (helper `persisted`, comme `vectorOptions`).
 - **Hors périmètre (YAGNI)** : presets, multi-variables, `chart-select`, encodage URL multi-sources. On ne modifie pas `rasterManager2` / `layer2Enabled` (ils bénéficient seulement du fade-in synchronisé).
 
@@ -36,7 +36,9 @@ export interface ContourLevel {
 	darkColor: string;
 	width: number;
 }
-export interface ContourStyle { levels: ContourLevel[]; }
+export interface ContourStyle {
+	levels: ContourLevel[];
+}
 
 export interface ArrowLevel {
 	minSpeed: number; // 0 = base
@@ -45,31 +47,33 @@ export interface ArrowLevel {
 	darkColor: string;
 	width: number;
 }
-export interface ArrowStyle { levels: ArrowLevel[]; }
+export interface ArrowStyle {
+	levels: ArrowLevel[];
+}
 ```
 
 ### Defaults — doivent reproduire EXACTEMENT l'existant
 
 `defaultContourStyle` (cf. `layers.ts:94-121`) :
 
-| modulo | light | dark | width |
-|--------|-------|------|-------|
-| 0 (fallback) | rgba(0,0,0,0.3) | rgba(255,255,255,0.5) | 1 |
-| 10 | rgba(0,0,0,0.4) | rgba(255,255,255,0.6) | 2 |
-| 50 | rgba(0,0,0,0.5) | rgba(255,255,255,0.7) | 2.5 |
-| 100 | rgba(0,0,0,0.6) | rgba(255,255,255,0.8) | 3 |
+| modulo       | light           | dark                  | width |
+| ------------ | --------------- | --------------------- | ----- |
+| 0 (fallback) | rgba(0,0,0,0.3) | rgba(255,255,255,0.5) | 1     |
+| 10           | rgba(0,0,0,0.4) | rgba(255,255,255,0.6) | 2     |
+| 50           | rgba(0,0,0,0.5) | rgba(255,255,255,0.7) | 2.5   |
+| 100          | rgba(0,0,0,0.6) | rgba(255,255,255,0.8) | 3     |
 
 `defaultArrowStyle` (cf. `layers.ts:49-92`) — **table d'union fidèle** (voir note ci-dessous) :
 
-| minSpeed | light | dark | width |
-|----------|-------|------|-------|
-| 0 (base) | rgba(0,0,0,0.2) | rgba(255,255,255,0.2) | 1.5 |
-| 2 | rgba(0,0,0,0.3) | rgba(255,255,255,0.3) | 1.6 |
-| 3 | rgba(0,0,0,0.4) | rgba(255,255,255,0.4) | 1.8 |
-| 4 | rgba(0,0,0,0.5) | rgba(255,255,255,0.5) | 1.8 |
-| 5 | rgba(0,0,0,0.6) | rgba(255,255,255,0.6) | 2 |
-| 10 | rgba(0,0,0,0.7) | rgba(255,255,255,0.7) | 2.2 |
-| 20 | rgba(0,0,0,0.7) | rgba(255,255,255,0.7) | 2.8 |
+| minSpeed | light           | dark                  | width |
+| -------- | --------------- | --------------------- | ----- |
+| 0 (base) | rgba(0,0,0,0.2) | rgba(255,255,255,0.2) | 1.5   |
+| 2        | rgba(0,0,0,0.3) | rgba(255,255,255,0.3) | 1.6   |
+| 3        | rgba(0,0,0,0.4) | rgba(255,255,255,0.4) | 1.8   |
+| 4        | rgba(0,0,0,0.5) | rgba(255,255,255,0.5) | 1.8   |
+| 5        | rgba(0,0,0,0.6) | rgba(255,255,255,0.6) | 2     |
+| 10       | rgba(0,0,0,0.7) | rgba(255,255,255,0.7) | 2.2   |
+| 20       | rgba(0,0,0,0.7) | rgba(255,255,255,0.7) | 2.8   |
 
 **Note (seuils couleur ≠ largeur).** Dans l'expression actuelle, la **couleur** change à >2/3/4/5/10 (et plafonne à 0.7 au-delà de 10) tandis que la **largeur** change à >2/3/5/10/20. Les deux jeux ne coïncident pas. Le modèle unifié (un niveau = un `minSpeed` portant couleur **et** largeur) les réconcilie via l'**union des seuils** : les lignes `minSpeed:4` (largeur 1.8, identique à 3) et `minSpeed:20` (couleur 0.7, identique à 10) sont volontairement « redondantes » mais reproduisent exactement le rendu actuel pour toute valeur. Vérification par valeur attendue dans le test, pas « par simplification ».
 
@@ -125,7 +129,13 @@ Snapshot du set à l'instant de l'appel (les `update()` sont synchrones dans un 
 
 ```ts
 import { persisted } from 'svelte-persisted-store';
-import { type ArrowStyle, type ContourStyle, defaultArrowStyle, defaultContourStyle } from '$lib/vector-styles';
+
+import {
+	type ArrowStyle,
+	type ContourStyle,
+	defaultArrowStyle,
+	defaultContourStyle
+} from '$lib/vector-styles';
 
 export const contourStyle = persisted<ContourStyle>('contour-style', defaultContourStyle);
 export const arrowStyle = persisted<ArrowStyle>('arrow-style', defaultArrowStyle);

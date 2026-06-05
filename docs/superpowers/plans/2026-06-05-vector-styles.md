@@ -29,6 +29,7 @@
 ## Task 1: Module `vector-styles.ts` + tests
 
 **Files:**
+
 - Create: `src/lib/vector-styles.ts`
 - Test: `src/lib/tests/vector-styles.test.ts`
 
@@ -132,10 +133,13 @@ describe('buildArrowWidthExpr (default)', () => {
 describe('rgba helpers', () => {
 	it('parses opacity', () => expect(parseRgbaOpacity('rgba(0,0,0, 0.4)')).toBe(0.4));
 	it('defaults to 1 when no alpha', () => expect(parseRgbaOpacity('rgb(0,0,0)')).toBe(1));
-	it('sets opacity', () => expect(setRgbaOpacity('rgba(10, 20, 30, 0.4)', 0.7)).toBe('rgba(10, 20, 30, 0.7)'));
+	it('sets opacity', () =>
+		expect(setRgbaOpacity('rgba(10, 20, 30, 0.4)', 0.7)).toBe('rgba(10, 20, 30, 0.7)'));
 	it('rgba string → hex', () => expect(rgbaStringToHex('rgba(10, 20, 30, 0.4)')).toBe('#0a141e'));
-	it('rgba string → hex (no alpha)', () => expect(rgbaStringToHex('rgb(255, 0, 128)')).toBe('#ff0080'));
-	it('hex + alpha → rgba string', () => expect(hexToRgbaString('#0a141e', 0.4)).toBe('rgba(10, 20, 30, 0.4)'));
+	it('rgba string → hex (no alpha)', () =>
+		expect(rgbaStringToHex('rgb(255, 0, 128)')).toBe('#ff0080'));
+	it('hex + alpha → rgba string', () =>
+		expect(hexToRgbaString('#0a141e', 0.4)).toBe('rgba(10, 20, 30, 0.4)'));
 	it('round-trips', () => {
 		const hex = rgbaStringToHex('rgba(0,0,0, 0.3)');
 		const a = parseRgbaOpacity('rgba(0,0,0, 0.3)');
@@ -193,22 +197,88 @@ export interface ArrowStyle {
 
 export const defaultContourStyle: ContourStyle = {
 	levels: [
-		{ modulo: 0, label: 'Autres', lightColor: 'rgba(0,0,0, 0.3)', darkColor: 'rgba(255,255,255, 0.5)', width: 1 },
-		{ modulo: 10, label: '×10', lightColor: 'rgba(0,0,0, 0.4)', darkColor: 'rgba(255,255,255, 0.6)', width: 2 },
-		{ modulo: 50, label: '×50', lightColor: 'rgba(0,0,0, 0.5)', darkColor: 'rgba(255,255,255, 0.7)', width: 2.5 },
-		{ modulo: 100, label: '×100', lightColor: 'rgba(0,0,0, 0.6)', darkColor: 'rgba(255,255,255, 0.8)', width: 3 }
+		{
+			modulo: 0,
+			label: 'Autres',
+			lightColor: 'rgba(0,0,0, 0.3)',
+			darkColor: 'rgba(255,255,255, 0.5)',
+			width: 1
+		},
+		{
+			modulo: 10,
+			label: '×10',
+			lightColor: 'rgba(0,0,0, 0.4)',
+			darkColor: 'rgba(255,255,255, 0.6)',
+			width: 2
+		},
+		{
+			modulo: 50,
+			label: '×50',
+			lightColor: 'rgba(0,0,0, 0.5)',
+			darkColor: 'rgba(255,255,255, 0.7)',
+			width: 2.5
+		},
+		{
+			modulo: 100,
+			label: '×100',
+			lightColor: 'rgba(0,0,0, 0.6)',
+			darkColor: 'rgba(255,255,255, 0.8)',
+			width: 3
+		}
 	]
 };
 
 export const defaultArrowStyle: ArrowStyle = {
 	levels: [
-		{ minSpeed: 0, label: '≤2', lightColor: 'rgba(0,0,0, 0.2)', darkColor: 'rgba(255,255,255, 0.2)', width: 1.5 },
-		{ minSpeed: 2, label: '>2', lightColor: 'rgba(0,0,0, 0.3)', darkColor: 'rgba(255,255,255, 0.3)', width: 1.6 },
-		{ minSpeed: 3, label: '>3', lightColor: 'rgba(0,0,0, 0.4)', darkColor: 'rgba(255,255,255, 0.4)', width: 1.8 },
-		{ minSpeed: 4, label: '>4', lightColor: 'rgba(0,0,0, 0.5)', darkColor: 'rgba(255,255,255, 0.5)', width: 1.8 },
-		{ minSpeed: 5, label: '>5', lightColor: 'rgba(0,0,0, 0.6)', darkColor: 'rgba(255,255,255, 0.6)', width: 2 },
-		{ minSpeed: 10, label: '>10', lightColor: 'rgba(0,0,0, 0.7)', darkColor: 'rgba(255,255,255, 0.7)', width: 2.2 },
-		{ minSpeed: 20, label: '>20', lightColor: 'rgba(0,0,0, 0.7)', darkColor: 'rgba(255,255,255, 0.7)', width: 2.8 }
+		{
+			minSpeed: 0,
+			label: '≤2',
+			lightColor: 'rgba(0,0,0, 0.2)',
+			darkColor: 'rgba(255,255,255, 0.2)',
+			width: 1.5
+		},
+		{
+			minSpeed: 2,
+			label: '>2',
+			lightColor: 'rgba(0,0,0, 0.3)',
+			darkColor: 'rgba(255,255,255, 0.3)',
+			width: 1.6
+		},
+		{
+			minSpeed: 3,
+			label: '>3',
+			lightColor: 'rgba(0,0,0, 0.4)',
+			darkColor: 'rgba(255,255,255, 0.4)',
+			width: 1.8
+		},
+		{
+			minSpeed: 4,
+			label: '>4',
+			lightColor: 'rgba(0,0,0, 0.5)',
+			darkColor: 'rgba(255,255,255, 0.5)',
+			width: 1.8
+		},
+		{
+			minSpeed: 5,
+			label: '>5',
+			lightColor: 'rgba(0,0,0, 0.6)',
+			darkColor: 'rgba(255,255,255, 0.6)',
+			width: 2
+		},
+		{
+			minSpeed: 10,
+			label: '>10',
+			lightColor: 'rgba(0,0,0, 0.7)',
+			darkColor: 'rgba(255,255,255, 0.7)',
+			width: 2.2
+		},
+		{
+			minSpeed: 20,
+			label: '>20',
+			lightColor: 'rgba(0,0,0, 0.7)',
+			darkColor: 'rgba(255,255,255, 0.7)',
+			width: 2.8
+		}
 	]
 };
 
@@ -249,7 +319,9 @@ export function buildContourWidthExpr(style: ContourStyle): NumOrExpr {
 /** Couleur des flèches : plus grand seuil testé en premier, base en dernier. */
 export function buildArrowColorExpr(style: ArrowStyle, dark: boolean): ColorOrExpr {
 	const base = style.levels.find((l) => l.minSpeed === 0);
-	const conditions = style.levels.filter((l) => l.minSpeed > 0).sort((a, b) => a.minSpeed - b.minSpeed);
+	const conditions = style.levels
+		.filter((l) => l.minSpeed > 0)
+		.sort((a, b) => a.minSpeed - b.minSpeed);
 	let expr: ColorOrExpr = (dark ? base?.darkColor : base?.lightColor) ?? 'transparent';
 	for (const lvl of conditions) {
 		expr = [
@@ -265,7 +337,9 @@ export function buildArrowColorExpr(style: ArrowStyle, dark: boolean): ColorOrEx
 /** Largeur des flèches (indépendante du thème). */
 export function buildArrowWidthExpr(style: ArrowStyle): NumOrExpr {
 	const base = style.levels.find((l) => l.minSpeed === 0);
-	const conditions = style.levels.filter((l) => l.minSpeed > 0).sort((a, b) => a.minSpeed - b.minSpeed);
+	const conditions = style.levels
+		.filter((l) => l.minSpeed > 0)
+		.sort((a, b) => a.minSpeed - b.minSpeed);
 	let expr: NumOrExpr = base?.width ?? 1.5;
 	for (const lvl of conditions) {
 		expr = ['case', ['boolean', ['>', VALUE, lvl.minSpeed], false], lvl.width, expr];
@@ -323,6 +397,7 @@ git commit -m "feat(vector-styles): module data-driven contours/flèches + tests
 ## Task 2: Brancher les builders dans `layers.ts` (refactor pur)
 
 **Files:**
+
 - Modify: `src/lib/layers.ts:49-121` (supprimer les `make*`), `:188-189`, `:239-240` (usages)
 
 But : remplacer les expressions hardcodées par les builders, **rendu visuellement identique**.
@@ -395,6 +470,7 @@ git commit -m "refactor(layers): utilise les builders vector-styles (rendu ident
 ## Task 3: `deferCommit` sur le SlotManager
 
 **Files:**
+
 - Modify: `src/lib/slot-manager.ts` (options, champ, méthodes, scission `commit`)
 
 - [ ] **Step 1: Étendre `SlotManagerOptions`**
@@ -426,7 +502,7 @@ Après `private slotLayers: Record<Slot, SlotLayer[]> = { A: [], B: [] };` :
 Dans `update()`, juste après `this.cleanupListener = null;` (avant le commentaire « Abandon stale pending slot ») :
 
 ```ts
-		this.deferredCommit = null;
+this.deferredCommit = null;
 ```
 
 - [ ] **Step 4: Ajouter les méthodes publiques `commitNow()` / `isReady()`**
@@ -497,6 +573,7 @@ git commit -m "feat(slot-manager): commit différé opt-in (deferCommit/commitNo
 ## Task 4: Coordinateur de fade-in synchronisé dans `layers.ts`
 
 **Files:**
+
 - Modify: `src/lib/layers.ts` (coordinateur module-level, `createManagers`, `buildRasterManager2`, `addOmFileLayers`, `changeOMfileURL`)
 
 - [ ] **Step 1: Ajouter le coordinateur (haut de la section « Manager instances »)**
@@ -683,6 +760,7 @@ Expected: aucune erreur.
 - [ ] **Step 7: Vérification visuelle (le cœur de la feature)**
 
 Run: `npm run dev`
+
 1. Activer la 2e couche raster (`layer2Enabled`) + les flèches de vent.
 2. Changer de pas de temps plusieurs fois.
 3. **Attendu :** raster principal, 2e raster et flèches apparaissent **ensemble**, sans clignotement décalé.
@@ -700,6 +778,7 @@ git commit -m "feat(layers): fade-in synchronisé des couches actives via deferC
 ## Task 5: Stores persistés + `reloadVectorStyle()`
 
 **Files:**
+
 - Create: `src/lib/stores/vector-styles.ts`
 - Modify: `src/lib/layers.ts` (`getArrowStyle`/`getContourStyle` lisent les stores ; ajouter `reloadVectorStyle`)
 
@@ -770,9 +849,24 @@ Expected: aucune erreur. (`npm run format` si l'ordre d'imports est signalé.)
 
 Run: `npm run dev`
 Activer les isocontours. Dans la console du navigateur, modifier le store et vérifier le re-rendu :
+
 ```js
-localStorage.setItem('contour-style', JSON.stringify({ levels: [{ modulo: 0, label: 'x', lightColor: 'rgba(255,0,0,1)', darkColor: 'rgba(255,0,0,1)', width: 1 }] }))
+localStorage.setItem(
+	'contour-style',
+	JSON.stringify({
+		levels: [
+			{
+				modulo: 0,
+				label: 'x',
+				lightColor: 'rgba(255,0,0,1)',
+				darkColor: 'rgba(255,0,0,1)',
+				width: 1
+			}
+		]
+	})
+);
 ```
+
 puis recharger → les isolignes « autres » doivent être rouges. Remettre `localStorage.removeItem('contour-style')` ensuite.
 
 - [ ] **Step 6: Commit**
@@ -787,6 +881,7 @@ git commit -m "feat(vector-styles): stores persistés + reloadVectorStyle"
 ## Task 6: UI — éditeur de style dans `contour-settings.svelte`
 
 **Files:**
+
 - Modify: `src/lib/components/settings/contour-settings.svelte`
 
 - [ ] **Step 1: Ajouter les imports et l'état d'édition**
@@ -794,40 +889,48 @@ git commit -m "feat(vector-styles): stores persistés + reloadVectorStyle"
 Dans le `<script lang="ts">` de `contour-settings.svelte`, ajouter aux imports existants :
 
 ```ts
-	import { reloadVectorStyle } from '$lib/layers';
-	import { defaultContourStyle, hexToRgbaString, parseRgbaOpacity, rgbaStringToHex } from '$lib/vector-styles';
-	import { contourStyle } from '$lib/stores/vector-styles';
+import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
 
-	import ColorPicker from '$lib/components/scale/color-picker.svelte';
+import { contourStyle } from '$lib/stores/vector-styles';
 
-	import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
+import ColorPicker from '$lib/components/scale/color-picker.svelte';
+
+import { reloadVectorStyle } from '$lib/layers';
+import {
+	defaultContourStyle,
+	hexToRgbaString,
+	parseRgbaOpacity,
+	rgbaStringToHex
+} from '$lib/vector-styles';
 ```
 
 Puis l'état et les handlers (après `handleContourIntervalChange`) :
 
 ```ts
-	let editing: { index: number; field: 'lightColor' | 'darkColor' } | null = $state(null);
+let editing: { index: number; field: 'lightColor' | 'darkColor' } | null = $state(null);
 
-	function setColor(index: number, field: 'lightColor' | 'darkColor', hex: string, alpha: number) {
-		contourStyle.update((s) => ({
-			...s,
-			levels: s.levels.map((l, i) => (i === index ? { ...l, [field]: hexToRgbaString(hex, alpha) } : l))
-		}));
-		reloadVectorStyle();
-	}
+function setColor(index: number, field: 'lightColor' | 'darkColor', hex: string, alpha: number) {
+	contourStyle.update((s) => ({
+		...s,
+		levels: s.levels.map((l, i) =>
+			i === index ? { ...l, [field]: hexToRgbaString(hex, alpha) } : l
+		)
+	}));
+	reloadVectorStyle();
+}
 
-	function setWidth(index: number, width: number) {
-		contourStyle.update((s) => ({
-			...s,
-			levels: s.levels.map((l, i) => (i === index ? { ...l, width } : l))
-		}));
-		reloadVectorStyle();
-	}
+function setWidth(index: number, width: number) {
+	contourStyle.update((s) => ({
+		...s,
+		levels: s.levels.map((l, i) => (i === index ? { ...l, width } : l))
+	}));
+	reloadVectorStyle();
+}
 
-	function resetContourStyle() {
-		contourStyle.set(structuredClone(defaultContourStyle));
-		reloadVectorStyle();
-	}
+function resetContourStyle() {
+	contourStyle.set(structuredClone(defaultContourStyle));
+	reloadVectorStyle();
+}
 ```
 
 - [ ] **Step 2: Ajouter le bloc d'édition dans le template**
@@ -835,66 +938,66 @@ Puis l'état et les handlers (après `handleContourIntervalChange`) :
 Dans `{#if contours}`, à l'intérieur du `<div class="mt-1 flex flex-col gap-2 pl-1">`, **après** le bloc `{#if !breakpoints} … {/if}`, insérer :
 
 ```svelte
-			<div class="mt-2 flex flex-col gap-1.5 border-t border-white/10 pt-2">
-				<div class="flex items-center justify-between">
-					<span class="text-xs text-white/70">Style des isolignes</span>
-					<button
-						type="button"
-						class="flex cursor-pointer items-center gap-1 text-xs text-white/50 hover:text-white/80"
-						onclick={resetContourStyle}
-					>
-						<RotateCcwIcon class="size-3" /> Réinitialiser
-					</button>
-				</div>
-				{#each $contourStyle.levels as level, i (level.label)}
-					<div class="flex items-center gap-2">
-						<span class="w-10 shrink-0 text-xs text-white/60">{level.label}</span>
-						<div class="relative">
-							<button
-								type="button"
-								aria-label={`Couleur (clair) ${level.label}`}
-								class="size-5 cursor-pointer rounded border border-white/20"
-								style="background: {level.lightColor};"
-								onclick={() => (editing = { index: i, field: 'lightColor' })}
-							></button>
-							{#if editing?.index === i && editing.field === 'lightColor'}
-								<ColorPicker
-									color={rgbaStringToHex(level.lightColor)}
-									alpha={parseRgbaOpacity(level.lightColor)}
-									onchange={(hex, alpha) => setColor(i, 'lightColor', hex, alpha)}
-									onclose={() => (editing = null)}
-								/>
-							{/if}
-						</div>
-						<div class="relative">
-							<button
-								type="button"
-								aria-label={`Couleur (sombre) ${level.label}`}
-								class="size-5 cursor-pointer rounded border border-white/20"
-								style="background: {level.darkColor};"
-								onclick={() => (editing = { index: i, field: 'darkColor' })}
-							></button>
-							{#if editing?.index === i && editing.field === 'darkColor'}
-								<ColorPicker
-									color={rgbaStringToHex(level.darkColor)}
-									alpha={parseRgbaOpacity(level.darkColor)}
-									onchange={(hex, alpha) => setColor(i, 'darkColor', hex, alpha)}
-									onclose={() => (editing = null)}
-								/>
-							{/if}
-						</div>
-						<Input
-							class="h-7 w-16 shrink-0 bg-background/60"
-							type="number"
-							step="0.5"
-							min="0"
-							value={level.width}
-							onchange={(e) => setWidth(i, Number(e.currentTarget.value))}
-							aria-label={`Largeur ${level.label}`}
-						/>
-					</div>
-				{/each}
+<div class="mt-2 flex flex-col gap-1.5 border-t border-white/10 pt-2">
+	<div class="flex items-center justify-between">
+		<span class="text-xs text-white/70">Style des isolignes</span>
+		<button
+			type="button"
+			class="flex cursor-pointer items-center gap-1 text-xs text-white/50 hover:text-white/80"
+			onclick={resetContourStyle}
+		>
+			<RotateCcwIcon class="size-3" /> Réinitialiser
+		</button>
+	</div>
+	{#each $contourStyle.levels as level, i (level.label)}
+		<div class="flex items-center gap-2">
+			<span class="w-10 shrink-0 text-xs text-white/60">{level.label}</span>
+			<div class="relative">
+				<button
+					type="button"
+					aria-label={`Couleur (clair) ${level.label}`}
+					class="size-5 cursor-pointer rounded border border-white/20"
+					style="background: {level.lightColor};"
+					onclick={() => (editing = { index: i, field: 'lightColor' })}
+				></button>
+				{#if editing?.index === i && editing.field === 'lightColor'}
+					<ColorPicker
+						color={rgbaStringToHex(level.lightColor)}
+						alpha={parseRgbaOpacity(level.lightColor)}
+						onchange={(hex, alpha) => setColor(i, 'lightColor', hex, alpha)}
+						onclose={() => (editing = null)}
+					/>
+				{/if}
 			</div>
+			<div class="relative">
+				<button
+					type="button"
+					aria-label={`Couleur (sombre) ${level.label}`}
+					class="size-5 cursor-pointer rounded border border-white/20"
+					style="background: {level.darkColor};"
+					onclick={() => (editing = { index: i, field: 'darkColor' })}
+				></button>
+				{#if editing?.index === i && editing.field === 'darkColor'}
+					<ColorPicker
+						color={rgbaStringToHex(level.darkColor)}
+						alpha={parseRgbaOpacity(level.darkColor)}
+						onchange={(hex, alpha) => setColor(i, 'darkColor', hex, alpha)}
+						onclose={() => (editing = null)}
+					/>
+				{/if}
+			</div>
+			<Input
+				class="h-7 w-16 shrink-0 bg-background/60"
+				type="number"
+				step="0.5"
+				min="0"
+				value={level.width}
+				onchange={(e) => setWidth(i, Number(e.currentTarget.value))}
+				aria-label={`Largeur ${level.label}`}
+			/>
+		</div>
+	{/each}
+</div>
 ```
 
 - [ ] **Step 3: Typecheck + lint**
@@ -919,6 +1022,7 @@ git commit -m "feat(settings): éditeur de style des isocontours dans le drawer"
 ## Task 7: UI — éditeur de style dans `arrows-settings.svelte`
 
 **Files:**
+
 - Modify: `src/lib/components/settings/arrows-settings.svelte`
 
 - [ ] **Step 1: Ajouter imports + état d'édition**
@@ -926,42 +1030,49 @@ git commit -m "feat(settings): éditeur de style des isocontours dans le drawer"
 Dans le `<script lang="ts">` de `arrows-settings.svelte`, ajouter aux imports :
 
 ```ts
-	import { Input } from '$lib/components/ui/input';
+import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
 
-	import { reloadVectorStyle } from '$lib/layers';
-	import { defaultArrowStyle, hexToRgbaString, parseRgbaOpacity, rgbaStringToHex } from '$lib/vector-styles';
-	import { arrowStyle } from '$lib/stores/vector-styles';
+import { arrowStyle } from '$lib/stores/vector-styles';
 
-	import ColorPicker from '$lib/components/scale/color-picker.svelte';
+import ColorPicker from '$lib/components/scale/color-picker.svelte';
+import { Input } from '$lib/components/ui/input';
 
-	import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
+import { reloadVectorStyle } from '$lib/layers';
+import {
+	defaultArrowStyle,
+	hexToRgbaString,
+	parseRgbaOpacity,
+	rgbaStringToHex
+} from '$lib/vector-styles';
 ```
 
 Puis (après `onLevel`) :
 
 ```ts
-	let editing: { index: number; field: 'lightColor' | 'darkColor' } | null = $state(null);
+let editing: { index: number; field: 'lightColor' | 'darkColor' } | null = $state(null);
 
-	function setColor(index: number, field: 'lightColor' | 'darkColor', hex: string, alpha: number) {
-		arrowStyle.update((s) => ({
-			...s,
-			levels: s.levels.map((l, i) => (i === index ? { ...l, [field]: hexToRgbaString(hex, alpha) } : l))
-		}));
-		reloadVectorStyle();
-	}
+function setColor(index: number, field: 'lightColor' | 'darkColor', hex: string, alpha: number) {
+	arrowStyle.update((s) => ({
+		...s,
+		levels: s.levels.map((l, i) =>
+			i === index ? { ...l, [field]: hexToRgbaString(hex, alpha) } : l
+		)
+	}));
+	reloadVectorStyle();
+}
 
-	function setWidth(index: number, width: number) {
-		arrowStyle.update((s) => ({
-			...s,
-			levels: s.levels.map((l, i) => (i === index ? { ...l, width } : l))
-		}));
-		reloadVectorStyle();
-	}
+function setWidth(index: number, width: number) {
+	arrowStyle.update((s) => ({
+		...s,
+		levels: s.levels.map((l, i) => (i === index ? { ...l, width } : l))
+	}));
+	reloadVectorStyle();
+}
 
-	function resetArrowStyle() {
-		arrowStyle.set(structuredClone(defaultArrowStyle));
-		reloadVectorStyle();
-	}
+function resetArrowStyle() {
+	arrowStyle.set(structuredClone(defaultArrowStyle));
+	reloadVectorStyle();
+}
 ```
 
 - [ ] **Step 2: Ajouter le bloc d'édition dans le template**
@@ -969,66 +1080,66 @@ Puis (après `onLevel`) :
 Dans le `{:else if arrows}`, **après** le `<div class="mt-1 flex items-center gap-3 pl-1"> … </div>` (sélecteur de niveau), insérer :
 
 ```svelte
-		<div class="mt-2 flex flex-col gap-1.5 border-t border-white/10 pt-2 pl-1">
-			<div class="flex items-center justify-between">
-				<span class="text-xs text-white/70">Style des flèches</span>
+<div class="mt-2 flex flex-col gap-1.5 border-t border-white/10 pt-2 pl-1">
+	<div class="flex items-center justify-between">
+		<span class="text-xs text-white/70">Style des flèches</span>
+		<button
+			type="button"
+			class="flex cursor-pointer items-center gap-1 text-xs text-white/50 hover:text-white/80"
+			onclick={resetArrowStyle}
+		>
+			<RotateCcwIcon class="size-3" /> Réinitialiser
+		</button>
+	</div>
+	{#each $arrowStyle.levels as level, i (level.label)}
+		<div class="flex items-center gap-2">
+			<span class="w-10 shrink-0 text-xs text-white/60">{level.label}</span>
+			<div class="relative">
 				<button
 					type="button"
-					class="flex cursor-pointer items-center gap-1 text-xs text-white/50 hover:text-white/80"
-					onclick={resetArrowStyle}
-				>
-					<RotateCcwIcon class="size-3" /> Réinitialiser
-				</button>
-			</div>
-			{#each $arrowStyle.levels as level, i (level.label)}
-				<div class="flex items-center gap-2">
-					<span class="w-10 shrink-0 text-xs text-white/60">{level.label}</span>
-					<div class="relative">
-						<button
-							type="button"
-							aria-label={`Couleur (clair) ${level.label}`}
-							class="size-5 cursor-pointer rounded border border-white/20"
-							style="background: {level.lightColor};"
-							onclick={() => (editing = { index: i, field: 'lightColor' })}
-						></button>
-						{#if editing?.index === i && editing.field === 'lightColor'}
-							<ColorPicker
-								color={rgbaToHex(level.lightColor)}
-								alpha={getAlpha(level.lightColor)}
-								onchange={(hex, alpha) => setColor(i, 'lightColor', hex, alpha)}
-								onclose={() => (editing = null)}
-							/>
-						{/if}
-					</div>
-					<div class="relative">
-						<button
-							type="button"
-							aria-label={`Couleur (sombre) ${level.label}`}
-							class="size-5 cursor-pointer rounded border border-white/20"
-							style="background: {level.darkColor};"
-							onclick={() => (editing = { index: i, field: 'darkColor' })}
-						></button>
-						{#if editing?.index === i && editing.field === 'darkColor'}
-							<ColorPicker
-								color={rgbaToHex(level.darkColor)}
-								alpha={getAlpha(level.darkColor)}
-								onchange={(hex, alpha) => setColor(i, 'darkColor', hex, alpha)}
-								onclose={() => (editing = null)}
-							/>
-						{/if}
-					</div>
-					<Input
-						class="h-7 w-16 shrink-0 bg-background/60"
-						type="number"
-						step="0.1"
-						min="0"
-						value={level.width}
-						onchange={(e) => setWidth(i, Number(e.currentTarget.value))}
-						aria-label={`Largeur ${level.label}`}
+					aria-label={`Couleur (clair) ${level.label}`}
+					class="size-5 cursor-pointer rounded border border-white/20"
+					style="background: {level.lightColor};"
+					onclick={() => (editing = { index: i, field: 'lightColor' })}
+				></button>
+				{#if editing?.index === i && editing.field === 'lightColor'}
+					<ColorPicker
+						color={rgbaToHex(level.lightColor)}
+						alpha={getAlpha(level.lightColor)}
+						onchange={(hex, alpha) => setColor(i, 'lightColor', hex, alpha)}
+						onclose={() => (editing = null)}
 					/>
-				</div>
-			{/each}
+				{/if}
+			</div>
+			<div class="relative">
+				<button
+					type="button"
+					aria-label={`Couleur (sombre) ${level.label}`}
+					class="size-5 cursor-pointer rounded border border-white/20"
+					style="background: {level.darkColor};"
+					onclick={() => (editing = { index: i, field: 'darkColor' })}
+				></button>
+				{#if editing?.index === i && editing.field === 'darkColor'}
+					<ColorPicker
+						color={rgbaToHex(level.darkColor)}
+						alpha={getAlpha(level.darkColor)}
+						onchange={(hex, alpha) => setColor(i, 'darkColor', hex, alpha)}
+						onclose={() => (editing = null)}
+					/>
+				{/if}
+			</div>
+			<Input
+				class="h-7 w-16 shrink-0 bg-background/60"
+				type="number"
+				step="0.1"
+				min="0"
+				value={level.width}
+				onchange={(e) => setWidth(i, Number(e.currentTarget.value))}
+				aria-label={`Largeur ${level.label}`}
+			/>
 		</div>
+	{/each}
+</div>
 ```
 
 - [ ] **Step 3: Typecheck + lint**
@@ -1061,4 +1172,7 @@ git commit -m "feat(settings): éditeur de style des flèches de vent dans le dr
 - **Cohérence des noms :** `getArrowStyle`/`getContourStyle` (Tasks 2,5), `reloadVectorStyle` (Tasks 5,6,7), `beginCommitGroup`/`tryFlushGroup`/`dropFromGroup`/`commitGroup` (Task 4), `contourStyle`/`arrowStyle` (Tasks 5,6,7), `commitNow`/`isReady`/`deferCommit`/`onReady` (Tasks 3,4). Cohérents. ✓
 - **Pas de placeholder :** chaque step de code montre le code complet. ✓
 - **Risque connu :** si un manager du groupe n'émet ni `onReady` ni `onError` (échec d'`addSource` → early-return de `update()`, cas rare), le groupe peut rester non flushé et `loading` bloqué — comportement déjà présent aujourd'hui sur ce chemin, non régressé. Si observé en pratique, ajouter un timeout de sécurité dans `beginCommitGroup`.
+
+```
+
 ```
