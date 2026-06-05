@@ -61,10 +61,10 @@
 				}}
 			>
 				<Select.Trigger
-					class="h-8 text-sm flex-1 cursor-pointer bg-background/60"
+					class="h-8 min-w-0 flex-1 cursor-pointer bg-background/60 text-sm"
 					aria-label="Unité de température"
 				>
-					{getLabel(temperatureOptions, $temperatureUnit)}
+					<span class="truncate">{getLabel(temperatureOptions, $temperatureUnit)}</span>
 				</Select.Trigger>
 				<Select.Content class="z-110 border-none bg-glass/65 backdrop-blur-sm">
 					{#each temperatureOptions as { value, label } (value)}
@@ -89,10 +89,10 @@
 				}}
 			>
 				<Select.Trigger
-					class="h-8 text-sm flex-1 cursor-pointer bg-background/60"
+					class="h-8 min-w-0 flex-1 cursor-pointer bg-background/60 text-sm"
 					aria-label="Unité de distance"
 				>
-					{getLabel(distanceOptions, $distanceUnit)}
+					<span class="truncate">{getLabel(distanceOptions, $distanceUnit)}</span>
 				</Select.Trigger>
 				<Select.Content class="z-110 border-none bg-glass/65 backdrop-blur-sm">
 					{#each distanceOptions as { value, label } (value)}
@@ -116,10 +116,10 @@
 				}}
 			>
 				<Select.Trigger
-					class="h-8 text-sm flex-1 cursor-pointer bg-background/60"
+					class="h-8 min-w-0 flex-1 cursor-pointer bg-background/60 text-sm"
 					aria-label="Unité de précipitations"
 				>
-					{getLabel(precipitationOptions, $precipitationUnit)}
+					<span class="truncate">{getLabel(precipitationOptions, $precipitationUnit)}</span>
 				</Select.Trigger>
 				<Select.Content class="z-110 border-none bg-glass/65 backdrop-blur-sm">
 					{#each precipitationOptions as { value, label } (value)}
@@ -143,10 +143,10 @@
 				}}
 			>
 				<Select.Trigger
-					class="h-8 text-sm flex-1 cursor-pointer bg-background/60"
+					class="h-8 min-w-0 flex-1 cursor-pointer bg-background/60 text-sm"
 					aria-label="Unité de vitesse du vent"
 				>
-					{getLabel(windSpeedOptions, $windSpeedUnit)}
+					<span class="truncate">{getLabel(windSpeedOptions, $windSpeedUnit)}</span>
 				</Select.Trigger>
 				<Select.Content class="z-110 border-none bg-glass/65 backdrop-blur-sm">
 					{#each windSpeedOptions as { value, label } (value)}

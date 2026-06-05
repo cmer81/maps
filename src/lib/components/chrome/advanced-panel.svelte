@@ -141,12 +141,15 @@
 	{#if $advancedOpen}
 		<!-- use:portal → rendu sur <body> pour que le backdrop-blur s'applique vraiment
 		     (même voile que la barre haute). -->
+		<!-- Drawer collé au bord droit : glisse entièrement depuis l'extérieur (x = largeur
+		     du rail, w-80 = 320px) et se referme vers la droite. La hauteur reste calée sur
+		     le contenu (max-height) pour ne jamais couvrir la timeline ni la légende en bas. -->
 		<div
 			use:portal
-			class="bg-glass/45 scrollbar-thin fixed right-2.5 z-60 w-72 overflow-x-hidden overflow-y-auto rounded-xl border border-white/15 p-3 text-white shadow-lg backdrop-blur-md"
+			class="bg-glass/45 scrollbar-thin fixed right-0 z-60 w-80 overflow-x-hidden overflow-y-auto rounded-l-xl border border-r-0 border-white/15 p-3 text-white shadow-lg backdrop-blur-md"
 			style="top: {controlsBottom + 8}px; max-height: calc(100dvh - {controlsBottom + 24}px);"
-			in:fly={{ x: 16, duration: reduceMotion.current ? 0 : 200, easing: cubicOut }}
-			out:fly={{ x: 16, duration: reduceMotion.current ? 0 : 150, easing: cubicIn }}
+			in:fly={{ x: 320, duration: reduceMotion.current ? 0 : 260, easing: cubicOut }}
+			out:fly={{ x: 320, duration: reduceMotion.current ? 0 : 200, easing: cubicIn }}
 		>
 			<div class="mb-3 flex items-center justify-between">
 				<h2 class="text-sm font-semibold">Calques &amp; réglages</h2>
