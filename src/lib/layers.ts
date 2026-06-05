@@ -447,6 +447,11 @@ export const changeOMfileURL = (vectorOnly = false, rasterOnly = false): void =>
  * coût réseau quasi nul ; fade-in via le commit différé.
  */
 export const reloadVectorStyle = (): void => {
+	// Edge connu : pendant un changeOMfileURL en vol, getActiveSourceUrl() renvoie
+	// l'URL du slot ACTIF (ancien pas de temps), pas celle en cours de chargement.
+	// Éditer un style à cet instant peut faire un fondu vecteur sur l'ancien pas
+	// pendant que le raster passe au nouveau (décalage d'une frame, auto-résorbé au
+	// tick suivant). Suivi : lire l'URL du slot pending. Cf. issue de suivi.
 	const url = vectorManager?.getActiveSourceUrl();
 	if (!url || !vectorManager) return;
 	loading.set(true);
