@@ -1,14 +1,24 @@
 <script lang="ts">
+	import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
 	import { toast } from 'svelte-sonner';
 
 	import { defaultVectorOptions, vectorOptions } from '$lib/stores/vector';
+	import { contourStyle } from '$lib/stores/vector-styles';
 
+	import ColorPicker from '$lib/components/scale/color-picker.svelte';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Switch } from '$lib/components/ui/switch';
 
+	import { reloadVectorStyle } from '$lib/layers';
 	import { changeOMfileURL } from '$lib/layers';
 	import { updateUrl } from '$lib/url';
+	import {
+		defaultContourStyle,
+		hexToRgbaString,
+		parseRgbaOpacity,
+		rgbaStringToHex
+	} from '$lib/vector-styles';
 
 	const contours = $derived($vectorOptions.contours);
 	const breakpoints = $derived($vectorOptions.breakpoints);
@@ -23,6 +33,31 @@
 			changeOMfileURL();
 		}
 	};
+
+	let editing: { index: number; field: 'lightColor' | 'darkColor' } | null = $state(null);
+
+	function setColor(index: number, field: 'lightColor' | 'darkColor', hex: string, alpha: number) {
+		contourStyle.update((s) => ({
+			...s,
+			levels: s.levels.map((l, i) =>
+				i === index ? { ...l, [field]: hexToRgbaString(hex, alpha) } : l
+			)
+		}));
+		reloadVectorStyle();
+	}
+
+	function setWidth(index: number, width: number) {
+		contourStyle.update((s) => ({
+			...s,
+			levels: s.levels.map((l, i) => (i === index ? { ...l, width } : l))
+		}));
+		reloadVectorStyle();
+	}
+
+	function resetContourStyle() {
+		contourStyle.set(structuredClone(defaultContourStyle));
+		reloadVectorStyle();
+	}
 </script>
 
 <div>
@@ -90,6 +125,66 @@
 					</div>
 				</div>
 			{/if}
+			<div class="mt-2 flex flex-col gap-1.5 border-t border-white/10 pt-2">
+				<div class="flex items-center justify-between">
+					<span class="text-xs text-white/70">Style des isolignes</span>
+					<button
+						type="button"
+						class="flex cursor-pointer items-center gap-1 text-xs text-white/50 hover:text-white/80"
+						onclick={resetContourStyle}
+					>
+						<RotateCcwIcon class="size-3" /> Réinitialiser
+					</button>
+				</div>
+				{#each $contourStyle.levels as level, i (level.label)}
+					<div class="flex items-center gap-2">
+						<span class="w-10 shrink-0 text-xs text-white/60">{level.label}</span>
+						<div class="relative">
+							<button
+								type="button"
+								aria-label={`Couleur (clair) ${level.label}`}
+								class="size-5 cursor-pointer rounded border border-white/20"
+								style="background: {level.lightColor};"
+								onclick={() => (editing = { index: i, field: 'lightColor' })}
+							></button>
+							{#if editing?.index === i && editing.field === 'lightColor'}
+								<ColorPicker
+									color={rgbaStringToHex(level.lightColor)}
+									alpha={parseRgbaOpacity(level.lightColor)}
+									onchange={(hex, alpha) => setColor(i, 'lightColor', hex, alpha)}
+									onclose={() => (editing = null)}
+								/>
+							{/if}
+						</div>
+						<div class="relative">
+							<button
+								type="button"
+								aria-label={`Couleur (sombre) ${level.label}`}
+								class="size-5 cursor-pointer rounded border border-white/20"
+								style="background: {level.darkColor};"
+								onclick={() => (editing = { index: i, field: 'darkColor' })}
+							></button>
+							{#if editing?.index === i && editing.field === 'darkColor'}
+								<ColorPicker
+									color={rgbaStringToHex(level.darkColor)}
+									alpha={parseRgbaOpacity(level.darkColor)}
+									onchange={(hex, alpha) => setColor(i, 'darkColor', hex, alpha)}
+									onclose={() => (editing = null)}
+								/>
+							{/if}
+						</div>
+						<Input
+							class="h-7 w-16 shrink-0 bg-background/60"
+							type="number"
+							step="0.5"
+							min="0"
+							value={level.width}
+							onchange={(e) => setWidth(i, Number(e.currentTarget.value))}
+							aria-label={`Largeur ${level.label}`}
+						/>
+					</div>
+				{/each}
+			</div>
 		</div>
 	{/if}
 </div>
