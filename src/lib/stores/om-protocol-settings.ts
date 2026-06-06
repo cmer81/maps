@@ -28,11 +28,6 @@ import {
 	DEFAULT_CACHE_MAX_BYTES_MB,
 	HTTP_OVERHEAD_BYTES
 } from '$lib/constants';
-import { getNextOmUrls } from '$lib/url';
-
-import { metaJson } from './time';
-import { selectedDomain } from './variables';
-
 import type {
 	Data,
 	OmProtocolSettings,
@@ -133,19 +128,6 @@ export const omProtocolSettings: Writable<OmProtocolSettings> = writable({
 	},
 
 	postReadCallback: (omFileReader: WeatherMapLayerFileReader, data: Data, state: OmUrlState) => {
-		const nextOmUrls = getNextOmUrls(state.omFileUrl, get(selectedDomain), get(metaJson));
-		for (const nextOmUrl of nextOmUrls) {
-			if (nextOmUrl === undefined) continue;
-			// Préchargement best-effort : on enchaîne le prefetch après l'ouverture du
-			// fichier, et on avale les rejets — un 404 en lisière d'horizon (pas de
-			// frame suivante) ne doit pas remonter en rejet de promesse non capturé.
-			void omFileReader
-				.setToOmFile(nextOmUrl)
-				// Requête sur la queue du fichier pour la mettre en cache. Demander une
-				// variable inexistante évite de télécharger des données supplémentaires.
-				.then(() => omFileReader.prefetchVariable('not_a_real_variable'))
-				.catch(() => {});
-		}
 		if (
 			state.dataOptions.domain.value === 'ecmwf_ifs' &&
 			state.dataOptions.variable === 'pressure_msl'
