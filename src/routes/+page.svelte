@@ -48,6 +48,7 @@
 	import { ensureDepartmentsLayer, refreshDepartments } from '$lib/departments-layer';
 	import { checkHighDefinition } from '$lib/helpers';
 	import { initHillshadeFromPrefs } from '$lib/hillshade';
+	import { initNeighborPrefetch } from '$lib/neighbor-prefetch';
 	import { addOmFileLayers, changeOMfileURL } from '$lib/layers';
 	import { addTerrainSource, getStyle, setMapControlSettings } from '$lib/map-controls';
 	import { getInitialMetaData, getMetaData, matchVariableOrFirst } from '$lib/metadata';
@@ -63,6 +64,8 @@
 	let clippingPanel: ReturnType<typeof ClippingPanel>;
 
 	let mapContainer: HTMLElement | null;
+
+	let stopNeighborPrefetch: (() => void) | undefined;
 
 	onMount(async () => {
 		$url = new URL(document.location.href);
@@ -127,6 +130,7 @@
 			addTerrainSource($map);
 			addTerrainSource($map, 'terrainSource2');
 			initHillshadeFromPrefs();
+			stopNeighborPrefetch = initNeighborPrefetch();
 			clippingPanel?.initTerraDraw();
 
 			addOmFileLayers();
@@ -238,6 +242,7 @@
 		}
 		domainSubscription(); // unsubscribe
 		variableSubscription(); // unsubscribe
+		stopNeighborPrefetch?.();
 	});
 </script>
 
