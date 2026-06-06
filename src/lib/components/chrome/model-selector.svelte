@@ -4,7 +4,7 @@
 
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
-	import { type Domain, domainGroups, domainOptions } from '@openmeteo/weather-map-layer';
+	import { domainOptions } from '@openmeteo/weather-map-layer';
 
 	import { domainSelectionOpen as dSO, domain, selectedDomain } from '$lib/stores/variables';
 
@@ -12,14 +12,7 @@
 	import * as Command from '$lib/components/ui/command';
 	import * as Popover from '$lib/components/ui/popover';
 
-	import { DOMAIN_ALLOWLIST, MODEL_DESCRIPTIONS } from '$lib/constants';
-
-	const visibleDomainOptions = domainOptions.filter((d: Domain) =>
-		DOMAIN_ALLOWLIST.includes(d.value)
-	);
-	const visibleDomainGroups = domainGroups.filter((g) =>
-		visibleDomainOptions.some((d) => d.value.startsWith(g.value))
-	);
+	import { MODEL_DESCRIPTIONS, MODEL_SELECTOR_GROUPS } from '$lib/constants';
 
 	let open = $state(get(dSO));
 	const unsub = dSO.subscribe((v) => (open = v));
@@ -64,10 +57,13 @@
 			<Command.Input placeholder="Rechercher un modèle…" class="border-none ring-0" />
 			<Command.List>
 				<Command.Empty>Aucun modèle trouvé.</Command.Empty>
-				{#each visibleDomainGroups as { value: group, label: groupLabel } (group)}
-					<Command.Group heading={groupLabel}>
-						{#each visibleDomainOptions as { value, label } (value)}
-							{#if value.startsWith(group)}
+				{#each MODEL_SELECTOR_GROUPS as group (group.label)}
+					{@const visible = group.domains.filter((d) =>
+						domainOptions.some((o) => o.value === d.value)
+					)}
+					{#if visible.length}
+						<Command.Group heading={group.label}>
+							{#each visible as { value, label } (value)}
 								<Command.Item
 									{value}
 									class="hover:bg-primary/20 cursor-pointer"
@@ -92,9 +88,9 @@
 										/>
 									</div>
 								</Command.Item>
-							{/if}
-						{/each}
-					</Command.Group>
+							{/each}
+						</Command.Group>
+					{/if}
 				{/each}
 			</Command.List>
 		</Command.Root>
