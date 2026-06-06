@@ -1,13 +1,7 @@
 import { tick } from 'svelte';
 import { get } from 'svelte/store';
 
-import {
-	type Domain,
-	type DomainMetaDataJson,
-	closestModelRun,
-	defaultOmProtocolSettings,
-	domainStep
-} from '@openmeteo/weather-map-layer';
+import { defaultOmProtocolSettings } from '@openmeteo/weather-map-layer';
 import { mode } from 'mode-watcher';
 
 import { replaceState } from '$app/navigation';
@@ -37,7 +31,7 @@ import { fmtModelRun, fmtSelectedTime, getBaseUri, hashValue, pad } from './help
 import { getModelsBucketUrl } from './runtime-env';
 import { clippingCountryCodes } from './stores/clipping';
 import { omProtocolSettings } from './stores/om-protocol-settings';
-import { formatISOUTCWithZ, parseISOWithoutTimezone } from './time-format';
+import { parseISOWithoutTimezone } from './time-format';
 
 export const updateUrl = async (
 	urlParam?: string,
@@ -321,66 +315,3 @@ export const getWindOverlayUrl = (): string | undefined => {
 	return getOMUrlFor(`wind_u_component_${level}`);
 };
 
-export const getNextOmUrls = (
-	_omUrl: string,
-	domain: Domain,
-	metaJson: DomainMetaDataJson | undefined
-): [string | undefined, string | undefined] => {
-	const date = get(time);
-	const dateString = formatISOUTCWithZ(date);
-
-	// Pseudo-domaine anomalie : le préchargement suit le layout bucket
-	// (`anomaly/temperature_2m/{phase}/{date}.om`), pas le schéma data_spatial.
-	if (domain.value === ANOMALY_DOMAIN) {
-		if (!metaJson) return [undefined, undefined];
-		const idx = metaJson.valid_times.findIndex((s) => s === dateString);
-		const bucket = getModelsBucketUrl().replace(/\/$/, '');
-		const now = new Date();
-		const provisional = provisionalDateSet(metaJson);
-		const buildAnomalyUrl = (i: number): string | undefined => {
-			const t = metaJson.valid_times[i];
-			if (!t) return undefined;
-			const d2 = new Date(t);
-			if (isNaN(d2.getTime())) return undefined;
-			return (
-				`${bucket}/anomaly/temperature_2m/${anomalyPhase(d2, now, provisional)}/${fmtDateYMD(d2)}.om` +
-				`?variable=${ANOMALY_VARIABLE}`
-			);
-		};
-		return [buildAnomalyUrl(idx + 1), buildAnomalyUrl(idx - 1)];
-	}
-
-	// Respecte le routing bucket (`getBaseUri`) : les pseudo-domaines servis depuis
-	// R2 (arome_france, arome_france_convection, arome_om_reunion) ne sont pas sur
-	// open-meteo — hardcoder l'hôte produisait un 404 systématique au préchargement.
-	const base = `${getBaseUri(domain.value)}/data_spatial/${domain.value}`;
-
-	let prevDate: Date;
-	let nextDate: Date;
-
-	if (metaJson) {
-		const idx = metaJson.valid_times.findIndex((s) => s === dateString);
-		prevDate = new Date(metaJson.valid_times[idx + 1]);
-		nextDate = new Date(metaJson.valid_times[idx - 1]);
-	} else {
-		prevDate = domainStep(date, domain.time_interval, 'backward');
-		nextDate = domainStep(date, domain.time_interval, 'forward');
-	}
-
-	const currentModelRun = metaJson ? new Date(metaJson.reference_time) : undefined;
-
-	const clampRun = (run: Date): Date =>
-		currentModelRun && run > currentModelRun ? currentModelRun : run;
-
-	const prevModelRun = clampRun(closestModelRun(prevDate, domain.model_interval));
-	const nextModelRun = clampRun(closestModelRun(nextDate, domain.model_interval));
-
-	const prevUrl = !isNaN(prevDate.getTime())
-		? `${base}/${fmtModelRun(prevModelRun)}/${fmtSelectedTime(prevDate)}.om`
-		: undefined;
-	const nextUrl = !isNaN(nextDate.getTime())
-		? `${base}/${fmtModelRun(nextModelRun)}/${fmtSelectedTime(nextDate)}.om`
-		: undefined;
-
-	return [prevUrl, nextUrl];
-};
