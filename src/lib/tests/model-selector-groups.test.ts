@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
+import { domainOptions } from '@openmeteo/weather-map-layer';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DOMAIN_ALLOWLIST, MODEL_SELECTOR_GROUPS } from '$lib/constants';
 
@@ -47,14 +48,32 @@ describe('MODEL_SELECTOR_GROUPS', () => {
 });
 
 describe('applyModelSelectorLabels', () => {
+	const PSEUDO_DOMAINS = [
+		'arome_france',
+		'arome_france_convection',
+		'anomaly_europe',
+		'arome_om_reunion',
+		'arome_om_antilles',
+		'arome_om_guyane',
+		'arome_om_polynesie',
+		'arome_om_ncaledonie'
+	];
+
+	beforeEach(() => {
+		for (const value of PSEUDO_DOMAINS) {
+			const idx = domainOptions.findIndex((d) => d.value === value);
+			if (idx >= 0) domainOptions.splice(idx, 1);
+		}
+		vi.resetModules();
+		vi.unstubAllEnvs();
+	});
+
 	it('aligne le libellé de domainOptions sur la table (package + pseudo-domaines)', async () => {
 		vi.stubEnv('VITE_MODELS_BUCKET_URL', 'https://bucket.test');
-		const { domainOptions } = await import('@openmeteo/weather-map-layer');
 		const { registerAnomalyDomain } = await import('$lib/anomaly-domain');
 		const { registerAromeOmDomain } = await import('$lib/arome-om-domain');
-		const { registerAromeFranceConvectionDomain } = await import(
-			'$lib/arome-france-convection-domain'
-		);
+		const { registerAromeFranceConvectionDomain } =
+			await import('$lib/arome-france-convection-domain');
 		const { registerAromeFranceDomain } = await import('$lib/arome-france-domain');
 		const { applyModelSelectorLabels } = await import('$lib/model-selector-labels');
 
