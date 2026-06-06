@@ -1,3 +1,14 @@
+import { get } from 'svelte/store';
+
+import {
+	NEIGHBOR_PREFETCH_BACKWARD,
+	NEIGHBOR_PREFETCH_DEBOUNCE_MS,
+	NEIGHBOR_PREFETCH_FORWARD
+} from './constants';
+import { prefetchData } from './prefetch';
+import { metaJson, modelRun, time } from './stores/time';
+import { layer2Enabled, selectedDomain, variable, variable2 } from './stores/variables';
+
 export interface NeighborWindow {
 	startDate: Date;
 	endDate: Date;
@@ -52,5 +63,68 @@ export const computeNeighborWindow = (
 	return {
 		startDate: validTimes[startIdx],
 		endDate: validTimes[endIdx]
+	};
+};
+
+/**
+ * Abonne le préchargement automatique au store `time`. À chaque changement d'échéance,
+ * (re)arme un debounce ; à l'échéance du timer, précharge les données de la variable
+ * affichée (+ variable2 si la couche 2 est active) sur la fenêtre voisine. Au plus un
+ * run de fetch est actif — tout nouveau déclenchement annule le précédent via AbortController.
+ *
+ * Retourne une fonction de cleanup (désabonnement + clear timer + abort).
+ */
+export const initNeighborPrefetch = (): (() => void) => {
+	let previousTime: Date | null = null;
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	let controller: AbortController | null = null;
+
+	const triggerPrefetch = async () => {
+		const meta = get(metaJson);
+		const currentRun = get(modelRun);
+		if (!meta || !currentRun) return;
+
+		const current = get(time);
+		const validTimes = meta.valid_times.map((vt: string) => new Date(vt));
+		const neighborWindow = computeNeighborWindow(current, previousTime, validTimes, {
+			forward: NEIGHBOR_PREFETCH_FORWARD,
+			backward: NEIGHBOR_PREFETCH_BACKWARD
+		});
+		previousTime = new Date(current.getTime());
+		if (!neighborWindow) return;
+
+		controller?.abort();
+		controller = new AbortController();
+		const signal = controller.signal;
+
+		const domain = get(selectedDomain).value;
+		const base = {
+			startDate: neighborWindow.startDate,
+			endDate: neighborWindow.endDate,
+			metaJson: meta,
+			modelRun: currentRun,
+			domain,
+			signal
+		};
+
+		// Variable principale d'abord (couche visible), puis couche 2 si active.
+		await prefetchData({ ...base, variable: get(variable) });
+		if (signal.aborted) return;
+		if (get(layer2Enabled)) {
+			await prefetchData({ ...base, variable: get(variable2) });
+		}
+	};
+
+	const unsubscribe = time.subscribe(() => {
+		clearTimeout(timer);
+		timer = setTimeout(() => {
+			void triggerPrefetch();
+		}, NEIGHBOR_PREFETCH_DEBOUNCE_MS);
+	});
+
+	return () => {
+		unsubscribe();
+		clearTimeout(timer);
+		controller?.abort();
 	};
 };
