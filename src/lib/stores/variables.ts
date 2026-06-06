@@ -14,12 +14,14 @@ import { registerAromeFranceConvectionDomain } from '$lib/arome-france-convectio
 import { registerAromeFranceDomain } from '$lib/arome-france-domain';
 import { registerAromeOmDomain } from '$lib/arome-om-domain';
 import { DEFAULT_DOMAIN, DEFAULT_VARIABLE } from '$lib/constants';
+import { applyModelSelectorLabels } from '$lib/model-selector-labels';
 
 // Doit tourner avant la première évaluation de `selectedDomain`.
 registerAnomalyDomain();
 registerAromeOmDomain();
 registerAromeFranceConvectionDomain();
 registerAromeFranceDomain();
+applyModelSelectorLabels();
 
 export const defaultDomain = DEFAULT_DOMAIN;
 export const domain = persisted('domain', defaultDomain);

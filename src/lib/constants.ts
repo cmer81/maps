@@ -168,70 +168,68 @@ export const soundingLevelsForDomain = (domain: string): readonly number[] =>
 export const isSoundingDomain = (domain: string): boolean =>
 	Object.prototype.hasOwnProperty.call(SOUNDING_LEVELS_BY_DOMAIN, soundingSourceDomain(domain));
 
-// Préset Infoclimat : sous-ensemble de modèles exposés dans le sélecteur de
-// domaine. Le reste de l'app (résolution d'URLs partagées, métadonnées) reste
-// indépendant — c'est purement un filtre d'affichage.
-//
-// Pour réactiver tous les modèles : passer la liste à `null` ou retirer le
-// filtre dans model-selector.svelte.
-export const DOMAIN_ALLOWLIST: readonly string[] = [
-	// Anomalies (pseudo-domaine, visible seulement si le bucket est configuré)
-	'anomaly_europe',
+/** Source unique du sélecteur de modèles : ordre des groupes, ordre des modèles,
+ *  groupe d'appartenance et libellé affiché. Privilégie les modèles français en tête
+ *  (issue #48). Remplace l'ancien mécanisme de regroupement par préfixe
+ *  (`domain.value.startsWith(group.value)`) du package, incapable de fusionner sous
+ *  un même groupe des domaines aux préfixes hétérogènes (AROME HD / France / OM).
+ *
+ *  Les pseudo-domaines servis depuis le bucket R2 (`anomaly_europe`, `arome_*`) ne
+ *  sont enregistrés dans `domainOptions` que si le bucket est configuré ; le sélecteur
+ *  saute ceux absents (cf. `model-selector.svelte`). */
+export const MODEL_SELECTOR_GROUPS = [
+	{
+		label: 'Météo-France Arome',
+		domains: [
+			{ value: 'meteofrance_arome_france_hd', label: 'Arome France HD' },
+			{ value: AROME_FRANCE_DOMAIN, label: 'Arome France 2.5' },
+			{ value: AROME_FRANCE_CONVECTION_DOMAIN, label: 'Arome France Convection' },
+			{ value: AROME_OM_REUNION_DOMAIN, label: 'Arome OM Réunion-Mayotte' },
+			{ value: AROME_OM_ANTILLES_DOMAIN, label: 'Arome OM Antilles' },
+			{ value: AROME_OM_GUYANE_DOMAIN, label: 'Arome OM Guyane' },
+			{ value: AROME_OM_POLYNESIE_DOMAIN, label: 'Arome OM Polynésie' },
+			{ value: AROME_OM_NCALEDONIE_DOMAIN, label: 'Arome OM Nouvelle-Calédonie' }
+		]
+	},
+	{
+		label: 'Météo-France Arpège',
+		domains: [
+			{ value: 'meteofrance_arpege_europe', label: 'Arpège Europe' },
+			{ value: 'meteofrance_arpege_world025', label: 'Arpège Monde' }
+		]
+	},
+	{
+		label: 'DWD Germany',
+		domains: [
+			{ value: 'dwd_icon_eu', label: 'DWD ICON EU' },
+			{ value: 'dwd_icon_d2', label: 'DWD ICON D2' }
+		]
+	},
+	{
+		label: 'ECMWF',
+		domains: [
+			{ value: 'ecmwf_ifs025', label: 'ECMWF IFS 0.25' },
+			{ value: 'ecmwf_ifs', label: 'ECMWF IFS HRES' },
+			{ value: 'ecmwf_aifs025_single', label: 'ECMWF AIFS 0.25' }
+		]
+	},
+	{
+		label: 'NOAA US',
+		domains: [{ value: 'ncep_gfs025', label: 'GFS Global 0.25' }]
+	},
+	{
+		label: 'Anomalie',
+		domains: [{ value: ANOMALY_DOMAIN, label: 'Anomalie T°C (Europe ERA/Arpège)' }]
+	}
+] as const satisfies readonly { label: string; domains: readonly { value: string; label: string }[] }[];
 
-	// AROME-OM Outre-Mer (pseudo-domaines, visibles seulement si le bucket est configuré)
-	'arome_om_reunion',
-	'arome_om_antilles',
-	'arome_om_guyane',
-	'arome_om_ncaledonie',
-	'arome_om_polynesie',
-
-	// AROME Convection France (pseudo-domaine, visible seulement si le bucket est configuré)
-	'arome_france_convection',
-
-	// AROME France surface (pseudo-domaine, visible seulement si le bucket est configuré)
-	'arome_france',
-
-	// AROME France HD (1,5 km, Open-Meteo) — conservé dans le sélecteur à la
-	// demande d'utilisateurs qui l'apprécient. Surface uniquement côté OM (pas de
-	// niveaux iso-pression → aucun bouton « Sondage vertical », cf.
-	// `SOUNDING_LEVELS_BY_DOMAIN`).
-	'meteofrance_arome_france_hd',
-
-	// Cœur français — l'AROME France maison (`arome_france` + `arome_france_convection`)
-	// couvre le 2,5 km, donc l'AROME 0025 d'Open-Meteo reste débranché du sélecteur
-	// (il sert encore de source au sondage vertical de `arome_france`, cf.
-	// `SOUNDING_SOURCE_BY_DOMAIN`). Les URLs partagées ciblant les domaines OM non
-	// listés résolvent toujours (l'allowlist ne filtre que l'affichage, pas le routing).
-	'meteofrance_arpege_europe',
-
-	// Référence globale + Europe
-	'meteofrance_arpege_world025',
-	'ncep_gfs025',
-	'ecmwf_ifs',
-	'ecmwf_ifs025',
-	'ecmwf_aifs025_single',
-	'dwd_icon_d2',
-	'dwd_icon_eu'
-
-	// Ensembles — commentés pour le moment
-	// 'ecmwf_ifs025_ensemble',
-	// 'ecmwf_aifs025_ensemble',
-	// 'meteoswiss_icon_ch1_ensemble',
-	// 'meteoswiss_icon_ch2_ensemble',
-
-	// Mer / littoral — commentés
-	// 'meteofrance_wave',
-	// 'ecmwf_wam025',
-	// 'meteofrance_currents',
-	// 'meteofrance_sea_surface_temperature',
-
-	// Qualité de l'air — commenté
-	// 'cams_global',
-
-	// Long terme — commentés
-	// 'ecmwf_seas5_monthly',
-	// 'ecmwf_ec46_weekly'
-];
+/** Domaines visibles dans le sélecteur, dérivés de `MODEL_SELECTOR_GROUPS` (aplatissement
+ *  dans l'ordre d'affichage). Display-only : filtre le sélecteur sans bloquer le routing
+ *  — une URL partagée ciblant un domaine non listé résout toujours (le reste de l'app lit
+ *  `domainOptions` non filtré). */
+export const DOMAIN_ALLOWLIST: readonly string[] = MODEL_SELECTOR_GROUPS.flatMap((g) =>
+	g.domains.map((d) => d.value)
+);
 
 // Descriptions courtes par modèle, affichées sous le nom dans le sélecteur de modèle
 // pour aider à choisir (fournisseur · résolution/zone · échéance). Optionnel par domaine.
@@ -244,7 +242,8 @@ export const MODEL_DESCRIPTIONS: Record<string, string> = {
 	arome_om_polynesie: 'Météo-France · Outre-mer, Polynésie française · haute résolution',
 	arome_france_convection:
 		'Infoclimat · 0,025° (~2,5 km), France métropole · convection / orage · ~51 h',
-	arome_france: 'Infoclimat · 0,025° (~2,5 km), France métropole · surface · ~51 h',
+	arome_france:
+		'Infoclimat · 0,025° (~2,5 km), France métropole · surface · ~51 h · émagramme (sondage)',
 	meteofrance_arome_france_hd:
 		'Météo-France · ~1,5 km, France · détaille les phénomènes locaux · échéance ~2 j',
 	meteofrance_arome_france0025:

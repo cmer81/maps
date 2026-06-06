@@ -3,10 +3,11 @@ import { type Domain, domainGroups, domainOptions } from '@openmeteo/weather-map
 import { AROME_FRANCE_DOMAIN } from '$lib/constants';
 import { getModelsBucketUrl } from '$lib/runtime-env';
 
-/** Groupe commun aux pseudo-domaines AROME France maison (Infoclimat). Le
- *  sélecteur range un domaine sous un groupe si `domain.value.startsWith(group.value)`
- *  — ce groupe capture donc `arome_france` ET `arome_france_convection`, mais aucun
- *  domaine d'Open-Meteo (préfixés `meteofrance`). */
+/** Groupe commun aux pseudo-domaines AROME France maison (Infoclimat).
+ *  Mécanisme historique : le sélecteur rangeait un domaine sous un groupe si
+ *  `domain.value.startsWith(group.value)`. Le sélecteur utilise désormais la table
+ *  `MODEL_SELECTOR_GROUPS` (`constants.ts`) et ne consomme plus ce groupe pour
+ *  l'affichage ; le push dans `domainGroups` est conservé (vestige couvert par tests). */
 export const AROME_FRANCE_GROUP: { value: string; label: string } = {
 	value: 'arome_france',
 	label: 'AROME France (Infoclimat)'
