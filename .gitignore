@@ -35,3 +35,4 @@ vite.config.ts.timestamp-*
 # Python bytecode (skill scripts)
 __pycache__/
 *.pyc
+.kanbots/
