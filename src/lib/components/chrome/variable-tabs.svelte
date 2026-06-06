@@ -35,6 +35,7 @@
 
 	import { HIDDEN_VARIABLES, VISIBLE_PRESSURE_LEVELS_HPA } from '$lib/constants';
 	import { localizeVariableOption, translateVariableLabel } from '$lib/i18n/variables-fr';
+	import { pickDefaultLevel, sortLevels } from '$lib/level-groups';
 	import { CATEGORIES, type CategoryKey, categorize } from '$lib/variable-categories';
 
 	const ICONS = {
@@ -73,7 +74,7 @@
 
 	const levelGroupsList = $derived.by(() => {
 		if ($metaJson) {
-			const groups: { [key: string]: [{ value: string; label: string }] } = {};
+			const groups: { [key: string]: { value: string; label: string }[] } = {};
 			for (let mjVariable of $metaJson.variables) {
 				let match = mjVariable.match(LEVEL_REGEX);
 				if (match && match.groups) {
@@ -101,6 +102,10 @@
 					}
 				}
 			}
+			// Niveaux triés par altitude croissante (issue #47) pour l'affichage du sous-sélecteur.
+			for (const prefix of Object.keys(groups)) {
+				groups[prefix] = sortLevels(groups[prefix]);
+			}
 			return groups;
 		}
 	});
@@ -121,17 +126,8 @@
 		if (levelGroupsList && $levelGroupSelected) {
 			const levelGroup = levelGroupsList[$levelGroupSelected.value];
 			if (levelGroup) {
-				// define some default levels
-				for (let level of levelGroup) {
-					if (level.value.includes('2m')) {
-						return level.value;
-					} else if (level.value.includes('10m')) {
-						return level.value;
-					} else if (level.value.includes('100m')) {
-						return level.value;
-					}
-				}
-				return levelGroup[0].value;
+				// Priorité 2 m > 10 m > niveau le plus bas, indépendante de l'ordre de la liste (issue #47).
+				return pickDefaultLevel(levelGroup) ?? value;
 			}
 		}
 		return value;
