@@ -32,7 +32,7 @@
 			<Button
 				{...props}
 				variant="outline"
-				class="bg-glass/50 hover:bg-glass/70 h-11 md:h-8 cursor-pointer justify-between gap-1.5 rounded-lg border border-white/20 px-3 text-white shadow-md backdrop-blur-md"
+				class="bg-glass/50 hover:bg-glass/70 h-11 md:h-8 cursor-pointer justify-between gap-1.5 rounded-lg border border-white/20 px-3 text-white shadow-md glass-blur"
 				role="combobox"
 				aria-expanded={open}
 				aria-label="Choisir le modèle météo"

@@ -14,6 +14,36 @@
 @custom-variant dark (&:is(.dark *));
 
 /* =============================================================================
+   Custom Utilities
+   ============================================================================= */
+
+/* Surface « verre dépoli » qui ne floute pas le texte.
+   Poser `backdrop-filter` sur l'élément qui porte le texte le rastérise à la
+   résolution de l'écran : sur un écran 1x (non-Retina), ça ramollit le texte
+   affiché par-dessus, alors qu'en zoomant la couche est re-rastérisée plus
+   finement et le texte redevient net (issue #44). On isole donc le flou dans un
+   pseudo-élément placé DERRIÈRE le contenu : le voile verre est préservé mais le
+   texte reste hors de la couche filtrée, donc net à tout facteur d'échelle.
+   À combiner avec un fond Tailwind (`bg-glass/45`, `hover:bg-glass/70`…), qui
+   lui ne pose pas de souci de netteté. Remplace `backdrop-blur-md`. */
+@utility glass-blur {
+	position: relative;
+	/* Nouveau stacking context : confine le `z-index: -1` du voile à l'élément,
+	   sinon il passerait derrière la carte et disparaîtrait. */
+	isolation: isolate;
+
+	&::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		border-radius: inherit;
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
+	}
+}
+
+/* =============================================================================
    Theme Configuration
    ============================================================================= */
 

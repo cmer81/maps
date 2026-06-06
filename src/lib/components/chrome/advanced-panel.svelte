@@ -131,7 +131,7 @@
 	type="button"
 	onclick={() => advancedOpen.update((v) => !v)}
 	aria-label="Calques et réglages"
-	class="bg-glass/50 hover:bg-glass/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 flex h-11 md:h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-white/20 px-3 text-sm text-white shadow-md backdrop-blur-md"
+	class="bg-glass/50 hover:bg-glass/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 flex h-11 md:h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-white/20 px-3 text-sm text-white shadow-md glass-blur"
 >
 	<SettingsIcon class="size-4" aria-hidden="true" />
 	<span class="hidden sm:inline">Calques &amp; réglages</span>

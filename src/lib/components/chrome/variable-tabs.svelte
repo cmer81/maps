@@ -176,7 +176,7 @@
 						variant="outline"
 						class="bg-glass/50 hover:bg-glass/70 {variableSelectionOpen
 							? 'bg-glass/70'
-							: ''} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 h-11 md:h-8 max-w-56 cursor-pointer justify-between gap-1.5 rounded-lg border border-white/20 px-3 text-white shadow-md backdrop-blur-md"
+							: ''} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 h-11 md:h-8 max-w-56 cursor-pointer justify-between gap-1.5 rounded-lg border border-white/20 px-3 text-white shadow-md glass-blur"
 						role="combobox"
 						aria-expanded={variableSelectionOpen}
 						aria-label="Choisir une variable"
@@ -284,7 +284,7 @@
 							variant="outline"
 							class="bg-glass/50 hover:bg-glass/70 {pressureLevelSelectionOpen
 								? 'bg-glass/70'
-								: ''} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 h-11 md:h-8 cursor-pointer justify-between gap-1.5 rounded-lg border border-white/20 px-3 text-white shadow-md backdrop-blur-md"
+								: ''} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 h-11 md:h-8 cursor-pointer justify-between gap-1.5 rounded-lg border border-white/20 px-3 text-white shadow-md glass-blur"
 							role="combobox"
 							aria-expanded={pressureLevelSelectionOpen}
 						>

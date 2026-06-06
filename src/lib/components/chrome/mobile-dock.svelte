@@ -23,7 +23,7 @@
 	target="_blank"
 	rel="noopener"
 	aria-label="Infoclimat"
-	class="bg-glass/50 fixed top-2.5 left-2.5 z-60 flex h-11 items-center rounded-lg border border-white/20 px-2.5 shadow-md backdrop-blur-md"
+	class="bg-glass/50 fixed top-2.5 left-2.5 z-60 flex h-11 items-center rounded-lg border border-white/20 px-2.5 shadow-md glass-blur"
 >
 	<img src={LOGO_URL} alt="Infoclimat" class="h-6 w-auto" crossorigin="anonymous" />
 </a>
