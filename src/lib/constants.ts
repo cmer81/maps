@@ -123,12 +123,23 @@ export const COMPLETE_DEFAULT_VALUES: { [key: string]: boolean | string | number
 	wind_overlay: 'false',
 	wind_overlay_level: '10m',
 	labels: 'false',
-	departments: 'true'
+	departments: 'true',
+	stations: 'false'
 };
 
 // Contours administratifs FR — GeoJSON simplifié (~550 KB / ~80 KB gzip),
 // licence ODbL, bundlé depuis `gregoiredavid/france-geojson`.
 export const DEPARTMENTS_GEOJSON_URL = '/departements.geojson';
+
+// --- Stations Infoclimat (calque de repérage) ---
+export const STATIONS_GEOJSON_URL = '/infoclimat-stations.geojson';
+export const STATIONS_SOURCE_ID = 'omStationsSource';
+export const STATIONS_LAYER_ID = 'omStationsLayer';
+// Base d'URL des fiches station (le slug est cosmétique, Infoclimat résout par id).
+export const STATION_FICHE_BASE = 'https://www.infoclimat.fr/observations-meteo/temps-reel';
+// Apparition progressive : opacité 0 sous MIN, plein à partir de MAX.
+export const STATIONS_FADE_MIN_ZOOM = 6;
+export const STATIONS_FADE_MAX_ZOOM = 7.5;
 
 // Niveaux iso-pression exposés dans le sélecteur (hPa). Les niveaux non listés
 // restent fonctionnels via URL partagée — c'est purement un filtre d'affichage.

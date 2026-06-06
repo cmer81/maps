@@ -419,6 +419,57 @@
 	color: white;
 }
 
+/* Popup station Infoclimat */
+.om-station .maplibregl-popup-content {
+	border-radius: 8px;
+	padding: 10px 12px;
+	background: rgba(255, 253, 248, 0.92);
+	backdrop-filter: blur(2px);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+	color: #1e293b;
+}
+.dark .om-station .maplibregl-popup-content {
+	background: rgba(26, 26, 24, 0.92);
+	color: #f1f5f9;
+}
+.om-station .maplibregl-popup-tip {
+	border-top-color: rgba(255, 253, 248, 0.92);
+	border-bottom-color: rgba(255, 253, 248, 0.92);
+}
+.dark .om-station .maplibregl-popup-tip {
+	border-top-color: rgba(26, 26, 24, 0.92);
+	border-bottom-color: rgba(26, 26, 24, 0.92);
+}
+.om-station-name {
+	font-weight: 600;
+	font-size: 0.9rem;
+	line-height: 1.2;
+}
+.om-station-meta {
+	font-size: 0.78rem;
+	opacity: 0.75;
+	margin-top: 2px;
+}
+.om-station-last {
+	font-size: 0.72rem;
+	opacity: 0.6;
+	margin-top: 2px;
+}
+.om-station-link {
+	display: inline-block;
+	margin-top: 6px;
+	font-size: 0.78rem;
+	font-weight: 500;
+	color: #2563eb;
+	text-decoration: none;
+}
+.om-station-link:hover {
+	text-decoration: underline;
+}
+.dark .om-station-link {
+	color: #60a5fa;
+}
+
 /* Time slider */
 .time-slider-container button {
 	border-width: 1px;

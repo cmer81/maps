@@ -25,6 +25,7 @@
 		"lint": "prettier --check . && eslint .",
 		"test": "vitest",
 		"coverage": "vitest run --coverage",
+		"generate:stations": "node scripts/generate-stations.mjs",
 		"upgrade:ui": "npx shadcn-svelte@latest add button command dialog input kbd label popover select separator sheet sonner switch -y -o"
 	},
 	"devDependencies": {

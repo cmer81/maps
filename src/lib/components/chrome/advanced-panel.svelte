@@ -16,6 +16,7 @@
 		helpOpen,
 		preferences
 	} from '$lib/stores/preferences';
+	import { DEFAULT_SHOW_STATIONS, showStations } from '$lib/stores/stations';
 
 	import SecondaryLayerPanel from '$lib/components/secondary-layer/secondary-layer-panel.svelte';
 	import ArrowsSettings from '$lib/components/settings/arrows-settings.svelte';
@@ -37,12 +38,18 @@
 
 	// Reactive snapshots driving the toggle UI.
 	const departmentsOn = $derived($showDepartments);
+	const stationsOn = $derived($showStations);
 	const hillshadeOn = $derived($preferences.hillshade);
 
 	// --- IControl behaviors ported to plain handlers ---
 	function toggleDepartments(next: boolean) {
 		showDepartments.set(next);
 		updateUrl('departments', String(next), String(DEFAULT_SHOW_DEPARTMENTS));
+	}
+
+	function toggleStations(next: boolean) {
+		showStations.set(next);
+		updateUrl('stations', String(next), String(DEFAULT_SHOW_STATIONS));
 	}
 
 	function toggleHillshade(next: boolean) {
@@ -93,6 +100,7 @@
 		<div class="my-1 h-px bg-white/10"></div>
 		<SecondaryLayerPanel />
 		<LayerToggle label="Départements" checked={departmentsOn} onCheckedChange={toggleDepartments} />
+		<LayerToggle label="Stations" checked={stationsOn} onCheckedChange={toggleStations} />
 		<LayerToggle label="Relief ombré" checked={hillshadeOn} onCheckedChange={toggleHillshade} />
 		<OpacitySetting />
 	</section>
