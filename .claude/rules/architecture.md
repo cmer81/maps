@@ -47,7 +47,16 @@ Supprimés : `src/lib/stores/playback.ts`, le composant `playback-panel.svelte`,
 
 ## Domain allowlist (Infoclimat preset)
 
-`DOMAIN_ALLOWLIST` in `src/lib/constants.ts` filters the domain selector in `model-selector.svelte` to the Infoclimat-relevant subset (MF AROME / ARPEGE, ECMWF IFS / AIFS, DWD ICON). This is **display-only**: URLs sharing a non-listed domain still resolve correctly (the rest of the app reads `domainOptions` from the package unfiltered). Add/remove entries in the list to expose more models in the UI.
+`MODEL_SELECTOR_GROUPS` in `src/lib/constants.ts` is the single source of truth for the
+domain selector (`model-selector.svelte`): it declares the visible domains, their order,
+their group, and their display label — French models first (issue #48). `DOMAIN_ALLOWLIST`
+is **derived** from it (flattened domain values). The selector iterates this table directly;
+it no longer relies on the package's `domainGroups` + `startsWith(group.value)` grouping
+(which could not merge AROME HD / France / OM under one group). Labels are aligned onto
+`domainOptions` via `applyModelSelectorLabels()` (`src/lib/model-selector-labels.ts`, called
+in `stores/variables.ts`) so the trigger button and the dropdown agree. This is still
+**display-only**: URLs sharing a non-listed domain resolve correctly. Add/reorder entries in
+`MODEL_SELECTOR_GROUPS` to change the UI.
 
 ## Pseudo-domaines servis depuis le bucket R2
 
