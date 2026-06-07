@@ -103,7 +103,7 @@
 		<SecondaryLayerPanel />
 		<LayerToggle label="Départements" checked={departmentsOn} onCheckedChange={toggleDepartments} />
 		<LayerToggle label="Relief ombré" checked={hillshadeOn} onCheckedChange={toggleHillshade} />
-		<LayerToggle label="Fond de carte sombre" checked={darkOn} onCheckedChange={toggleDark} />
+		<LayerToggle label="Dark Mode" checked={darkOn} onCheckedChange={toggleDark} />
 		<OpacitySetting />
 	</section>
 
