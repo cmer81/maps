@@ -130,7 +130,11 @@ export const reloadStyles = () => {
 		map.setStyle(style);
 		map.once('styledata', () => {
 			setTimeout(() => {
+				// setStyle a retiré toutes les sources ; on recrée les DEUX sources terrain
+				// comme à l'init (+page.svelte). terrainSource2 alimente le TerrainControl
+				// (hillshade.ts) — sans elle, le bouton « terrain » lève « no source … terrainSource2 ».
 				addTerrainSource(map);
+				addTerrainSource(map, 'terrainSource2');
 				const preferences = get(p);
 				if (preferences.hillshade) {
 					addHillshadeLayer();
