@@ -97,7 +97,11 @@ export const DEFAULT_OPACITY = 75;
 
 // Cache defaults (in KB and MB for UI display)
 export const DEFAULT_CACHE_BLOCK_SIZE_KB = 64;
-export const DEFAULT_CACHE_MAX_BYTES_MB = 400;
+// 1 GiO : large pour la fenêtre glissante de scrubbing (neighbor-prefetch) sans
+// saturer un petit disque. Le quota navigateur est typiquement bien supérieur
+// (plusieurs Go) ; cf. requestPersistentStorage() qui empêche l'éviction d'origine.
+// Override manuel via le store persisté `cacheMaxBytesMb` (réglages → Cache).
+export const DEFAULT_CACHE_MAX_BYTES_MB = 1024;
 
 // Measured HTTP/2 overhead per range request (~1342 bytes: HPACK headers + framing).
 // Rounded up to 1408 for safety margin (Range/Content-Range header lengths vary with file offset).
@@ -228,7 +232,10 @@ export const MODEL_SELECTOR_GROUPS = [
 		label: 'Anomalie',
 		domains: [{ value: ANOMALY_DOMAIN, label: 'Anomalie T°C (Europe ERA/Arpège)' }]
 	}
-] as const satisfies readonly { label: string; domains: readonly { value: string; label: string }[] }[];
+] as const satisfies readonly {
+	label: string;
+	domains: readonly { value: string; label: string }[];
+}[];
 
 /** Domaines visibles dans le sélecteur, dérivés de `MODEL_SELECTOR_GROUPS` (aplatissement
  *  dans l'ordre d'affichage). Display-only : filtre le sélecteur sans bloquer le routing

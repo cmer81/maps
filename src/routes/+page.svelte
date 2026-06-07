@@ -48,11 +48,12 @@
 	import { ensureDepartmentsLayer, refreshDepartments } from '$lib/departments-layer';
 	import { checkHighDefinition } from '$lib/helpers';
 	import { initHillshadeFromPrefs } from '$lib/hillshade';
-	import { initNeighborPrefetch } from '$lib/neighbor-prefetch';
 	import { addOmFileLayers, changeOMfileURL } from '$lib/layers';
 	import { addTerrainSource, getStyle, setMapControlSettings } from '$lib/map-controls';
 	import { getInitialMetaData, getMetaData, matchVariableOrFirst } from '$lib/metadata';
+	import { initNeighborPrefetch } from '$lib/neighbor-prefetch';
 	import { addPopup } from '$lib/popup';
+	import { requestPersistentStorage } from '$lib/storage-persistence';
 	import { formatISOWithoutTimezone } from '$lib/time-format';
 	import { findTimeStep } from '$lib/time-utils';
 	import { updateUrl, urlParamsToPreferences } from '$lib/url';
@@ -70,6 +71,11 @@
 	onMount(async () => {
 		$url = new URL(document.location.href);
 		urlParamsToPreferences();
+
+		// Marque le stockage comme persistant pour que le cache de blocs OMfile ne
+		// soit pas évincé par le navigateur sous pression disque. Fire-and-forget :
+		// ne doit pas retarder l'initialisation de la carte.
+		void requestPersistentStorage();
 
 		// first time on load, check if monitor supports high definition, for increased tile size
 		if (!get(tileSizeSet)) {
