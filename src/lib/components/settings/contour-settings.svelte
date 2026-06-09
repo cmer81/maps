@@ -2,6 +2,8 @@
 	import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
 	import { toast } from 'svelte-sonner';
 
+	import { isGeopotentialVariable } from '$lib/stores/units';
+	import { variable } from '$lib/stores/variables';
 	import { defaultVectorOptions, vectorOptions } from '$lib/stores/vector';
 	import { contourStyle } from '$lib/stores/vector-styles';
 
@@ -22,6 +24,12 @@
 
 	const contours = $derived($vectorOptions.contours);
 	const breakpoints = $derived($vectorOptions.breakpoints);
+
+	// L'intervalle est en unité de base (gpm pour le géopotentiel), pas en unité
+	// d'affichage. Le géopotentiel a une plage utile bien plus large (~40-80 gpm)
+	// que les autres variables, d'où une borne haute dédiée. Le champ numérique
+	// permet toujours de dépasser ; seul le curseur est plafonné.
+	const sliderMax = $derived(isGeopotentialVariable($variable) ? 120 : 50);
 
 	const handleContourIntervalChange = () => {
 		updateUrl(
@@ -124,7 +132,7 @@
 						class:cursor-not-allowed={breakpoints}
 						type="range"
 						min="0"
-						max="50"
+						max={sliderMax}
 						disabled={breakpoints}
 						bind:value={$vectorOptions.contourInterval}
 						onchange={handleContourIntervalChange}
