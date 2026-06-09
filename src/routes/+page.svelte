@@ -17,6 +17,7 @@
 
 	import { basemapTheme } from '$lib/stores/basemap-theme';
 	import { showDepartments } from '$lib/stores/departments';
+	import { showLabels } from '$lib/stores/labels';
 	import { map } from '$lib/stores/map';
 	import { omProtocolSettings } from '$lib/stores/om-protocol-settings';
 	import { currentOmUrl } from '$lib/stores/om-url';
@@ -49,6 +50,7 @@
 	import { ensureDepartmentsLayer, refreshDepartments } from '$lib/departments-layer';
 	import { checkHighDefinition } from '$lib/helpers';
 	import { initHillshadeFromPrefs } from '$lib/hillshade';
+	import { applyLabelsVisibility } from '$lib/labels-layer';
 	import { addOmFileLayers, changeOMfileURL } from '$lib/layers';
 	import {
 		addTerrainSource,
@@ -158,6 +160,7 @@
 
 			ensureDepartmentsLayer();
 			refreshDepartments();
+			applyLabelsVisibility();
 		});
 	});
 
@@ -227,6 +230,10 @@
 
 	$effect(() => {
 		refreshDepartments([$showDepartments]);
+	});
+
+	$effect(() => {
+		applyLabelsVisibility($showLabels);
 	});
 
 	// Re-applique basemap + couches météo quand le thème du fond de carte change

@@ -7,6 +7,7 @@ import { mode } from 'mode-watcher';
 import { replaceState } from '$app/navigation';
 
 import { DEFAULT_SHOW_DEPARTMENTS, showDepartments } from '$lib/stores/departments';
+import { DEFAULT_SHOW_LABELS, showLabels } from '$lib/stores/labels';
 import { map as m } from '$lib/stores/map';
 import {
 	type Preferences,
@@ -181,6 +182,13 @@ export const urlParamsToPreferences = () => {
 		url.searchParams.set('departments', String(get(showDepartments)));
 	}
 
+	const labelsRaw = params.get('labels');
+	if (labelsRaw !== null) {
+		showLabels.set(labelsRaw === 'true');
+	} else if (get(showLabels) !== DEFAULT_SHOW_LABELS) {
+		url.searchParams.set('labels', String(get(showLabels)));
+	}
+
 	const clipCountries = parseClipCountriesParam(params.get(CLIP_COUNTRIES_PARAM));
 	if (clipCountries.length > 0) {
 		clippingCountryCodes.set(clipCountries);
@@ -314,4 +322,3 @@ export const getWindOverlayUrl = (): string | undefined => {
 	// weather-map-layer reads U/V components and renders arrows when arrows=true.
 	return getOMUrlFor(`wind_u_component_${level}`);
 };
-
