@@ -82,9 +82,7 @@
 	{#if contours}
 		<div class="mt-1 flex flex-col gap-2 pl-1">
 			<label class="flex cursor-pointer items-center justify-between gap-3" for="breakpoints">
-				<span class="text-xs text-white/70"
-					>Intervalle sur paliers {breakpoints ? 'activé' : 'désactivé'}</span
-				>
+				<span class="text-xs text-white/70">Aligner sur les paliers de l'échelle</span>
 				<Switch
 					id="breakpoints"
 					class="cursor-pointer"
@@ -97,35 +95,50 @@
 						);
 						changeOMfileURL();
 						toast.info(
-							"Intervalle sur paliers d'échelle " + (breakpoints ? 'activé' : 'désactivé')
+							breakpoints
+								? "Isolignes alignées sur les paliers de l'échelle"
+								: 'Isolignes à intervalle fixe'
 						);
 					}}
 				/>
 			</label>
+			<p class="text-xs leading-snug text-white/45">
+				{#if breakpoints}
+					Une isoligne par palier de l'échelle de couleurs. Désactivez pour régler vous-même
+					l'intervalle.
+				{:else}
+					Intervalle fixe réglé ci-dessous, indépendant des paliers de l'échelle.
+				{/if}
+			</p>
 
-			{#if !breakpoints}
-				<div class="flex flex-col gap-2 duration-300">
-					<Label class="text-xs text-white/70" for="interval">Intervalle des isolignes :</Label>
-					<div class="flex items-center gap-3">
-						<input
-							id="interval_slider"
-							class="min-w-0 flex-1 delay-75 duration-200"
-							type="range"
-							min="0"
-							max="50"
-							bind:value={$vectorOptions.contourInterval}
-							onchange={handleContourIntervalChange}
-						/>
-						<Input
-							id="interval"
-							class="w-16 shrink-0 bg-background/60"
-							step="0.5"
-							bind:value={$vectorOptions.contourInterval}
-							onchange={handleContourIntervalChange}
-						/>
-					</div>
+			<div
+				class="flex flex-col gap-2 duration-300"
+				class:opacity-50={breakpoints}
+				aria-disabled={breakpoints}
+			>
+				<Label class="text-xs text-white/70" for="interval">Intervalle fixe des isolignes :</Label>
+				<div class="flex items-center gap-3">
+					<input
+						id="interval_slider"
+						class="min-w-0 flex-1 delay-75 duration-200"
+						class:cursor-not-allowed={breakpoints}
+						type="range"
+						min="0"
+						max="50"
+						disabled={breakpoints}
+						bind:value={$vectorOptions.contourInterval}
+						onchange={handleContourIntervalChange}
+					/>
+					<Input
+						id="interval"
+						class="w-16 shrink-0 bg-background/60"
+						step="0.5"
+						disabled={breakpoints}
+						bind:value={$vectorOptions.contourInterval}
+						onchange={handleContourIntervalChange}
+					/>
 				</div>
-			{/if}
+			</div>
 			<div class="mt-2 flex flex-col gap-1.5 border-t border-white/10 pt-2">
 				<div class="flex items-center justify-between">
 					<span class="text-xs text-white/70">Style des isolignes</span>
