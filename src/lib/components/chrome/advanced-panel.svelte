@@ -10,6 +10,7 @@
 	import { basemapTheme } from '$lib/stores/basemap-theme';
 	import { clippingPanelOpen } from '$lib/stores/clipping';
 	import { DEFAULT_SHOW_DEPARTMENTS, showDepartments } from '$lib/stores/departments';
+	import { DEFAULT_SHOW_LABELS, showLabels } from '$lib/stores/labels';
 	import {
 		advancedOpen,
 		defaultPreferences,
@@ -38,6 +39,7 @@
 
 	// Reactive snapshots driving the toggle UI.
 	const departmentsOn = $derived($showDepartments);
+	const labelsOn = $derived($showLabels);
 	const hillshadeOn = $derived($preferences.hillshade);
 	// Thème du FOND DE CARTE (le chrome reste sombre en permanence — cf. basemap-theme.ts).
 	const darkOn = $derived($basemapTheme === 'dark');
@@ -46,6 +48,11 @@
 	function toggleDepartments(next: boolean) {
 		showDepartments.set(next);
 		updateUrl('departments', String(next), String(DEFAULT_SHOW_DEPARTMENTS));
+	}
+
+	function toggleLabels(next: boolean) {
+		showLabels.set(next);
+		updateUrl('labels', String(next), String(DEFAULT_SHOW_LABELS));
 	}
 
 	function toggleHillshade(next: boolean) {
@@ -102,6 +109,7 @@
 		<div class="my-1 h-px bg-white/10"></div>
 		<SecondaryLayerPanel />
 		<LayerToggle label="Départements" checked={departmentsOn} onCheckedChange={toggleDepartments} />
+		<LayerToggle label="Villes &amp; pays" checked={labelsOn} onCheckedChange={toggleLabels} />
 		<LayerToggle label="Relief ombré" checked={hillshadeOn} onCheckedChange={toggleHillshade} />
 		<LayerToggle label="Dark Mode" checked={darkOn} onCheckedChange={toggleDark} />
 		<OpacitySetting />

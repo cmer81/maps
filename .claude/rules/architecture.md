@@ -34,6 +34,18 @@ Single page app: `src/routes/+page.svelte` is the entry; `+layout.ts` opts out o
 
 The departments contour file is bundled (`static/departements.geojson`) to avoid CORS issues with third-party CDNs.
 
+## Labels villes/pays du basemap (toggle)
+
+`src/lib/labels-layer.ts` masque/affiche les noms de villes et de pays — ce sont des
+symbol-layers **du basemap** (`place_label_other`, `place_label_city`, `country_label-other`,
+`country_label` dans `src/lib/basemap/minimal-*.json`), pas un overlay GeoJSON. `applyLabelsVisibility()`
+bascule leur `visibility` via `setLayoutProperty` (défensif : couche absente ignorée). Piloté par le
+store persisté `showLabels` (`src/lib/stores/labels.ts`, défaut `true`) + param URL `labels`, toggle
+« Villes & pays » dans `advanced-panel.svelte`. **Piège** : `setStyle` (donc `reloadStyles()` au
+changement de thème) recrée les couches du basemap en `visible` → `applyLabelsVisibility()` doit être
+rappelé après chaque re-style (fait dans `reloadStyles()` et au `load` initial dans `+page.svelte`,
+plus un `$effect` sur `$showLabels`). Même schéma que `showDepartments`.
+
 ## Playback (diaporama) — retiré
 
 Le player d'animation pré-rendu a été retiré (à reconstruire dans un module propre). Vestiges conservés :
