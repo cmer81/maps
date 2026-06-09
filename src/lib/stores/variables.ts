@@ -16,6 +16,7 @@ import { registerAromeFranceHdDomain } from '$lib/arome-france-hd-domain';
 import { registerAromeOmDomain } from '$lib/arome-om-domain';
 import { DEFAULT_DOMAIN, DEFAULT_VARIABLE } from '$lib/constants';
 import { applyModelSelectorLabels } from '$lib/model-selector-labels';
+import { registerRadarDomain } from '$lib/radar-domain';
 
 // Doit tourner avant la première évaluation de `selectedDomain`.
 registerAnomalyDomain();
@@ -23,6 +24,7 @@ registerAromeOmDomain();
 registerAromeFranceConvectionDomain();
 registerAromeFranceDomain();
 registerAromeFranceHdDomain();
+registerRadarDomain();
 applyModelSelectorLabels();
 
 export const defaultDomain = DEFAULT_DOMAIN;
