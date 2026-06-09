@@ -7,7 +7,13 @@ import { basemapTheme } from '$lib/stores/basemap-theme';
 import { map as m } from '$lib/stores/map';
 import { loading, opacity, opacity2, preferences as p } from '$lib/stores/preferences';
 import { metaJson as mJ, time } from '$lib/stores/time';
-import { domain as d, layer2Enabled, variable2 } from '$lib/stores/variables';
+import { geopotentialUnit } from '$lib/stores/units';
+import {
+	domain as d,
+	variable as displayedVariable,
+	layer2Enabled,
+	variable2
+} from '$lib/stores/variables';
 import { vectorOptions as vO } from '$lib/stores/vector';
 import { arrowStyle, contourStyle } from '$lib/stores/vector-styles';
 
@@ -27,6 +33,7 @@ import {
 	buildArrowColorExpr,
 	buildArrowWidthExpr,
 	buildContourColorExpr,
+	buildContourLabelExpr,
 	buildContourWidthExpr
 } from '$lib/vector-styles';
 
@@ -202,7 +209,7 @@ const vectorContourLabelsLayer = (): SlotLayer => ({
 					'symbol-placement': 'line-center',
 					'symbol-spacing': 1,
 					'text-font': ['Noto Sans Regular'],
-					'text-field': ['to-string', ['get', 'value']],
+					'text-field': buildContourLabelExpr(get(displayedVariable), get(geopotentialUnit)),
 					'text-padding': 1,
 					'text-offset': [0, -0.6]
 				},

@@ -21,6 +21,7 @@
 		convertValue,
 		getDisplayUnit,
 		getUnitOptions,
+		isGeopotentialVariable,
 		setUnitForCategory,
 		unitPreferences
 	} from '$lib/stores/units';
@@ -31,7 +32,7 @@
 	import { getAlpha, hexToRgba, rgbaToHex } from '$lib/color';
 	import { categoricalLegendEntries, isCategorical } from '$lib/color-scales/legend';
 	import { textWhite } from '$lib/helpers';
-	import { changeOMfileURL } from '$lib/layers';
+	import { changeOMfileURL, reloadVectorStyle } from '$lib/layers';
 	import { refreshPopup } from '$lib/popup';
 
 	import CategoricalLegend from './categorical-legend.svelte';
@@ -269,6 +270,8 @@
 									if (v) {
 										setUnitForCategory(colorScale.unit, v, $variable);
 										refreshPopup();
+										// Le géopotentiel convertit aussi les étiquettes d'isolignes (gpm↔gpdam).
+										if (isGeopotentialVariable($variable)) reloadVectorStyle();
 									}
 								}}
 							>

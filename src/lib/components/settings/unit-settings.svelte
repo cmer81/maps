@@ -17,6 +17,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import * as Select from '$lib/components/ui/select';
 
+	import { reloadVectorStyle } from '$lib/layers';
 	import { refreshPopup } from '$lib/popup';
 
 	const temperatureOptions: { value: TemperatureUnit; label: string }[] = [
@@ -119,6 +120,8 @@
 					if (v) {
 						geopotentialUnit.set(v as GeopotentialUnit);
 						refreshPopup();
+						// Rafraîchit les étiquettes d'isolignes si un géopotentiel est affiché.
+						reloadVectorStyle();
 						toast.info(`Unité de géopotentiel : ${v}`);
 					}
 				}}

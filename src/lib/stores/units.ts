@@ -72,6 +72,11 @@ export type UnitCategory =
 	| 'distance'
 	| 'geopotential';
 
+/** Vrai pour les variables de hauteur géopotentielle (`geopotential_height_*`). */
+export function isGeopotentialVariable(variable: string): boolean {
+	return /geopotential/i.test(variable);
+}
+
 /**
  * Map a value's unit category from the color-scale base unit, optionally
  * disambiguated by the variable name.
@@ -81,7 +86,7 @@ export type UnitCategory =
  * désigne un géopotentiel, la catégorie `geopotential` est prioritaire.
  */
 export function getUnitCategory(baseUnit: string, variable?: string): UnitCategory | undefined {
-	if (variable && /geopotential/i.test(variable)) return 'geopotential';
+	if (variable && isGeopotentialVariable(variable)) return 'geopotential';
 	switch (baseUnit) {
 		case '°C':
 		case 'K':

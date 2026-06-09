@@ -4,6 +4,7 @@ import {
 	buildArrowColorExpr,
 	buildArrowWidthExpr,
 	buildContourColorExpr,
+	buildContourLabelExpr,
 	buildContourWidthExpr,
 	defaultArrowStyle,
 	defaultContourStyle,
@@ -93,6 +94,33 @@ describe('buildArrowWidthExpr (default)', () => {
 	it('>5 → 2', () => expect(evalExpr(expr, 7)).toBe(2));
 	it('>10 → 2.2', () => expect(evalExpr(expr, 15)).toBe(2.2));
 	it('>20 → 2.8', () => expect(evalExpr(expr, 25)).toBe(2.8));
+});
+
+describe('buildContourLabelExpr', () => {
+	it('géopotentiel + gpdam → number-format ÷10', () => {
+		const expr = buildContourLabelExpr('geopotential_height_500hPa', 'gpdam');
+		expect(expr).toEqual([
+			'number-format',
+			['/', ['to-number', ['get', 'value']], 10],
+			{
+				'max-fraction-digits': 1
+			}
+		]);
+	});
+
+	it('géopotentiel + gpm → valeur brute', () => {
+		expect(buildContourLabelExpr('geopotential_height_500hPa', 'gpm')).toEqual([
+			'to-string',
+			['get', 'value']
+		]);
+	});
+
+	it('variable non géopotentielle → valeur brute même en gpdam', () => {
+		expect(buildContourLabelExpr('temperature_850hPa', 'gpdam')).toEqual([
+			'to-string',
+			['get', 'value']
+		]);
+	});
 });
 
 describe('rgba helpers', () => {

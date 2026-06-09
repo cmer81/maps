@@ -5,6 +5,8 @@
  * ici en données (niveaux) + builders purs, pour pouvoir les personnaliser
  * (cf. stores/vector-styles.ts) sans toucher au moteur de rendu.
  */
+import { type GeopotentialUnit, isGeopotentialVariable } from '$lib/stores/units';
+
 import type * as maplibregl from 'maplibre-gl';
 
 // ── Types ────────────────────────────────────────────────────────────────
@@ -154,6 +156,23 @@ export function buildContourWidthExpr(style: ContourStyle): NumOrExpr {
 		expr = ['case', ['boolean', ['==', ['%', VALUE, lvl.modulo], 0], false], lvl.width, expr];
 	}
 	return expr;
+}
+
+/**
+ * Champ texte des étiquettes d'isolignes. Les tuiles portent la valeur en unité
+ * de base (gpm pour le géopotentiel). On la convertit en gpdam (÷10) quand la
+ * variable est un géopotentiel et que l'unité choisie est gpdam ; sinon valeur
+ * brute. La couleur/largeur restent pilotées par la valeur brute (modulo), donc
+ * les lignes ne bougent pas — seul le libellé change.
+ */
+export function buildContourLabelExpr(
+	variable: string,
+	geopotentialUnit: GeopotentialUnit
+): maplibregl.ExpressionSpecification {
+	if (geopotentialUnit === 'gpdam' && isGeopotentialVariable(variable)) {
+		return ['number-format', ['/', VALUE, 10], { 'max-fraction-digits': 1 }];
+	}
+	return ['to-string', ['get', 'value']];
 }
 
 /** Couleur des flèches : plus grand seuil testé en premier, base en dernier. */
