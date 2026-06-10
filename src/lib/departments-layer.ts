@@ -59,20 +59,16 @@ export const ensureDepartmentsLayer = (): void => {
 };
 
 /**
- * Applique la visibilité selon `showDepartments`. Ne fetch plus rien :
- * simple bascule `setLayoutProperty` (défensif si layer absent). Le paramètre
- * optionnel n'existe que pour rendre le `$effect` appelant réactif au store.
+ * Applique la visibilité selon `showDepartments` (par défaut le store courant).
+ * Ne fetch plus rien : `ensureDepartmentsLayer()` puis bascule `setLayoutProperty`
+ * (défensif si layer absent). Pattern de `applyLabelsVisibility()`.
  */
-export const refreshDepartments = (_deps?: unknown): void => {
+export const refreshDepartments = (visible: boolean = get(showDepartments)): void => {
 	const map = get(mStore);
 	if (!map) return;
 
 	ensureDepartmentsLayer();
 	if (!map.getLayer(DEPARTMENTS_LAYER_ID)) return;
 
-	map.setLayoutProperty(
-		DEPARTMENTS_LAYER_ID,
-		'visibility',
-		get(showDepartments) ? 'visible' : 'none'
-	);
+	map.setLayoutProperty(DEPARTMENTS_LAYER_ID, 'visibility', visible ? 'visible' : 'none');
 };

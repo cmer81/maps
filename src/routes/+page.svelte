@@ -47,7 +47,7 @@
 	import TimeSelector from '$lib/components/time/time-selector.svelte';
 
 	import { DOMAIN_DEFAULT_VIEWS } from '$lib/constants';
-	import { ensureDepartmentsLayer, refreshDepartments } from '$lib/departments-layer';
+	import { refreshDepartments } from '$lib/departments-layer';
 	import { checkHighDefinition } from '$lib/helpers';
 	import { initHillshadeFromPrefs } from '$lib/hillshade';
 	import { applyLabelsVisibility } from '$lib/labels-layer';
@@ -158,7 +158,6 @@
 			addPopup();
 			changeOMfileURL();
 
-			ensureDepartmentsLayer();
 			refreshDepartments();
 			applyLabelsVisibility();
 		});
@@ -229,7 +228,7 @@
 	});
 
 	$effect(() => {
-		refreshDepartments([$showDepartments]);
+		refreshDepartments($showDepartments);
 	});
 
 	$effect(() => {

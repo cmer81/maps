@@ -79,6 +79,16 @@ describe('ensureDepartmentsLayer', () => {
 		ensureDepartmentsLayer();
 		expect(m.added).toHaveLength(1);
 		expect(m.added[0].layer.id).toBe(DEPARTMENTS_LAYER_ID);
+		expect(m.added[0].before).toBe('place_label_other');
+	});
+
+	it('insère sans before-layer quand BEFORE_LAYER_VECTOR est absent', () => {
+		const m = fakeMap({ hasBefore: false });
+		// @ts-expect-error — fausse carte de test
+		map.set(m);
+		ensureDepartmentsLayer();
+		expect(m.added).toHaveLength(1);
+		expect(m.added[0].before).toBeUndefined();
 	});
 });
 
