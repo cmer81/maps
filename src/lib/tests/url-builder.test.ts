@@ -28,6 +28,18 @@ describe('getOMUrlFor', () => {
 		expect(getOMUrl()).toContain('variable=temperature_2m');
 	});
 
+	it('builds the URL for an overridden time, not the store time', () => {
+		// store time = 15:00 ; on précharge le voisin +3h = 18:00
+		const url = getOMUrlFor('temperature_2m', new Date('2026-05-23T18:00:00Z'));
+		expect(url).toContain('2026-05-23T1800.om');
+		expect(url).not.toContain('2026-05-23T1500');
+	});
+
+	it('without a time override, falls back to the store time', () => {
+		const url = getOMUrlFor('temperature_2m');
+		expect(url).toContain('2026-05-23T1500.om');
+	});
+
 	it('routes arome_france_convection to the R2 bucket data_spatial path', () => {
 		vi.stubEnv('VITE_MODELS_BUCKET_URL', 'https://bucket.test');
 		d.set('arome_france_convection');

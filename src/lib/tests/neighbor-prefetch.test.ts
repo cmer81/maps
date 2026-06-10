@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { computeNeighborWindow, isPrefetchableDomain } from '$lib/neighbor-prefetch';
+import {
+	computeNeighborWindow,
+	isPrefetchableDomain,
+	neighborTimesToDecode
+} from '$lib/neighbor-prefetch';
 
 // 6 pas horaires : 00:00 … 05:00
 const VALID_TIMES = [
@@ -70,6 +74,21 @@ describe('computeNeighborWindow', () => {
 	it('currentTime introuvable → null', () => {
 		const unknown = new Date('2026-06-06T09:00:00Z');
 		expect(computeNeighborWindow(unknown, null, VALID_TIMES, CFG)).toBeNull();
+	});
+});
+
+describe('neighborTimesToDecode', () => {
+	it('liste les échéances de la fenêtre, courante exclue, plus proche en premier', () => {
+		// fenêtre [idx1 … idx5], courante = idx2 → décoder 1,3,4,5 (jamais 2)
+		// tri par distance à idx2 ; à distance égale, l'avant (idx supérieur) d'abord
+		const w = { startDate: VALID_TIMES[1], endDate: VALID_TIMES[5] };
+		const got = neighborTimesToDecode(w, VALID_TIMES, VALID_TIMES[2]);
+		expect(got).toEqual([VALID_TIMES[3], VALID_TIMES[1], VALID_TIMES[4], VALID_TIMES[5]]);
+	});
+
+	it('exclut toujours la courante (fenêtre réduite à un seul pas)', () => {
+		const w = { startDate: VALID_TIMES[2], endDate: VALID_TIMES[2] };
+		expect(neighborTimesToDecode(w, VALID_TIMES, VALID_TIMES[2])).toEqual([]);
 	});
 });
 

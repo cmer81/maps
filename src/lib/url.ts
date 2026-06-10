@@ -262,11 +262,11 @@ const colorHashSuffix = (): string => {
 	return '';
 };
 
-export const getOMUrlFor = (variable: string): string | undefined => {
+export const getOMUrlFor = (variable: string, timeOverride?: Date): string | undefined => {
 	const domain = get(d);
 	const modelRun = get(mR);
 	if (!modelRun) return undefined;
-	const selectedTime = get(time);
+	const selectedTime = timeOverride ?? get(time);
 
 	if (domain === ANOMALY_DOMAIN) {
 		const phase = anomalyPhase(selectedTime, new Date(), provisionalDateSet(get(mJ)));

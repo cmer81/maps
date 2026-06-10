@@ -1,5 +1,7 @@
 import { get } from 'svelte/store';
 
+import { omProtocol } from '@openmeteo/weather-map-layer';
+
 import {
 	ANOMALY_DOMAIN,
 	NEIGHBOR_PREFETCH_BACKWARD,
@@ -7,8 +9,10 @@ import {
 	NEIGHBOR_PREFETCH_FORWARD
 } from './constants';
 import { prefetchData } from './prefetch';
+import { omProtocolSettings } from './stores/om-protocol-settings';
 import { metaJson, modelRun, time } from './stores/time';
 import { layer2Enabled, selectedDomain, variable, variable2 } from './stores/variables';
+import { getOMUrlFor } from './url';
 
 /**
  * Le préchargement voisin passe par `prefetchData` qui construit des URLs `data_spatial`.
@@ -77,6 +81,39 @@ export const computeNeighborWindow = (
 };
 
 /**
+ * Échéances de la fenêtre voisine à **décoder** par anticipation (peupler `state.data`
+ * dans le `stateByKey` du protocole `om://`), au-delà du simple préchargement des octets.
+ *
+ * Filtre les `validTimes` comprises dans `[startDate, endDate]`, **exclut la courante**
+ * (déjà rendue → son `state.data` est déjà vivant) et trie par proximité d'index à la
+ * courante (le voisin le plus probablement visité ensuite est décodé en premier, ce qui
+ * limite la casse si l'abort coupe le run en cours). À distance égale, l'avant (index
+ * supérieur, sens de navigation par défaut) passe en premier.
+ */
+export const neighborTimesToDecode = (
+	window: NeighborWindow,
+	validTimes: Date[],
+	currentTime: Date
+): Date[] => {
+	const currentIdx = validTimes.findIndex((t) => t.getTime() === currentTime.getTime());
+	if (currentIdx === -1) return [];
+
+	const start = window.startDate.getTime();
+	const end = window.endDate.getTime();
+
+	return validTimes
+		.map((t, idx) => ({ t, idx }))
+		.filter(({ t, idx }) => idx !== currentIdx && t.getTime() >= start && t.getTime() <= end)
+		.sort((a, b) => {
+			const da = Math.abs(a.idx - currentIdx);
+			const db = Math.abs(b.idx - currentIdx);
+			if (da !== db) return da - db;
+			return b.idx - a.idx; // distance égale → l'avant (index supérieur) d'abord
+		})
+		.map(({ t }) => t);
+};
+
+/**
  * Abonne le préchargement automatique au store `time`. À chaque changement d'échéance,
  * (re)arme un debounce ; à l'échéance du timer, précharge les données de la variable
  * affichée (+ variable2 si la couche 2 est active) sur la fenêtre voisine. Au plus un
@@ -108,7 +145,8 @@ export const initNeighborPrefetch = (): (() => void) => {
 
 		controller?.abort();
 		controller = new AbortController();
-		const signal = controller.signal;
+		const abortController = controller;
+		const signal = abortController.signal;
 
 		const base = {
 			startDate: neighborWindow.startDate,
@@ -124,6 +162,29 @@ export const initNeighborPrefetch = (): (() => void) => {
 		if (signal.aborted) return;
 		if (get(layer2Enabled)) {
 			await prefetchData({ ...base, variable: get(variable2) });
+		}
+		if (signal.aborted) return;
+
+		// Décode anticipé des voisins : au-delà des octets chauffés ci-dessus, on peuple
+		// `state.data` du protocole `om://` pour ces échéances. Un saut ultérieur vers
+		// l'une d'elles réutilise alors la frame déjà décodée (~280 ms vs ~750 ms) au lieu
+		// de relire métadonnées + décoder. L'URL est bâtie via le **même** chemin que la
+		// source MapLibre (`'om://' + getOMUrlFor`) pour que la clé du `stateByKey` matche
+		// exactement. Séquentiel (le décode est coûteux), abortable, erreurs silencieuses.
+		const decodeTimes = neighborTimesToDecode(neighborWindow, validTimes, current);
+		const decodeVariables = get(layer2Enabled) ? [get(variable), get(variable2)] : [get(variable)];
+		const settings = get(omProtocolSettings);
+		for (const decodeTime of decodeTimes) {
+			for (const decodeVariable of decodeVariables) {
+				if (signal.aborted) return;
+				const omUrl = getOMUrlFor(decodeVariable, decodeTime);
+				if (!omUrl) continue;
+				try {
+					await omProtocol({ url: 'om://' + omUrl, type: 'json' }, abortController, settings);
+				} catch {
+					// Voisin manquant / abort : on continue, le décode reste best-effort.
+				}
+			}
 		}
 	};
 

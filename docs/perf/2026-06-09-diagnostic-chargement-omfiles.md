@@ -96,14 +96,19 @@ les ~750 ms sont du pipeline pur.
 
 ## Plan d'action priorisé (impact/effort)
 
-1. **Décode anticipé des voisins** — `src/lib/neighbor-prefetch.ts`.
-   Le prefetch actuel ne chauffe que les _octets_ ; appeler en plus
+1. ~~**Décode anticipé des voisins** — `src/lib/neighbor-prefetch.ts`.~~ **✅ FAIT (2026-06-10).**
+   Le prefetch ne chauffait que les _octets_ ; `triggerPrefetch` appelle désormais en plus
    `omProtocol({url: 'om://…', type: 'json'}, abortController, get(omProtocolSettings))`
-   pour les URLs voisines peuple `state.data` dans le `stateByKey` du protocole (même
-   identité de `settings` → même instance ; rétention `MAX_STATES_WITH_DATA = 24` déjà
-   en place, ~3,2 MB/frame).
-   **Impact : pas préchargé 750 → ~280 ms (−63 %), scrub avant aligné sur le scrub
-   arrière. Effort : faible (~10-20 lignes). Risque : faible** (mémoire bornée, abort déjà géré).
+   pour les URLs voisines, ce qui peuple `state.data` dans le `stateByKey` du protocole (même
+   identité de `settings` → même instance ; rétention `MAX_STATES_WITH_DATA = 24`). L'URL
+   voisine est bâtie via `getOMUrlFor(variable, timeOverride)` — **même chemin que la source
+   MapLibre** → clé `stateByKey` identique (condition de la réutilisation).
+   **Impact mesuré (Chrome réel, AROME France, `terrain=true`)** : saut vers voisin décodé
+   **~172-175 ms** (reproductible sur 2 variables), 0 requête réseau ; vs frame froide même
+   fichier **~900-1700 ms**. Mieux que la cible ~280 ms. **Limite** : le décode anticipé
+   s'abonne à `time` seulement → un changement de **variable** ne le re-déclenche pas (le 1ᵉʳ
+   pas d'heure après un changement de variable reste froid, puis se réchauffe) — recoupe
+   l'action 2.
 
 2. **Supprimer les métadonnées par pas** — upstream `file-reader`/`weather-map-layer`
    (dépendance git pinnée, donc patchable + PR amont) : cacher le résultat du HEAD

@@ -86,6 +86,23 @@ s'abonne au store `time` (initialisé dans `+page.svelte`), debounce
 variable principale → couverts sans requête dédiée. Remplace l'ancien préchargement
 header-only du `postReadCallback` (`getNextOmUrls`, retiré).
 
+**Décode anticipé des voisins (action 1, perf scrubbing).** Au-delà des octets chauffés par
+`prefetchData()`, `triggerPrefetch` **décode** ensuite chaque échéance voisine via
+`omProtocol({ url: 'om://' + getOMUrlFor(variable, neighborTime), type: 'json' }, …)` →
+peuple `state.data` dans le `stateByKey` de l'instance partagée (`getProtocolInstance`,
+rétention `MAX_STATES_WITH_DATA = 24`). Un saut ultérieur vers ce voisin réutilise la frame
+décodée au lieu de refaire `setToOmFile` + décode. **L'URL est bâtie via le même
+`getOMUrlFor(variable, timeOverride)` que la source MapLibre** (`'om://' + getOMUrl()`) : c'est
+la condition pour que la clé du `stateByKey` matche — toute divergence de suffixe (dark,
+vector, tile_size, hashes) ferait silencieusement échouer la réutilisation. `getOMUrlFor`
+accepte un `timeOverride?: Date` (défaut = `get(time)`) pour construire l'URL d'une autre
+échéance sans toucher au store. Quelles échéances décoder : `neighborTimesToDecode()` (fenêtre,
+courante exclue, plus proche d'abord). Décode séquentiel, abortable, erreurs silencieuses.
+**Impact mesuré** (Chrome réel, AROME France) : saut vers voisin décodé **~175 ms** vs frame
+froide même fichier **~900-1700 ms**, 0 requête réseau. **Limite** : le décode anticipé
+s'abonne à `time` seulement → un **changement de variable** ne le re-déclenche pas, donc le
+1ᵉʳ pas d'heure après un changement de variable reste froid (puis se réchauffe).
+
 ## Domain allowlist (Infoclimat preset)
 
 `MODEL_SELECTOR_GROUPS` in `src/lib/constants.ts` is the single source of truth for the
