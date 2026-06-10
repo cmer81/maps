@@ -23,6 +23,7 @@
 ## Task 1 : Builder pur du layer + tests
 
 **Files:**
+
 - Modify: `src/lib/departments-layer.ts` (réécriture complète)
 - Modify: `src/lib/constants.ts` (suppression de `DEPARTMENTS_GEOJSON_URL`)
 - Test: `src/lib/tests/departments-layer.test.ts` (créer)
@@ -34,8 +35,6 @@ Créer `src/lib/tests/departments-layer.test.ts` :
 ```ts
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import type maplibregl from 'maplibre-gl';
-
 import { showDepartments } from '$lib/stores/departments';
 import { map } from '$lib/stores/map';
 
@@ -45,6 +44,8 @@ import {
 	ensureDepartmentsLayer,
 	refreshDepartments
 } from '$lib/departments-layer';
+
+import type maplibregl from 'maplibre-gl';
 
 describe('buildDepartmentsLineLayer', () => {
 	it('cible la couche boundary admin_level 6 du fond', () => {
@@ -89,13 +90,13 @@ Remplacer **tout** le contenu du fichier par :
 // `showDepartments` (pattern de `labels-layer.ts`).
 import { get } from 'svelte/store';
 
-import type maplibregl from 'maplibre-gl';
-
 import { basemapTheme } from '$lib/stores/basemap-theme';
 import { showDepartments } from '$lib/stores/departments';
 import { map as mStore } from '$lib/stores/map';
 
 import { BEFORE_LAYER_VECTOR } from './constants';
+
+import type maplibregl from 'maplibre-gl';
 
 export const DEPARTMENTS_LAYER_ID = 'omDepartmentsLayer';
 
@@ -187,6 +188,7 @@ git commit -m "refactor(departments): read basemap boundary layer instead of bun
 ## Task 2 : Tests de câblage (ensure + toggle) sur fausse carte
 
 **Files:**
+
 - Test: `src/lib/tests/departments-layer.test.ts:1` (ajouter des describe)
 
 - [ ] **Step 1 : Ajouter les tests de câblage (échouent si la logique régresse)**
@@ -284,6 +286,7 @@ git commit -m "test(departments): cover layer registration and visibility toggle
 ## Task 3 : Supprimer l'asset bundlé
 
 **Files:**
+
 - Delete: `static/departements.geojson`
 
 - [ ] **Step 1 : Vérifier l'absence de toute autre référence**
@@ -308,7 +311,8 @@ git commit -m "chore(departments): drop bundled 556KB geojson asset"
 ## Task 4 : Mettre à jour la doc d'architecture
 
 **Files:**
-- Modify: `.claude/rules/architecture.md` (§ *GeoJSON overlays*)
+
+- Modify: `.claude/rules/architecture.md` (§ _GeoJSON overlays_)
 
 - [ ] **Step 1 : Réécrire le paragraphe § GeoJSON overlays**
 
@@ -348,6 +352,7 @@ git commit -m "docs(architecture): departments overlay reads basemap boundary la
 ```bash
 npm run format && npm run lint && npm run check && npm run test -- --run && npm run build
 ```
+
 Expected: tout passe, aucune erreur, aucune référence résiduelle à `departements.geojson` dans `./build`.
 
 - [ ] **Step 2 : Vérifier l'absence du geojson dans le build**

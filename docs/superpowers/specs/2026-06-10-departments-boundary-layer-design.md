@@ -65,7 +65,7 @@ basemap → raccord parfait, poids nul, plus de décimales.
    après re-style (`map-controls.ts` / `+page.svelte`) ; on conserve ce câblage. La
    visibilité doit être réappliquée après chaque re-style (comme `applyLabelsVisibility`).
 
-4. **Documentation** — mettre à jour `.claude/rules/architecture.md` (§ *GeoJSON overlays*)
+4. **Documentation** — mettre à jour `.claude/rules/architecture.md` (§ _GeoJSON overlays_)
    dans le même commit : l'overlay départements ne lit plus un geojson bundlé mais la couche
    `boundary` du fond ; retirer la phrase « The departments contour file is bundled ».
 
