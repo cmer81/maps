@@ -7,13 +7,13 @@
 // `showDepartments` (pattern de `labels-layer.ts`).
 import { get } from 'svelte/store';
 
-import type maplibregl from 'maplibre-gl';
-
 import { basemapTheme } from '$lib/stores/basemap-theme';
 import { showDepartments } from '$lib/stores/departments';
 import { map as mStore } from '$lib/stores/map';
 
 import { BEFORE_LAYER_VECTOR } from './constants';
+
+import type maplibregl from 'maplibre-gl';
 
 export const DEPARTMENTS_LAYER_ID = 'omDepartmentsLayer';
 
