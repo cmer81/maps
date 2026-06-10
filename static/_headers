@@ -11,3 +11,11 @@
 
 /site.webmanifest
   Content-Type: application/manifest+json
+
+# Contours départements : asset stable, non hashé, régénéré très rarement.
+# Edge Cloudflare ~1 an (s-maxage), navigateur 7 j, puis revalidation en
+# arrière-plan (stale-while-revalidate) → pas d'`immutable` pour éviter de figer
+# une version périmée dans les navigateurs après une régénération.
+/departements.geojson
+  Content-Type: application/geo+json
+  Cache-Control: public, max-age=604800, s-maxage=31536000, stale-while-revalidate=2592000

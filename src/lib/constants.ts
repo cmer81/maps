@@ -130,8 +130,12 @@ export const COMPLETE_DEFAULT_VALUES: { [key: string]: boolean | string | number
 	departments: 'true'
 };
 
-// Contours administratifs FR — GeoJSON simplifié (~550 KB / ~80 KB gzip),
-// licence ODbL, bundlé depuis `gregoiredavid/france-geojson`.
+// Contours départements FR — GeoJSON dérivé d'OpenStreetMap (admin_level=6,
+// même source que le fond OpenFreeMap → bon raccord), simplifié (mapshaper
+// Visvalingam 0,4 %) et arrondi à 5 décimales : ~200 KB / ~70 KB gzip, 100
+// features (métropole + Corse + DOM 971/974/976). Bundlé pour éviter le CORS et
+// rester visible à tous les zooms (le fond ne porte admin_level=6 qu'à z9+).
+// Licence ODbL.
 export const DEPARTMENTS_GEOJSON_URL = '/departements.geojson';
 
 // Niveaux iso-pression exposés dans le sélecteur (hPa). Les niveaux non listés

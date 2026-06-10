@@ -1,12 +1,13 @@
 // MapLibre wiring for the French departments contours overlay.
 //
-// Owns: a single geojson source + a line layer placed above the raster.
-// Drives: refresh when the toggle changes. Source GeoJSON is fetched lazily
-// on first activation, then cached in module scope — subsequent toggles are
-// instantaneous.
+// Source GeoJSON dérivée d'OpenStreetMap (`admin_level=6`, même famille de
+// données que le fond OpenFreeMap), simplifiée et bundlée (`static/departements.geojson`).
+// Bundlée plutôt que lue dans la couche `boundary` du fond car celui-ci ne porte
+// `admin_level=6` qu'à partir du zoom 9 — invisible à l'échelle France (z5-8).
+// Le fichier est fetché paresseusement à la première activation puis caché en
+// portée module ; le toggle bascule ensuite la `visibility` (pattern de
+// `labels-layer.ts`), sans re-fetch.
 import { get } from 'svelte/store';
-
-import maplibregl from 'maplibre-gl';
 
 import { basemapTheme } from '$lib/stores/basemap-theme';
 import { showDepartments } from '$lib/stores/departments';
@@ -14,8 +15,10 @@ import { map as mStore } from '$lib/stores/map';
 
 import { BEFORE_LAYER_VECTOR, DEPARTMENTS_GEOJSON_URL } from './constants';
 
-const SOURCE_ID = 'omDepartmentsSource';
-const LAYER_ID = 'omDepartmentsLayer';
+import type maplibregl from 'maplibre-gl';
+
+export const DEPARTMENTS_SOURCE_ID = 'omDepartmentsSource';
+export const DEPARTMENTS_LAYER_ID = 'omDepartmentsLayer';
 
 type DepartmentsFeatureCollection = GeoJSON.FeatureCollection<
 	GeoJSON.MultiPolygon | GeoJSON.Polygon
@@ -32,9 +35,8 @@ const fetchDepartments = async (): Promise<DepartmentsFeatureCollection> => {
 	inflight = (async () => {
 		const res = await fetch(DEPARTMENTS_GEOJSON_URL);
 		if (!res.ok) throw new Error(`departments GeoJSON HTTP ${res.status}`);
-		const data = (await res.json()) as DepartmentsFeatureCollection;
-		cachedData = data;
-		return data;
+		cachedData = (await res.json()) as DepartmentsFeatureCollection;
+		return cachedData;
 	})();
 	try {
 		return await inflight;
@@ -44,60 +46,70 @@ const fetchDepartments = async (): Promise<DepartmentsFeatureCollection> => {
 };
 
 /**
- * Idempotent: registers the source/layer once. Safe to call multiple times
- * (e.g. after a map style reload).
+ * Spec du layer `line` des départements. Pur (testable) : couleur dépendante du
+ * FOND DE CARTE (pas du chrome, toujours sombre), visibilité figée à la création.
+ */
+export const buildDepartmentsLineLayer = (
+	isDark: boolean,
+	visible: boolean
+): maplibregl.LineLayerSpecification => ({
+	id: DEPARTMENTS_LAYER_ID,
+	type: 'line',
+	source: DEPARTMENTS_SOURCE_ID,
+	layout: {
+		visibility: visible ? 'visible' : 'none'
+	},
+	paint: {
+		'line-color': isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)',
+		'line-width': ['interpolate', ['linear'], ['zoom'], 4, 0.4, 8, 0.9, 12, 1.4],
+		'line-opacity': 0.85
+	}
+});
+
+/**
+ * Idempotent : enregistre la source (vide) + le layer une fois. Sûr à rappeler
+ * après un re-style (`setStyle` purge les sources/layers custom ; ce hook les
+ * recrée avec la couleur du thème de fond courant). Les données déjà fetchées
+ * sont réinjectées par `refreshDepartments`.
  */
 export const ensureDepartmentsLayer = (): void => {
 	const map = get(mStore);
 	if (!map) return;
 
-	if (!map.getSource(SOURCE_ID)) {
-		map.addSource(SOURCE_ID, {
-			type: 'geojson',
-			data: emptyFc()
-		});
+	if (!map.getSource(DEPARTMENTS_SOURCE_ID)) {
+		map.addSource(DEPARTMENTS_SOURCE_ID, { type: 'geojson', data: cachedData ?? emptyFc() });
 	}
-	if (!map.getLayer(LAYER_ID)) {
-		// Couleur dépendante du FOND DE CARTE (pas du chrome, toujours sombre).
+	if (!map.getLayer(DEPARTMENTS_LAYER_ID)) {
 		const isDark = get(basemapTheme) === 'dark';
-		map.addLayer(
-			{
-				id: LAYER_ID,
-				type: 'line',
-				source: SOURCE_ID,
-				paint: {
-					'line-color': isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)',
-					'line-width': ['interpolate', ['linear'], ['zoom'], 4, 0.4, 8, 0.9, 12, 1.4],
-					'line-opacity': 0.85
-				}
-			},
-			map.getLayer(BEFORE_LAYER_VECTOR) ? BEFORE_LAYER_VECTOR : undefined
-		);
+		const layer = buildDepartmentsLineLayer(isDark, get(showDepartments));
+		map.addLayer(layer, map.getLayer(BEFORE_LAYER_VECTOR) ? BEFORE_LAYER_VECTOR : undefined);
 	}
 };
 
-const setData = (data: DepartmentsFeatureCollection): void => {
-	const map = get(mStore);
-	if (!map) return;
-	const src = map.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
-	src?.setData(data);
-};
-
-export const refreshDepartments = async (_deps?: unknown): Promise<void> => {
+/**
+ * Applique la visibilité selon `showDepartments` (par défaut le store courant).
+ * Au premier affichage, fetch paresseux du GeoJSON puis `setData` ; ensuite la
+ * donnée est cachée et seul la `visibility` bascule (pas de re-fetch). Défensif
+ * si la carte/source n'est pas prête.
+ */
+export const refreshDepartments = async (
+	visible: boolean = get(showDepartments)
+): Promise<void> => {
 	const map = get(mStore);
 	if (!map) return;
 
 	ensureDepartmentsLayer();
+	if (!map.getLayer(DEPARTMENTS_LAYER_ID)) return;
 
-	if (!get(showDepartments)) {
-		setData(emptyFc());
-		return;
-	}
+	map.setLayoutProperty(DEPARTMENTS_LAYER_ID, 'visibility', visible ? 'visible' : 'none');
+	if (!visible) return;
 
 	try {
 		const data = await fetchDepartments();
+		// Le toggle a pu être recoupé pendant le fetch.
 		if (!get(showDepartments)) return;
-		setData(data);
+		const src = map.getSource(DEPARTMENTS_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+		src?.setData(data);
 	} catch (err) {
 		console.warn('[departments] fetch failed', err);
 	}

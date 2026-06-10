@@ -25,7 +25,12 @@
 			"type": "fill",
 			"source": "openmaptiles",
 			"source-layer": "water",
-			"filter": ["all", ["==", "$type", "Polygon"], ["!=", "intermittent", 1]],
+			"filter": [
+				"all",
+				["==", "$type", "Polygon"],
+				["!=", "intermittent", 1],
+				["!=", "class", "river"]
+			],
 			"paint": {
 				"fill-color": "rgba(148, 193, 225, 0.4)"
 			}
@@ -35,7 +40,12 @@
 			"type": "fill",
 			"source": "openmaptiles",
 			"source-layer": "water",
-			"filter": ["all", ["==", "$type", "Polygon"], ["==", "intermittent", 1]],
+			"filter": [
+				"all",
+				["==", "$type", "Polygon"],
+				["==", "intermittent", 1],
+				["!=", "class", "river"]
+			],
 			"paint": {
 				"fill-color": "rgba(212, 229, 239, 1)",
 				"fill-opacity": 0.7

@@ -28,11 +28,11 @@ Le style des contours et des flèches n'est plus codé en dur : il est défini d
 
 Single page app: `src/routes/+page.svelte` is the entry; `+layout.ts` opts out of SSR (`export const prerender = true` / no server logic). Adding new routes is unusual — most features become components under `src/lib/components/`.
 
-## GeoJSON overlays
+## GeoJSON overlays (départements)
 
-`src/lib/departments-layer.ts` (contours des départements français) suit ce pattern : un seul `geojson` source + un layer MapLibre placé sous `BEFORE_LAYER_VECTOR`, togglé par un store persisté (`showDepartments`). Il expose `ensureDepartmentsLayer()` (enregistrement idempotent) et `refreshDepartments()` (mise à jour des données). Réutiliser ce pattern pour tout nouvel overlay (régions, communes, etc.) plutôt que de câbler sources/layers depuis `+page.svelte` directement.
+`src/lib/departments-layer.ts` (contours des départements français) suit ce pattern : une source `geojson` dédiée (`omDepartmentsSource`) + un layer `line` (`omDepartmentsLayer`) placé sous `BEFORE_LAYER_VECTOR`, togglé par le store persisté `showDepartments`. Il expose `buildDepartmentsLineLayer(isDark, visible)` (builder pur du `LineLayerSpecification`, testé sans carte ; couleur figée selon `basemapTheme`), `ensureDepartmentsLayer()` (ajoute source vide + layer une fois, idempotent) et `refreshDepartments(visible = get(showDepartments))` (bascule la `visibility` via `setLayoutProperty` ; au 1er affichage, fetch **paresseux** du GeoJSON puis `setData`, données ensuite cachées en portée module — pas de re-fetch). **Piège re-style** : `setStyle` (donc `reloadStyles()`) purge sources/layers custom → `refreshDepartments()` est rappelé après chaque re-style (`map-controls.ts`) pour recréer source+layer (couleur du thème courant) et réinjecter les données cachées.
 
-The departments contour file is bundled (`static/departements.geojson`) to avoid CORS issues with third-party CDNs.
+Le fichier `static/departements.geojson` est **bundlé** (évite le CORS, reste visible à tous les zooms). Il est **dérivé d'OpenStreetMap** (`admin_level=6`, même famille de données que le fond OpenFreeMap → bon raccord avec les côtes/régions/frontières du fond), simplifié (mapshaper Visvalingam ~0,4 %) et arrondi à 5 décimales : ~200 KB / ~70 KB gzip, 100 features (métropole + Corse 2A/2B + Rhône/Métropole de Lyon 69D/69M + DOM 971/974/976). **Pourquoi pas la couche `boundary` du fond** : OpenFreeMap ne porte `admin_level=6` qu'à partir du **zoom 9** (vérifié en décodant les tuiles MVT) — invisible à l'échelle France (z5-8, zoom par défaut ~5,2). Régénération : voir l'en-tête de `DEPARTMENTS_GEOJSON_URL` dans `constants.ts` (Overpass `area FR` + `admin_level=6` → `osmtogeojson` → `mapshaper -simplify -o precision`). Réutiliser ce pattern (source geojson dédiée) pour tout nouvel overlay autonome (régions, communes…).
 
 ## Labels villes/pays du basemap (toggle)
 

@@ -10,7 +10,7 @@ import minimalDark from '$lib/basemap/minimal-dark.json';
 import minimalLight from '$lib/basemap/minimal-light.json';
 import { BEFORE_LAYER_RASTER, HILLSHADE_LAYER } from '$lib/constants';
 
-import { ensureDepartmentsLayer, refreshDepartments } from './departments-layer';
+import { refreshDepartments } from './departments-layer';
 import { applyLabelsVisibility } from './labels-layer';
 import { addOmFileLayers } from './layers';
 import { updateUrl } from './url';
@@ -143,7 +143,6 @@ export const reloadStyles = () => {
 				addOmFileLayers();
 				// La couche départements est retirée par setStyle ; on la recrée (avec la
 				// couleur du nouveau thème de fond de carte) si l'overlay est actif.
-				ensureDepartmentsLayer();
 				refreshDepartments();
 				// setStyle a recréé les labels du basemap en `visible` ; on ré-applique
 				// le choix de l'utilisateur (toggle « Villes & pays »).
