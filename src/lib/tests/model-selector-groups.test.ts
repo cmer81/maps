@@ -16,6 +16,8 @@ const EXPECTED_ORDER = [
 	'meteofrance_arpege_world025',
 	'dwd_icon_eu',
 	'dwd_icon_d2',
+	'meteoswiss_icon_ch1',
+	'meteoswiss_icon_ch2',
 	'ecmwf_ifs025',
 	'ecmwf_ifs',
 	'ecmwf_aifs025_single',
@@ -29,6 +31,7 @@ describe('MODEL_SELECTOR_GROUPS', () => {
 			'Météo-France Arome',
 			'Météo-France Arpège',
 			'DWD Germany',
+			'MeteoSwiss',
 			'ECMWF',
 			'NOAA US',
 			'Anomalie'

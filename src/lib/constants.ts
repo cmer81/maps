@@ -217,6 +217,13 @@ export const MODEL_SELECTOR_GROUPS = [
 		]
 	},
 	{
+		label: 'MeteoSwiss',
+		domains: [
+			{ value: 'meteoswiss_icon_ch1', label: 'ICON CH1' },
+			{ value: 'meteoswiss_icon_ch2', label: 'ICON CH2' }
+		]
+	},
+	{
 		label: 'ECMWF',
 		domains: [
 			{ value: 'ecmwf_ifs025', label: 'ECMWF IFS 0.25' },
@@ -269,7 +276,9 @@ export const MODEL_DESCRIPTIONS: Record<string, string> = {
 	ecmwf_ifs025: 'ECMWF (Europe) · global 0,25° · référence fiable · ~15 j',
 	ecmwf_aifs025_single: 'ECMWF · modèle IA (AIFS) · global 0,25° · ~15 j',
 	dwd_icon_d2: 'DWD (Allemagne) · ~2 km, Europe centrale · échéance ~2 j',
-	dwd_icon_eu: 'DWD (Allemagne) · ~7 km, Europe · échéance ~5 j'
+	dwd_icon_eu: 'DWD (Allemagne) · ~7 km, Europe · échéance ~5 j',
+	meteoswiss_icon_ch1: 'MeteoSwiss (Suisse) · ~1 km, Alpes/Suisse · échéance ~33 h',
+	meteoswiss_icon_ch2: 'MeteoSwiss (Suisse) · ~2 km, Alpes/Suisse · échéance ~5 j'
 };
 
 // Time constants
