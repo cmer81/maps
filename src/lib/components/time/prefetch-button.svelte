@@ -1,26 +1,28 @@
 <script lang="ts">
 	import { toast } from 'svelte-sonner';
 
-	import { prefetchMode } from '$lib/stores/prefetch';
 	import { metaJson } from '$lib/stores/time';
 	import { modelRun, time } from '$lib/stores/time';
 	import { domain as domainStore, variable as variableStore } from '$lib/stores/variables';
 
 	import * as Select from '$lib/components/ui/select';
 
-	import {
-		PREFETCH_MODE_LABELS,
-		type PrefetchMode,
-		getDateRangeForMode,
-		prefetchData
-	} from '$lib/prefetch';
+	import { type PrefetchMode, getDateRangeForMode, prefetchData } from '$lib/prefetch';
 
 	let isPrefetching = $state(false);
 	let prefetchProgress = $state({ current: 0, total: 0 });
+	let selectedPrefetchMode: PrefetchMode = $state('today');
 	let abortController: AbortController | null = null;
 
+	const prefetchModes = new Map<PrefetchMode, string>([
+		['today', "Aujourd'hui"],
+		['next24h', '24 h suivantes'],
+		['prev24h', '24 h précédentes'],
+		['completeModelRun', 'Run complet']
+	]);
+
 	let prefetchModeLabel: string = $derived(
-		PREFETCH_MODE_LABELS.get($prefetchMode) ?? 'Run complet'
+		prefetchModes.get(selectedPrefetchMode) ?? "Aujourd'hui"
 	);
 
 	const handlePrefetch = async () => {
@@ -40,7 +42,7 @@
 
 		toast.info(`Préchargement « ${prefetchModeLabel} »…`);
 
-		const { startDate, endDate } = getDateRangeForMode($prefetchMode, $time, $metaJson);
+		const { startDate, endDate } = getDateRangeForMode(selectedPrefetchMode, $time, $metaJson);
 
 		const result = await prefetchData(
 			{
@@ -73,10 +75,10 @@
 <!-- Prefetch Mode Select -->
 <Select.Root
 	type="single"
-	value={$prefetchMode}
+	value={selectedPrefetchMode}
 	onValueChange={(v) => {
 		if (v) {
-			$prefetchMode = v as PrefetchMode;
+			selectedPrefetchMode = v as PrefetchMode;
 		}
 	}}
 >
@@ -85,14 +87,14 @@
 		aria-label="Choisir le mode de préchargement"
 		disabled={isPrefetching}
 	>
-		{prefetchModeLabel}
+		{prefetchModes.get(selectedPrefetchMode) ?? "Aujourd'hui"}
 	</Select.Trigger>
 	<Select.Content
 		class="left-5 border-none max-h-60 bg-glass/65 backdrop-blur-sm"
 		sideOffset={4}
 		align="end"
 	>
-		{#each Array.from(PREFETCH_MODE_LABELS.entries()) as [value, label] (value)}
+		{#each Array.from(prefetchModes.entries()) as [value, label] (value)}
 			<Select.Item {value} {label} class="cursor-pointer text-xs">
 				{label}
 			</Select.Item>

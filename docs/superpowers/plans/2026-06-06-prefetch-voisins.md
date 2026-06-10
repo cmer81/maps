@@ -26,7 +26,6 @@ Spec de référence : `docs/superpowers/specs/2026-06-06-prefetch-voisins-design
 ## Task 1 : Constantes de configuration
 
 **Files:**
-
 - Modify: `src/lib/constants.ts` (à la suite des constantes de cache, après `HTTP_OVERHEAD_BYTES` ligne ~105)
 
 - [ ] **Step 1: Ajouter les constantes**
@@ -59,7 +58,6 @@ git commit -m "feat(prefetch): constantes de configuration du préchargement voi
 ## Task 2 : Fonction pure `computeNeighborWindow` (TDD)
 
 **Files:**
-
 - Create: `src/lib/neighbor-prefetch.ts`
 - Test: `src/lib/tests/neighbor-prefetch.test.ts`
 
@@ -221,7 +219,6 @@ git commit -m "feat(prefetch): computeNeighborWindow — calcul de la fenêtre v
 ## Task 3 : Orchestrateur `initNeighborPrefetch`
 
 **Files:**
-
 - Modify: `src/lib/neighbor-prefetch.ts`
 
 - [ ] **Step 1: Ajouter l'orchestrateur**
@@ -329,7 +326,6 @@ git commit -m "feat(prefetch): initNeighborPrefetch — orchestrateur debounce +
 ## Task 4 : Câblage dans `+page.svelte`
 
 **Files:**
-
 - Modify: `src/routes/+page.svelte` (import en tête ; `onMount` ~67 ; `onDestroy` ~235)
 
 - [ ] **Step 1: Ajouter l'import**
@@ -337,7 +333,7 @@ git commit -m "feat(prefetch): initNeighborPrefetch — orchestrateur debounce +
 Dans la zone d'imports `$lib/*` de `src/routes/+page.svelte` (à côté de `import { initHillshadeFromPrefs } from '$lib/hillshade';` ligne ~50), ajouter :
 
 ```ts
-import { initNeighborPrefetch } from '$lib/neighbor-prefetch';
+	import { initNeighborPrefetch } from '$lib/neighbor-prefetch';
 ```
 
 - [ ] **Step 2: Déclarer la variable de cleanup et initialiser dans `onMount`**
@@ -347,13 +343,13 @@ Repérer l'appel `initHillshadeFromPrefs();` dans `onMount` (ligne ~129). Juste 
 Déclaration (zone des `let` du `<script>`, près des autres subscriptions) :
 
 ```ts
-let stopNeighborPrefetch: (() => void) | undefined;
+	let stopNeighborPrefetch: (() => void) | undefined;
 ```
 
 Dans `onMount`, juste après `initHillshadeFromPrefs();` :
 
 ```ts
-stopNeighborPrefetch = initNeighborPrefetch();
+		stopNeighborPrefetch = initNeighborPrefetch();
 ```
 
 - [ ] **Step 3: Nettoyer dans `onDestroy`**
@@ -361,7 +357,7 @@ stopNeighborPrefetch = initNeighborPrefetch();
 Dans le bloc `onDestroy(() => { … })` (ligne ~235), à côté de `domainSubscription();` / `variableSubscription();`, ajouter :
 
 ```ts
-stopNeighborPrefetch?.();
+		stopNeighborPrefetch?.();
 ```
 
 - [ ] **Step 4: Vérifier la compilation**
@@ -381,7 +377,6 @@ git commit -m "feat(prefetch): initialise le préchargement voisin au montage (#
 ## Task 5 : Retirer le préchargement header-only du `postReadCallback`
 
 **Files:**
-
 - Modify: `src/lib/stores/om-protocol-settings.ts:135-148`
 
 - [ ] **Step 1: Supprimer le bloc de préchargement header-only**
@@ -389,19 +384,19 @@ git commit -m "feat(prefetch): initialise le préchargement voisin au montage (#
 Dans `postReadCallback` (`src/lib/stores/om-protocol-settings.ts`), supprimer ces lignes (la boucle `nextOmUrls`), en conservant la transformation `ecmwf_ifs` qui suit :
 
 ```ts
-const nextOmUrls = getNextOmUrls(state.omFileUrl, get(selectedDomain), get(metaJson));
-for (const nextOmUrl of nextOmUrls) {
-	if (nextOmUrl === undefined) continue;
-	// Préchargement best-effort : on enchaîne le prefetch après l'ouverture du
-	// fichier, et on avale les rejets — un 404 en lisière d'horizon (pas de
-	// frame suivante) ne doit pas remonter en rejet de promesse non capturé.
-	void omFileReader
-		.setToOmFile(nextOmUrl)
-		// Requête sur la queue du fichier pour la mettre en cache. Demander une
-		// variable inexistante évite de télécharger des données supplémentaires.
-		.then(() => omFileReader.prefetchVariable('not_a_real_variable'))
-		.catch(() => {});
-}
+		const nextOmUrls = getNextOmUrls(state.omFileUrl, get(selectedDomain), get(metaJson));
+		for (const nextOmUrl of nextOmUrls) {
+			if (nextOmUrl === undefined) continue;
+			// Préchargement best-effort : on enchaîne le prefetch après l'ouverture du
+			// fichier, et on avale les rejets — un 404 en lisière d'horizon (pas de
+			// frame suivante) ne doit pas remonter en rejet de promesse non capturé.
+			void omFileReader
+				.setToOmFile(nextOmUrl)
+				// Requête sur la queue du fichier pour la mettre en cache. Demander une
+				// variable inexistante évite de télécharger des données supplémentaires.
+				.then(() => omFileReader.prefetchVariable('not_a_real_variable'))
+				.catch(() => {});
+		}
 ```
 
 Le `postReadCallback` doit conserver son bloc `if (state.dataOptions.domain.value === 'ecmwf_ifs' && …)`.
@@ -433,7 +428,6 @@ git commit -m "refactor(prefetch): retire le préchargement header-only du postR
 ## Task 6 : Retirer `getNextOmUrls` et ses imports orphelins
 
 **Files:**
-
 - Modify: `src/lib/url.ts` (fonction `getNextOmUrls` ~324-389 ; imports ~4-10)
 - Modify: `src/lib/tests/url-builder.test.ts` (`describe('getNextOmUrls')` ~57-78)
 
@@ -472,7 +466,6 @@ git commit -m "refactor(prefetch): retire getNextOmUrls devenu code mort (#46)"
 ## Task 7 : Mettre à jour la doc d'architecture
 
 **Files:**
-
 - Modify: `.claude/rules/architecture.md` (§ « Préchargement (prefetch) — réintroduit seul »)
 
 - [ ] **Step 1: Documenter le préchargement automatique**
@@ -480,6 +473,7 @@ git commit -m "refactor(prefetch): retire getNextOmUrls devenu code mort (#46)"
 Dans `.claude/rules/architecture.md`, à la fin du paragraphe `**Préchargement (prefetch) — réintroduit seul.**`, ajouter :
 
 ```markdown
+
 **Préchargement automatique des échéances voisines (#46).** `src/lib/neighbor-prefetch.ts`
 s'abonne au store `time` (initialisé dans `+page.svelte`), debounce
 `NEIGHBOR_PREFETCH_DEBOUNCE_MS` (400 ms), détecte le sens de navigation via les index
@@ -517,7 +511,6 @@ Expected: build statique réussi.
 - [ ] **Step 3: Validation manuelle locale (à faire par l'utilisateur)**
 
 Démarrer `npm run dev`, ouvrir l'app, onglet Réseau :
-
 - scrubber rapidement plusieurs échéances → **aucune** requête `.om` voisine pendant le défilement (debounce) ;
 - s'arrêter → après ~400 ms, requêtes des échéances voisines (sens avant : ~3 devant) ;
 - revenir sur une échéance préchargée → affichage **instantané** (cache hit, pas de download) ;

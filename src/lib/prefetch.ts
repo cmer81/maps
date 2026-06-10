@@ -12,13 +12,6 @@ import type { DomainMetaDataJson } from '@openmeteo/weather-map-layer';
 
 export type PrefetchMode = 'today' | 'next24h' | 'prev24h' | 'completeModelRun';
 
-export const PREFETCH_MODE_LABELS: ReadonlyMap<PrefetchMode, string> = new Map([
-	['today', "Aujourd'hui"],
-	['next24h', '24 h suivantes'],
-	['prev24h', '24 h précédentes'],
-	['completeModelRun', 'Run complet']
-]);
-
 export interface PrefetchOptions {
 	startDate: Date;
 	endDate: Date;

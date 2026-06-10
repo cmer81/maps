@@ -16,9 +16,7 @@ précédent et suivant (±1) via `getNextOmUrls()`. **Mais il ne charge que le h
 du `.om` voisin :
 
 ```js
-omFileReader
-	.setToOmFile(nextOmUrl)
-	.then(() => omFileReader.prefetchVariable('not_a_real_variable'));
+omFileReader.setToOmFile(nextOmUrl).then(() => omFileReader.prefetchVariable('not_a_real_variable'))
 ```
 
 La variable `'not_a_real_variable'` est volontairement inexistante pour « éviter de
@@ -33,16 +31,16 @@ une courte pause. Le scrubbing devient instantané là où l'utilisateur se diri
 
 ## Décisions de conception
 
-| Point                 | Décision                                                                                                                                                                                                      |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fenêtre               | **Adaptative au sens** : 3 échéances devant / 1 derrière dans le sens de navigation détecté.                                                                                                                  |
-| Saut / 1er chargement | Fenêtre symétrique **±1**.                                                                                                                                                                                    |
-| Couches               | Variable principale **+ `variable2` si `layer2Enabled`**. Les contours/flèches partagent la variable principale → couverts sans requête dédiée (même domaine pour les deux couches : un seul store `domain`). |
-| Déclenchement         | **Debounce 400 ms** après le dernier changement d'échéance.                                                                                                                                                   |
-| Annulation            | Un seul `AbortController` actif ; chaque nouveau lancement abort le précédent.                                                                                                                                |
-| Implémentation        | Module dédié `src/lib/neighbor-prefetch.ts`, store-driven, initialisé depuis `+page.svelte`.                                                                                                                  |
-| Mécanisme existant    | **Retiré** : préchargement header-only du `postReadCallback`, `getNextOmUrls` et ses tests (pas de code mort).                                                                                                |
-| Toggle UI             | Aucun pour l'instant (YAGNI). Extension naturelle : un réglage dans `cache-settings.svelte`.                                                                                                                  |
+| Point | Décision |
+|---|---|
+| Fenêtre | **Adaptative au sens** : 3 échéances devant / 1 derrière dans le sens de navigation détecté. |
+| Saut / 1er chargement | Fenêtre symétrique **±1**. |
+| Couches | Variable principale **+ `variable2` si `layer2Enabled`**. Les contours/flèches partagent la variable principale → couverts sans requête dédiée (même domaine pour les deux couches : un seul store `domain`). |
+| Déclenchement | **Debounce 400 ms** après le dernier changement d'échéance. |
+| Annulation | Un seul `AbortController` actif ; chaque nouveau lancement abort le précédent. |
+| Implémentation | Module dédié `src/lib/neighbor-prefetch.ts`, store-driven, initialisé depuis `+page.svelte`. |
+| Mécanisme existant | **Retiré** : préchargement header-only du `postReadCallback`, `getNextOmUrls` et ses tests (pas de code mort). |
+| Toggle UI | Aucun pour l'instant (YAGNI). Extension naturelle : un réglage dans `cache-settings.svelte`. |
 
 ## Architecture
 

@@ -5,8 +5,9 @@
  * triggered. `error` fires on source load failure. Both managers (raster +
  * vector) dispatch into the same bus.
  *
- * Note : le moteur de lecture en direct (`playback-engine.ts`) consomme ce bus
- * pour avancer d'une échéance seulement quand la frame courante est rendue.
+ * Note : il n'y a plus de consommateur de ce bus depuis le retrait du player
+ * d'animation ; l'émission est conservée (inoffensive) pour le futur module
+ * d'animation à reconstruire.
  *
  * Multiple subscribers are safe; events are not coalesced.
  */

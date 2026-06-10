@@ -28,7 +28,6 @@ Les `register*Domain()` conservent leurs `domainGroups.push(...)` actuels (inoff
 ### Task 1: Table d'ordre + allowlist dérivée + description émagramme
 
 **Files:**
-
 - Modify: `src/lib/constants.ts` (bloc `DOMAIN_ALLOWLIST` L177-234 ; `MODEL_DESCRIPTIONS` L247)
 - Test: `src/lib/tests/model-selector-groups.test.ts`
 
@@ -196,7 +195,6 @@ git commit -m "feat(model-selector): table d'ordre France-first + allowlist dér
 ### Task 2: Alignement des libellés sur `domainOptions`
 
 **Files:**
-
 - Create: `src/lib/model-selector-labels.ts`
 - Modify: `src/lib/stores/variables.ts:18-22`
 - Test: `src/lib/tests/model-selector-groups.test.ts` (ajout d'un `describe`)
@@ -212,8 +210,9 @@ describe('applyModelSelectorLabels', () => {
 		const { domainOptions } = await import('@openmeteo/weather-map-layer');
 		const { registerAnomalyDomain } = await import('$lib/anomaly-domain');
 		const { registerAromeOmDomain } = await import('$lib/arome-om-domain');
-		const { registerAromeFranceConvectionDomain } =
-			await import('$lib/arome-france-convection-domain');
+		const { registerAromeFranceConvectionDomain } = await import(
+			'$lib/arome-france-convection-domain'
+		);
 		const { registerAromeFranceDomain } = await import('$lib/arome-france-domain');
 		const { applyModelSelectorLabels } = await import('$lib/model-selector-labels');
 
@@ -304,7 +303,6 @@ git commit -m "feat(model-selector): aligne les libellés de domainOptions sur l
 ### Task 3: Rendu du composant via la table
 
 **Files:**
-
 - Modify: `src/lib/components/chrome/model-selector.svelte`
 
 - [ ] **Step 1: Réécrire le composant**
@@ -436,8 +434,7 @@ git commit -m "feat(model-selector): rendu via MODEL_SELECTOR_GROUPS, France d'a
 ### Task 4: Doc de synchronisation + vérification globale
 
 **Files:**
-
-- Modify: `.claude/rules/architecture.md` (§ _Domain allowlist (Infoclimat preset)_)
+- Modify: `.claude/rules/architecture.md` (§ *Domain allowlist (Infoclimat preset)*)
 
 - [ ] **Step 1: Mettre à jour la doc**
 

@@ -13,7 +13,6 @@
 	import { inProgress, latest, modelRun, now, time } from '$lib/stores/time';
 	import { selectedDomain } from '$lib/stores/variables';
 
-	import PlaybackButton from '$lib/components/time/playback-button.svelte';
 	import PrefetchButton from '$lib/components/time/prefetch-button.svelte';
 	import * as Select from '$lib/components/ui/select';
 
@@ -293,17 +292,6 @@
 		updateUrl('time', formatISOWithoutTimezone($time));
 		await checkClosestModelRun();
 		changeOMfileURL();
-	};
-
-	// Avancée pilotée par le moteur de lecture (bouton play) : même chemin que
-	// onDateChange, sans recalage de run — les échéances proposées par le moteur
-	// sortent des valid_times du run courant.
-	const playbackAdvance = (date: Date) => {
-		$time = new SvelteDate(date);
-		currentDate = new SvelteDate(date);
-		updateUrl('time', formatISOWithoutTimezone($time));
-		changeOMfileURL();
-		centerDateButton(date);
 	};
 
 	// changes the selected model run and updates available time steps
@@ -872,7 +860,6 @@
 			bind:clientWidth={runControlsWidth}
 			class="-top-4.5 h-4.5 z-10 right-0 absolute flex rounded-t-lg items-center px-2 gap-0.5 bg-glass/65 backdrop-blur-sm"
 		>
-			<PlaybackButton advance={playbackAdvance} />
 			<PrefetchButton />
 
 			<Select.Root

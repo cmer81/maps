@@ -46,35 +46,16 @@ changement de thème) recrée les couches du basemap en `visible` → `applyLabe
 rappelé après chaque re-style (fait dans `reloadStyles()` et au `load` initial dans `+page.svelte`,
 plus un `$effect` sur `$showLabels`). Même schéma que `showDepartments`.
 
-## Playback (lecture en direct)
+## Playback (diaporama) — retiré
 
-Le bouton play/pause de la barre de run (`src/lib/components/time/playback-button.svelte`, monté
-dans `time-selector.svelte` à côté du bouton de préchargement) anime les échéances **en direct** —
-pas de pré-rendu. Le moteur `src/lib/playback-engine.ts` (`createPlaybackEngine`, dépendances
-injectées, testé dans `tests/playback-engine.test.ts`) avance le store `time` d'un pas via le
-callback `playbackAdvance` de `time-selector.svelte` (store + URL + `changeOMfileURL()` + centrage,
-**sans** `checkClosestModelRun` : les échéances sortent des `valid_times` du run courant), attend
-que la frame soit réellement rendue (événement `commit` de `slot-events.ts` ; les commits
-surnuméraires des managers raster/vecteur sont ignorés pendant qu'une avancée est programmée) puis
-programme la suivante avec un plancher de 1,2 s/frame (`PLAYBACK_MIN_FRAME_MS`) et une garde de
-10 s sans commit (`PLAYBACK_MAX_WAIT_MS` — on avance quand même). La **plage lue** est celle du
-sélecteur de mode partagé avec le préchargement (store persisté `prefetchMode`,
-`src/lib/stores/prefetch.ts`, défaut « Run complet ») : bornes injectées au start via `getBounds`,
-boucle dans la plage (`nextPlaybackFrame`, `src/lib/playback.ts`) jusqu'à pause, saut au début de
-plage si l'échéance courante est dehors. Changer de plage en cours de lecture redémarre le moteur
-sur les nouvelles bornes (`$effect` untracked — `start()` lit `$time`/`$metaJson`, ne pas
-re-déclencher sur chaque frame). Arrêt automatique sur `error` de slot et sur changement de
-domaine/run. Au play, le bouton lance aussi un `prefetchData()` **en arrière-plan** sur la même
-plage (variable affichée), fire-and-forget et annulé à la pause (`AbortController`) : la lecture
-démarre sans attendre et se lisse à mesure que le cache rattrape, en plus de `neighbor-prefetch.ts`
-et du préchargement manuel.
+Le player d'animation pré-rendu a été retiré (à reconstruire dans un module propre). Vestiges conservés :
 
-L'ancien player **pré-rendu** (diaporama : capture canvas, overlay, gel de la carte) reste retiré.
-Vestige : `src/lib/playback-renderer.ts` ne contient plus que `waitForIdle(map, timeoutMs, signal?)`,
-utilisé par `capture-flow.svelte` pour attendre la mise au repos de la carte avant la capture PNG du
-canvas (`preserveDrawingBuffer` reste activé sur la map — voir `+page.svelte`).
+- `src/lib/playback-renderer.ts` ne contient plus que `waitForIdle(map, timeoutMs, signal?)`, utilisé par `capture-flow.svelte` pour attendre la mise au repos de la carte avant la capture PNG du canvas (`preserveDrawingBuffer` reste activé sur la map — voir `+page.svelte`).
+- `src/lib/slot-events.ts` continue d'émettre `commit`/`error` depuis le slot manager (`layers.ts`), mais plus aucun consommateur n'écoute ce bus — émission inoffensive, conservée pour le futur module d'animation.
 
-**Préchargement (prefetch) — réintroduit seul.** `src/lib/prefetch.ts` + `src/lib/components/time/prefetch-button.svelte` ont été restaurés (sans le player d'animation). Le bouton vit dans la barre de run (`time-selector.svelte`, dans le `<div>` `-top-4.5` à côté du sélecteur de run) : un `Select` de mode (Aujourd'hui / 24 h suivantes / 24 h précédentes / Run complet — store persisté `prefetchMode`, partagé avec la lecture, libellés dans `PREFETCH_MODE_LABELS` de `prefetch.ts`) + un bouton télécharger qui appelle `prefetchData()`. `getDateRangeForMode()` traduit le mode en plage `[startDate, endDate]`, `prefetchData()` filtre les `valid_times` du `metaJson` dans cette plage et précharge chaque pas via `omFileReader.prefetchVariable()` (8 workers concurrents, annulable via `AbortController`). Sans `metaJson`/`modelRun` chargés, un toast d'avertissement s'affiche.
+Supprimés : `src/lib/stores/playback.ts`, le composant `playback-panel.svelte`, et les exports `PlaybackOverlay` / `MapInteractionLock` / `captureFrame` / `decodeFrames` / `computeFrameIntervalMs` / `estimatePrerenderMs` / `isFailureRateExceeded` / `waitForCommit` de `playback-renderer.ts`.
+
+**Préchargement (prefetch) — réintroduit seul.** `src/lib/prefetch.ts` + `src/lib/components/time/prefetch-button.svelte` ont été restaurés (sans le player d'animation). Le bouton vit dans la barre de run (`time-selector.svelte`, dans le `<div>` `-top-4.5` à côté du sélecteur de run) : un `Select` de mode (Aujourd'hui / 24 h suivantes / 24 h précédentes / Run complet) + un bouton télécharger qui appelle `prefetchData()`. `getDateRangeForMode()` traduit le mode en plage `[startDate, endDate]`, `prefetchData()` filtre les `valid_times` du `metaJson` dans cette plage et précharge chaque pas via `omFileReader.prefetchVariable()` (8 workers concurrents, annulable via `AbortController`). Sans `metaJson`/`modelRun` chargés, un toast d'avertissement s'affiche.
 
 **Préchargement automatique des échéances voisines (#46).** `src/lib/neighbor-prefetch.ts`
 s'abonne au store `time` (initialisé dans `+page.svelte`), debounce
@@ -105,7 +86,7 @@ Certains domaines ne viennent pas d'Open-Meteo mais d'un bucket R2 (`VITE_MODELS
 
 `arome_france_convection` (AROME France métropole, convection/orage) expose 9 variables avec colormaps dédiées dans `src/lib/color-scales/` (7 continues + 1 catégorielle partagée par `precipitation_type`/`precipitation_type_severe`, type `CategoricalColorScale` rendu par `components/scale/categorical-legend.svelte`). La variable affichée par défaut sur bascule de domaine est pilotée par `DOMAIN_DEFAULT_VARIABLES` (`constants.ts`), consultée par `matchVariableOrFirst()` (`metadata.ts`).
 
-`arome_france` (AROME France métropole, **surface**) expose 12 variables standard Open-Meteo (`temperature_2m`, `relative_humidity_2m`, `dew_point_2m`, `wind_u_component_10m`, `wind_v_component_10m`, `wind_gusts_10m`, `pressure_msl`, `cloud_cover_low/mid/high`, `precipitation`, `precipitation_sum`) servies depuis le bucket maison — **pas de fallback Open-Meteo**. Même grille que `arome_france_convection` (1121×717 à 0,025°). Colormaps par défaut du package (`precipitation_sum` surchargé dans `standardColorScales`) ; le vent u/v est dérivé en vitesse/direction par le package (le `_v_component` est masqué par `variable-tabs.svelte`), donc aucune dérivation côté client. Dans le sélecteur, `arome_france` et `arome_france_convection` apparaissent sous le groupe « Météo-France Arome » défini par `MODEL_SELECTOR_GROUPS` (`constants.ts`) — voir le § _Domain allowlist_. Le groupe partagé `AROME_FRANCE_GROUP` (« AROME France (Infoclimat) ») poussé dans `domainGroups` par `ensureAromeFranceGroup()` (`arome-france-domain.ts`) n'est **plus consommé pour l'affichage** (vestige conservé, couvert par tests).
+`arome_france` (AROME France métropole, **surface**) expose 12 variables standard Open-Meteo (`temperature_2m`, `relative_humidity_2m`, `dew_point_2m`, `wind_u_component_10m`, `wind_v_component_10m`, `wind_gusts_10m`, `pressure_msl`, `cloud_cover_low/mid/high`, `precipitation`, `precipitation_sum`) servies depuis le bucket maison — **pas de fallback Open-Meteo**. Même grille que `arome_france_convection` (1121×717 à 0,025°). Colormaps par défaut du package (`precipitation_sum` surchargé dans `standardColorScales`) ; le vent u/v est dérivé en vitesse/direction par le package (le `_v_component` est masqué par `variable-tabs.svelte`), donc aucune dérivation côté client. Dans le sélecteur, `arome_france` et `arome_france_convection` apparaissent sous le groupe « Météo-France Arome » défini par `MODEL_SELECTOR_GROUPS` (`constants.ts`) — voir le § *Domain allowlist*. Le groupe partagé `AROME_FRANCE_GROUP` (« AROME France (Infoclimat) ») poussé dans `domainGroups` par `ensureAromeFranceGroup()` (`arome-france-domain.ts`) n'est **plus consommé pour l'affichage** (vestige conservé, couvert par tests).
 
 **`precipitation_type` / `precipitation_type_severe` masquées (à refactorer).** Ces deux variables sont **catégorielles** (codes producteur entiers) mais `@openmeteo/weather-map-layer@0.0.19` n'a pas de rendu catégoriel : le rasterizer échantillonne les données en **bilinéaire** (`grid.getLinearInterpolatedValue`) avant le LUT couleur, à la fois pour les tuiles et pour `getValueFromLatLong` (popup), et aucune option nearest-neighbor n'est exposée (`RenderOptions` n'a pas de type d'échelle `categorical`). Résultat : halos de catégorie parasite en lisière (une valeur interpolée entre deux codes éloignés tombe sur un code intermédiaire) et valeurs non entières au survol. En attendant une refacto / un correctif amont du package (échantillonnage NN + correspondance exacte → hors-code transparent, à porter dans le rasterizer worker **et** `getValueFromLatLong`), elles sont **masquées du sélecteur** via `HIDDEN_VARIABLES` (`constants.ts`), filtré dans `variable-tabs.svelte`. Masquage display-only : une URL partagée ciblant ces variables résout toujours (rendu avec l'artefact). La `precipitationTypeScale` (`color-scales/precipitation-type.ts`) et la légende catégorielle restent en place pour la reprise. Suivi : [issue #35](https://github.com/cmer81/maps/issues/35).
 

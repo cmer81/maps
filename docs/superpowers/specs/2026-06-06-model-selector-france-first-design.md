@@ -66,8 +66,8 @@ ANOMALIE
 
 ### 1. Source unique : `MODEL_SELECTOR_GROUPS` (dans `constants.ts`)
 
-Tableau ordonné de groupes ; unique déclaration de _quels domaines, dans quel ordre,
-sous quel groupe, avec quel libellé_.
+Tableau ordonné de groupes ; unique déclaration de *quels domaines, dans quel ordre,
+sous quel groupe, avec quel libellé*.
 
 ```ts
 export const MODEL_SELECTOR_GROUPS: readonly {
@@ -162,7 +162,9 @@ Itère `MODEL_SELECTOR_GROUPS` au lieu de `domainGroups` + `startsWith` :
 
 ```svelte
 {#each MODEL_SELECTOR_GROUPS as group (group.label)}
-	{@const visible = group.domains.filter((d) => domainOptions.some((o) => o.value === d.value))}
+	{@const visible = group.domains.filter((d) =>
+		domainOptions.some((o) => o.value === d.value)
+	)}
 	{#if visible.length}
 		<Command.Group heading={group.label}>
 			{#each visible as { value, label } (value)}
@@ -199,6 +201,6 @@ Inchangé, sauf : ajout de la mention émagramme au sous-texte d'`arome_france`
 
 ## Docs à synchroniser
 
-- `.claude/rules/architecture.md` § _Domain allowlist_ : `DOMAIN_ALLOWLIST` est
+- `.claude/rules/architecture.md` § *Domain allowlist* : `DOMAIN_ALLOWLIST` est
   désormais dérivé de `MODEL_SELECTOR_GROUPS` (ordre + groupes + libellés). Le
   regroupement n'utilise plus `startsWith`.

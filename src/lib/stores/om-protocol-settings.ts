@@ -28,7 +28,6 @@ import {
 	DEFAULT_CACHE_MAX_BYTES_MB,
 	HTTP_OVERHEAD_BYTES
 } from '$lib/constants';
-
 import type {
 	Data,
 	OmProtocolSettings,
