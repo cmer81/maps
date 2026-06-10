@@ -59,8 +59,11 @@ surnuméraires des managers raster/vecteur sont ignorés pendant qu'une avancée
 programme la suivante avec un plancher de 700 ms/frame (`PLAYBACK_MIN_FRAME_MS`) et une garde de
 10 s sans commit (`PLAYBACK_MAX_WAIT_MS` — on avance quand même). Boucle de l'échéance de départ à
 la fin du run (`nextPlaybackFrame`, `src/lib/playback.ts`) jusqu'à pause. Arrêt automatique sur
-`error` de slot et sur changement de domaine/run (`$effect` dans le bouton). La fluidité vient du
-préchargement : bouton prefetch (run complet) et/ou `neighbor-prefetch.ts` (échéances voisines).
+`error` de slot et sur changement de domaine/run (`$effect` dans le bouton). Au play, le bouton
+lance aussi un `prefetchData()` **en arrière-plan** sur la plage à jouer (échéance courante → fin
+de run, variable affichée), fire-and-forget et annulé à la pause (`AbortController`) : la lecture
+démarre sans attendre et se lisse à mesure que le cache rattrape, en plus de `neighbor-prefetch.ts`
+et du préchargement manuel.
 
 L'ancien player **pré-rendu** (diaporama : capture canvas, overlay, gel de la carte) reste retiré.
 Vestige : `src/lib/playback-renderer.ts` ne contient plus que `waitForIdle(map, timeoutMs, signal?)`,

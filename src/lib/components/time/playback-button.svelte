@@ -2,9 +2,10 @@
 	import { toast } from 'svelte-sonner';
 
 	import { metaJson, modelRun, time } from '$lib/stores/time';
-	import { domain as domainStore } from '$lib/stores/variables';
+	import { domain as domainStore, variable as variableStore } from '$lib/stores/variables';
 
 	import { createPlaybackEngine } from '$lib/playback-engine';
+	import { prefetchData } from '$lib/prefetch';
 	import { slotEvents } from '$lib/slot-events';
 
 	// L'avancée d'échéance est déléguée à time-selector pour réutiliser son
@@ -12,6 +13,29 @@
 	let { advance }: { advance: (date: Date) => void } = $props();
 
 	let playing = $state(false);
+	let prefetchAbort: AbortController | null = null;
+
+	// Au lancement de la lecture, on précharge en arrière-plan la plage à jouer
+	// (échéance courante → fin de run) pour lisser l'animation sur réseau lent.
+	// Fire-and-forget : la lecture n'attend pas, le cache rattrape en route.
+	const startBackgroundPrefetch = () => {
+		if (!$metaJson || !$modelRun) return;
+		prefetchAbort = new AbortController();
+		void prefetchData({
+			startDate: new Date($time),
+			endDate: new Date($metaJson.valid_times[$metaJson.valid_times.length - 1] as string),
+			metaJson: $metaJson,
+			modelRun: $modelRun,
+			domain: $domainStore,
+			variable: $variableStore,
+			signal: prefetchAbort.signal
+		});
+	};
+
+	const stopBackgroundPrefetch = () => {
+		prefetchAbort?.abort();
+		prefetchAbort = null;
+	};
 
 	const engine = createPlaybackEngine({
 		events: slotEvents,
@@ -19,20 +43,27 @@
 		getCurrent: () => $time,
 		advance: (date) => advance(date),
 		onAutoStop: () => {
+			stopBackgroundPrefetch();
 			playing = false;
 		}
 	});
 
+	const stopPlayback = () => {
+		engine.stop();
+		stopBackgroundPrefetch();
+		playing = false;
+	};
+
 	const togglePlayback = () => {
 		if (engine.running) {
-			engine.stop();
-			playing = false;
+			stopPlayback();
 			return;
 		}
 		if (!engine.start()) {
 			toast.warning('Aucune échéance disponible pour lancer la lecture');
 			return;
 		}
+		startBackgroundPrefetch();
 		playing = true;
 	};
 
@@ -41,13 +72,12 @@
 		void $domainStore;
 		void $modelRun;
 		if (engine.running) {
-			engine.stop();
-			playing = false;
+			stopPlayback();
 		}
 	});
 
 	$effect(() => {
-		return () => engine.stop();
+		return () => stopPlayback();
 	});
 </script>
 
