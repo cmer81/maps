@@ -206,17 +206,27 @@ const vectorContourLabelsLayer = (): SlotLayer => ({
 				source: sourceId,
 				'source-layer': 'contours',
 				layout: {
-					'symbol-placement': 'line-center',
-					'symbol-spacing': 1,
+					// 'line' (et non 'line-center') : étiquette répétée tous les
+					// `symbol-spacing` px écran le long de l'isoligne.
+					'symbol-placement': 'line',
+					'symbol-spacing': 120,
+					// Les contours marching-squares sont en escalier à l'échelle de la
+					// maille : le contrôle de courbure de MapLibre (défaut 45°) rejette
+					// sinon quasi tous les ancrages au zoom continental. Texte aligné
+					// viewport (horizontal) → le rejet n'a plus d'objet, on le désactive.
+					'text-rotation-alignment': 'viewport',
+					'text-max-angle': 180,
 					'text-font': ['Noto Sans Regular'],
 					'text-field': buildContourLabelExpr(get(displayedVariable), get(geopotentialUnit)),
-					'text-padding': 1,
-					'text-offset': [0, -0.6]
+					'text-padding': 1
 				},
 				paint: {
 					'text-opacity': 0,
 					'text-opacity-transition': { duration: 200, delay: 0 },
-					'text-color': lightOrDark('rgba(0,0,0, 0.7)', 'rgba(255,255,255, 0.8)')
+					'text-color': lightOrDark('rgba(0,0,0, 0.7)', 'rgba(255,255,255, 0.8)'),
+					// Le halo interrompt visuellement la ligne sous l'étiquette.
+					'text-halo-color': lightOrDark('rgba(255,255,255, 0.8)', 'rgba(0,0,0, 0.6)'),
+					'text-halo-width': 1.5
 				}
 			},
 			beforeLayer

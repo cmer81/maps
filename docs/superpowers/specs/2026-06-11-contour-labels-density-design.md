@@ -31,12 +31,36 @@ lignes majeures » (via les modulos de `ContourStyle`) est volontairement exclu 
 
 Uniquement dans `vectorContourLabelsLayer` (`src/lib/layers.ts`) :
 
-- `symbol-placement: 'line-center'` → `'line'` avec `symbol-spacing: 280`
-  (étiquette répétée ~tous les 280 px écran, collision gérée par MapLibre).
+- `symbol-placement: 'line-center'` → `'line'` avec `symbol-spacing: 120`
+  (étiquette répétée le long des lignes, collision gérée par MapLibre).
+- `text-rotation-alignment: 'viewport'` + `text-max-angle: 180` — voir
+  « Découverte en implémentation » ci-dessous.
 - `text-offset: [0, -0.6]` → `[0, 0]` — l'étiquette se pose sur la ligne, le
   halo l'interrompt visuellement.
 - Paint : ajout de `text-halo-color` (accordé au thème via `lightOrDark`,
   comme `text-color`) et `text-halo-width: 1.5`.
+
+## Découverte en implémentation (cause racine)
+
+Le premier jet (`'line'` + `symbol-spacing: 280` seul) plaçait **zéro**
+étiquette au zoom continental — et l'ancien `line-center` aussi (bug
+préexistant, masqué à fort zoom). Cause, mesurée en headless via
+`queryRenderedFeatures` sur la couche labels :
+
+1. Les polylignes marching-squares de `@openmeteo/weather-map-layer` sont en
+   escalier à l'échelle de la maille (~3 px/maille ARPEGE 0,1° au zoom 5) ;
+   le contrôle de courbure MapLibre (`text-max-angle`, défaut 45°, appliqué
+   dès qu'il y a du texte, quel que soit l'alignement) rejette quasi tous les
+   ancrages (0 placé à 45°, 1 à 85° sur ~3 000 fragments).
+2. Les contours arrivent fragmentés par tuile ; chaque fragment doit être plus
+   long que l'offset d'entrée (~`symbol-spacing`/2) pour recevoir un ancrage —
+   d'où `symbol-spacing: 120` plutôt que 280.
+
+Remède : texte aligné **viewport** (horizontal, style Meteociel) — la
+courbure de la ligne n'a alors plus d'incidence sur le rendu du texte, ce qui
+permet de neutraliser le contrôle avec `text-max-angle: 180`. Mesures après
+correctif (Europe entière, 1440×900) : 23 étiquettes placées à intervalle 2,
+4 à intervalle 15 (3 isolignes à l'écran), contre 0/0 avant.
 
 ## Hors périmètre (inchangé)
 
