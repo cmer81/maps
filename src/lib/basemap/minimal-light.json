@@ -597,7 +597,7 @@
 			"type": "line",
 			"source": "openmaptiles",
 			"source-layer": "water",
-			"filter": ["==", "$type", "Polygon"],
+			"filter": ["all", ["==", "$type", "Polygon"], ["==", "class", "ocean"]],
 			"layout": {
 				"line-cap": "round",
 				"line-join": "round"
