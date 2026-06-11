@@ -96,7 +96,13 @@ export const DEFAULT_TILE_SIZE = 512;
 export const DEFAULT_OPACITY = 75;
 
 // Cache defaults (in KB and MB for UI display)
-export const DEFAULT_CACHE_BLOCK_SIZE_KB = 64;
+// 256 KB : sur les grilles HD (ex. meteofrance_arome_france_hd ≈ 20 Mo/frame), des blocs
+// de 64 KB généraient ~28 requêtes par frame visible — overhead HTTP élevé et bursts qui
+// déclenchaient des 503 (throttling de concurrence côté CDN). 256 KB divise ce nombre par
+// ~4 (≈7 requêtes/frame) avec un sur-fetch de bordure négligeable. Voir la migration
+// one-shot dans om-protocol-settings.ts qui relève les utilisateurs encore sur l'ancien 64.
+export const DEFAULT_CACHE_BLOCK_SIZE_KB = 256;
+export const LEGACY_CACHE_BLOCK_SIZE_KB = 64;
 // 1 GiO : large pour la fenêtre glissante de scrubbing (neighbor-prefetch) sans
 // saturer un petit disque. Le quota navigateur est typiquement bien supérieur
 // (plusieurs Go) ; cf. requestPersistentStorage() qui empêche l'éviction d'origine.

@@ -26,7 +26,8 @@ import {
 	ANOMALY_VARIABLE,
 	DEFAULT_CACHE_BLOCK_SIZE_KB,
 	DEFAULT_CACHE_MAX_BYTES_MB,
-	HTTP_OVERHEAD_BYTES
+	HTTP_OVERHEAD_BYTES,
+	LEGACY_CACHE_BLOCK_SIZE_KB
 } from '$lib/constants';
 
 import type {
@@ -43,6 +44,17 @@ export const customColorScales = persisted<Record<string, RenderableColorScale>>
 
 export const cacheBlockSizeKb = persisted('cache-block-size-kb', DEFAULT_CACHE_BLOCK_SIZE_KB);
 export const cacheMaxBytesMb = persisted('cache-max-bytes-mb', DEFAULT_CACHE_MAX_BYTES_MB);
+
+// Migration one-shot : relève les utilisateurs déjà existants encore sur l'ancien défaut
+// (64 KB) vers le nouveau (256 KB). Doit s'exécuter AVANT createBlockCache() pour que le
+// cache soit instancié avec la bonne taille de bloc. Un drapeau évite de réécraser un choix
+// manuel ultérieur ; une valeur personnalisée (≠ 64) est laissée intacte.
+if (browser && !localStorage.getItem('cache-block-size-migrated-256')) {
+	if (get(cacheBlockSizeKb) === LEGACY_CACHE_BLOCK_SIZE_KB) {
+		cacheBlockSizeKb.set(DEFAULT_CACHE_BLOCK_SIZE_KB);
+	}
+	localStorage.setItem('cache-block-size-migrated-256', '1');
+}
 
 const initialCustomColorScales = get(customColorScales);
 
