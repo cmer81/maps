@@ -56,6 +56,10 @@ export const buildDepartmentsLineLayer = (
 	id: DEPARTMENTS_LAYER_ID,
 	type: 'line',
 	source: DEPARTMENTS_SOURCE_ID,
+	// Masqué dès z>=9 : à partir de ce zoom, le fond OpenFreeMap porte lui-même
+	// `admin_level=6` (cf. en-tête). On bascule alors sur le tracé natif (géométrie
+	// fine) au lieu de superposer notre GeoJSON simplifié — évite le double trait.
+	maxzoom: 9,
 	layout: {
 		visibility: visible ? 'visible' : 'none'
 	},

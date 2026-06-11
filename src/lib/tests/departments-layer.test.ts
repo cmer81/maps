@@ -87,6 +87,10 @@ describe('buildDepartmentsLineLayer', () => {
 		expect(buildDepartmentsLineLayer(true, true).layout!.visibility).toBe('visible');
 		expect(buildDepartmentsLineLayer(true, false).layout!.visibility).toBe('none');
 	});
+
+	it('masqué dès z>=9 (le fond OpenFreeMap prend le relais)', () => {
+		expect(buildDepartmentsLineLayer(true, true).maxzoom).toBe(9);
+	});
 });
 
 describe('ensureDepartmentsLayer', () => {

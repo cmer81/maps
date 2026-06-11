@@ -603,7 +603,7 @@
 			"type": "line",
 			"source": "openmaptiles",
 			"source-layer": "water",
-			"filter": ["==", "$type", "Polygon"],
+			"filter": ["all", ["==", "$type", "Polygon"], ["==", "class", "ocean"]],
 			"layout": {
 				"line-cap": "round",
 				"line-join": "round"
@@ -630,10 +630,18 @@
 			"paint": {
 				"line-color": {
 					"stops": [
-						[3, "rgba(150, 150, 150, 0)"],
-						[6, "rgba(150, 150, 150, 0.6)"]
+						[3, "rgba(255, 255, 255, 0)"],
+						[6, "rgba(255, 255, 255, 0.55)"]
 					],
 					"type": "exponential"
+				},
+				"line-width": {
+					"base": 1.4,
+					"stops": [
+						[6, 0.6],
+						[9, 1],
+						[14, 1.6]
+					]
 				},
 				"line-dasharray": [2, 1]
 			}
