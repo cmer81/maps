@@ -21,7 +21,7 @@ import { windOverlayEnabled } from '$lib/stores/vector';
 import { isSoundingDomain } from '$lib/constants';
 
 import { textWhite } from './helpers';
-import { rasterManager, vectorManager } from './layers';
+import { arrowManager, rasterManager } from './layers';
 import { terraDrawActive } from './stores/clipping';
 import { desktop, opacity } from './stores/preferences';
 
@@ -106,8 +106,12 @@ const updatePopupContent = async (coordinates: maplibregl.LngLat): Promise<void>
 	const activeUrl = rasterManager?.getActiveSourceUrl();
 	if (!activeUrl) return;
 
+	// L'overlay vent rend ses flèches via l'arrowManager (source = niveau de vent
+	// dédié) ; le vectorManager porte désormais la variable affichée. On lit donc la
+	// vitesse du vent depuis l'arrowManager — sinon on lirait la valeur de la variable
+	// affichée (p. ex. la température) et on l'afficherait comme du vent.
 	const showWind = get(windOverlayEnabled) && !WIND_VARIABLE_REGEX.test(get(v));
-	const windUrl = showWind ? vectorManager?.getActiveSourceUrl() : undefined;
+	const windUrl = showWind ? arrowManager?.getActiveSourceUrl() : undefined;
 
 	const [{ value }, windResult] = await Promise.all([
 		getValueFromLatLong(coordinates.lat, coordinates.lng, activeUrl),

@@ -97,26 +97,60 @@ describe('buildArrowWidthExpr (default)', () => {
 });
 
 describe('buildContourLabelExpr', () => {
-	it('géopotentiel + gpdam → number-format ÷10', () => {
-		const expr = buildContourLabelExpr('geopotential_height_500hPa', 'gpdam');
+	const units = {
+		temperature: '°C',
+		precipitation: 'mm',
+		windSpeed: 'km/h',
+		distance: 'm',
+		geopotential: 'gpm'
+	} as const;
+
+	it('géopotentiel + gpdam → number-format ×0,1', () => {
+		const expr = buildContourLabelExpr('geopotential_height_500hPa', 'gpm', {
+			...units,
+			geopotential: 'gpdam'
+		});
 		expect(expr).toEqual([
 			'number-format',
-			['/', ['to-number', ['get', 'value']], 10],
-			{
-				'max-fraction-digits': 1
-			}
+			['*', ['to-number', ['get', 'value']], 0.1],
+			{ 'max-fraction-digits': 1 }
 		]);
 	});
 
 	it('géopotentiel + gpm → valeur brute', () => {
-		expect(buildContourLabelExpr('geopotential_height_500hPa', 'gpm')).toEqual([
+		expect(buildContourLabelExpr('geopotential_height_500hPa', 'gpm', units)).toEqual([
 			'to-string',
 			['get', 'value']
 		]);
 	});
 
-	it('variable non géopotentielle → valeur brute même en gpdam', () => {
-		expect(buildContourLabelExpr('temperature_850hPa', 'gpdam')).toEqual([
+	it('vent m/s → km/h : number-format ×3,6', () => {
+		const expr = buildContourLabelExpr('wind_speed_10m', 'm/s', { ...units, windSpeed: 'km/h' });
+		expect(expr).toEqual([
+			'number-format',
+			['*', ['to-number', ['get', 'value']], 3.6],
+			{ 'max-fraction-digits': 1 }
+		]);
+	});
+
+	it('vent m/s → m/s : valeur brute (pas de conversion)', () => {
+		expect(buildContourLabelExpr('wind_speed_10m', 'm/s', { ...units, windSpeed: 'm/s' })).toEqual([
+			'to-string',
+			['get', 'value']
+		]);
+	});
+
+	it('température °C → °F : affine ×1,8 + 32', () => {
+		const expr = buildContourLabelExpr('temperature_2m', '°C', { ...units, temperature: '°F' });
+		expect(expr).toEqual([
+			'number-format',
+			['+', ['*', ['to-number', ['get', 'value']], 1.8], 32],
+			{ 'max-fraction-digits': 1 }
+		]);
+	});
+
+	it('température °C → °C : valeur brute', () => {
+		expect(buildContourLabelExpr('temperature_2m', '°C', units)).toEqual([
 			'to-string',
 			['get', 'value']
 		]);

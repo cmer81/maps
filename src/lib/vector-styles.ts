@@ -5,7 +5,7 @@
  * ici en données (niveaux) + builders purs, pour pouvoir les personnaliser
  * (cf. stores/vector-styles.ts) sans toucher au moteur de rendu.
  */
-import { type GeopotentialUnit, isGeopotentialVariable } from '$lib/stores/units';
+import { type UnitPreferences, convertValue } from '$lib/stores/units';
 
 import type * as maplibregl from 'maplibre-gl';
 
@@ -159,20 +159,32 @@ export function buildContourWidthExpr(style: ContourStyle): NumOrExpr {
 }
 
 /**
- * Champ texte des étiquettes d'isolignes. Les tuiles portent la valeur en unité
- * de base (gpm pour le géopotentiel). On la convertit en gpdam (÷10) quand la
- * variable est un géopotentiel et que l'unité choisie est gpdam ; sinon valeur
- * brute. La couleur/largeur restent pilotées par la valeur brute (modulo), donc
- * les lignes ne bougent pas — seul le libellé change.
+ * Champ texte des étiquettes d'isolignes. Les tuiles portent la valeur dans
+ * l'unité de base de la variable (`baseUnit` = unité de l'échelle de couleurs,
+ * p. ex. `m/s` pour le vent, `gpm` pour le géopotentiel). On la convertit dans
+ * l'unité d'affichage choisie via une transformation **affine** (offset +
+ * facteur) dérivée de `convertValue`, exprimée en MapLibre — ce qui couvre
+ * toutes les catégories (vent m/s→km/h, °C→°F, géopotentiel gpm→gpdam…). La
+ * couleur/largeur restent pilotées par la valeur brute (modulo), donc les lignes
+ * ne bougent pas — seul le libellé change.
  */
 export function buildContourLabelExpr(
 	variable: string,
-	geopotentialUnit: GeopotentialUnit
+	baseUnit: string,
+	units: UnitPreferences
 ): maplibregl.ExpressionSpecification {
-	if (geopotentialUnit === 'gpdam' && isGeopotentialVariable(variable)) {
-		return ['number-format', ['/', VALUE, 10], { 'max-fraction-digits': 1 }];
-	}
-	return ['to-string', ['get', 'value']];
+	// Arrondi pour éviter le bruit flottant (ex. 33,8 − 32 = 1,79999…) dans
+	// l'expression ; 6 décimales suffisent largement (affichage à 1 décimale).
+	const round = (n: number): number => Math.round(n * 1e6) / 1e6;
+	const offset = round(convertValue(0, baseUnit, units, variable));
+	const factor = round(
+		convertValue(1, baseUnit, units, variable) - convertValue(0, baseUnit, units, variable)
+	);
+	// Unité d'affichage = unité de base → valeur brute (formatage historique).
+	if (factor === 1 && offset === 0) return ['to-string', ['get', 'value']];
+	const scaled: maplibregl.ExpressionSpecification =
+		offset === 0 ? ['*', VALUE, factor] : ['+', ['*', VALUE, factor], offset];
+	return ['number-format', scaled, { 'max-fraction-digits': 1 }];
 }
 
 /** Couleur des flèches : plus grand seuil testé en premier, base en dernier. */

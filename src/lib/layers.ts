@@ -1,13 +1,15 @@
 import { get } from 'svelte/store';
 
+import { getColorScale } from '@openmeteo/weather-map-layer';
 import * as maplibregl from 'maplibre-gl';
 import { toast } from 'svelte-sonner';
 
 import { basemapTheme } from '$lib/stores/basemap-theme';
 import { map as m } from '$lib/stores/map';
+import { omProtocolSettings } from '$lib/stores/om-protocol-settings';
 import { loading, opacity, opacity2, preferences as p } from '$lib/stores/preferences';
 import { metaJson as mJ, time } from '$lib/stores/time';
-import { geopotentialUnit } from '$lib/stores/units';
+import { unitPreferences } from '$lib/stores/units';
 import {
 	domain as d,
 	variable as displayedVariable,
@@ -223,7 +225,12 @@ const vectorContourLabelsLayer = (): SlotLayer => ({
 					'text-rotation-alignment': 'viewport',
 					'text-max-angle': 180,
 					'text-font': ['Noto Sans Regular'],
-					'text-field': buildContourLabelExpr(get(displayedVariable), get(geopotentialUnit)),
+					'text-field': buildContourLabelExpr(
+						get(displayedVariable),
+						getColorScale(get(displayedVariable), isDark(), get(omProtocolSettings).colorScales)
+							.unit,
+						get(unitPreferences)
+					),
 					'text-padding': 1
 				},
 				paint: {

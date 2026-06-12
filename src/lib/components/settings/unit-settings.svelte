@@ -64,6 +64,8 @@
 					if (v) {
 						temperatureUnit.set(v as TemperatureUnit);
 						refreshPopup();
+						// Rafraîchit les étiquettes d'isolignes si la variable affichée est convertie.
+						reloadVectorStyle();
 						toast.info(`Unité de température : ${v}`);
 					}
 				}}
@@ -92,6 +94,7 @@
 					if (v) {
 						distanceUnit.set(v as DistanceUnit);
 						refreshPopup();
+						reloadVectorStyle();
 						toast.info(`Unité de distance : ${v}`);
 					}
 				}}
@@ -149,6 +152,7 @@
 					if (v) {
 						precipitationUnit.set(v as PrecipitationUnit);
 						refreshPopup();
+						reloadVectorStyle();
 						toast.info(`Unité de précipitations : ${v}`);
 					}
 				}}
@@ -176,6 +180,8 @@
 					if (v) {
 						windSpeedUnit.set(v as WindSpeedUnit);
 						refreshPopup();
+						// Rafraîchit les étiquettes d'isolignes du vent (m/s → km/h, etc.).
+						reloadVectorStyle();
 						toast.info(`Unité de vitesse du vent : ${v}`);
 					}
 				}}
