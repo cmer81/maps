@@ -78,6 +78,7 @@
 
 	const formatValue = (value: number, digits: number): string => {
 		const converted = convertValue(value, colorScale.unit, $unitPreferences, $variable);
+		if (converted === 0) return '0';
 		if (Math.abs(converted) >= 1) return converted.toFixed(0);
 		if (Math.abs(converted) >= 0.1) return converted.toFixed(1);
 		return converted.toFixed(digits);
