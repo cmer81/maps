@@ -241,3 +241,31 @@ export function hexToRgbaString(hex: string, alpha: number): string {
 	const [r, g, b] = [m[1], m[2], m[3]].map((h) => parseInt(h, 16));
 	return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
+
+// ── Résolution du niveau de vent (mode « selon la variable affichée ») ──────
+
+/**
+ * Variables que le `vectorManager` rend déjà en flèches (la lib dérive u/v →
+ * vitesse/direction) : `wind_u_component_*`, `wind_v_component_*`, `wind_speed_*`,
+ * `wind_direction_*`. `wind_gusts` est exclu : pas de composante directionnelle,
+ * donc traité comme une variable non-vent → éligible au fallback.
+ */
+export function isWindVariable(variable: string): boolean {
+	return variable.startsWith('wind_') && !variable.startsWith('wind_gusts');
+}
+
+/**
+ * Niveau de vent à afficher en repli quand la variable affichée n'est pas du vent :
+ * le niveau de la variable (`…_<N>hPa`) si le vent y est publié, sinon `10m`.
+ * Renvoie `null` si le modèle ne publie aucun vent exploitable.
+ */
+export function deriveDisplayedWindLevel(
+	displayedVariable: string,
+	modelVariables: Iterable<string>
+): string | null {
+	const vars = new Set(modelVariables);
+	const level = displayedVariable.match(/_(\d+m|\d+hPa)$/)?.[1];
+	if (level && vars.has(`wind_u_component_${level}`)) return level;
+	if (vars.has('wind_u_component_10m')) return '10m';
+	return null;
+}
