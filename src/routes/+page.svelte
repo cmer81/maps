@@ -132,6 +132,14 @@
 			canvasContextAttributes: { preserveDrawingBuffer: true }
 		});
 
+		// Expose l'instance MapLibre sur `window.__map` en DEV uniquement
+		// (`import.meta.env.DEV` → arbre mort dans le build statique de prod), pour le
+		// harnais de vérification headless `e2e/verify-map.mjs` (queryRenderedFeatures,
+		// getLayoutProperty, getSource…). Ne pas s'en servir dans le code applicatif.
+		if (import.meta.env.DEV) {
+			(window as unknown as { __map?: maplibregl.Map }).__map = $map;
+		}
+
 		// getStyle() ci-dessus a lu basemapTheme : on mémorise le thème réellement posé.
 		appliedTheme = get(basemapTheme);
 

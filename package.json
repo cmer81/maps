@@ -25,6 +25,7 @@
 		"lint": "prettier --check . && eslint .",
 		"test": "vitest",
 		"coverage": "vitest run --coverage",
+		"verify:map": "node e2e/verify-map.mjs",
 		"upgrade:ui": "npx shadcn-svelte@latest add button command dialog input kbd label popover select separator sheet sonner switch -y -o"
 	},
 	"devDependencies": {
@@ -49,6 +50,7 @@
 		"globals": "^17.6.0",
 		"maplibre-gl": "^5.24.0",
 		"mode-watcher": "^1.1.0",
+		"playwright-core": "^1.60.0",
 		"prettier": "^3.8.0",
 		"prettier-plugin-svelte": "^3.5.0",
 		"prettier-plugin-tailwindcss": "^0.8.0",
