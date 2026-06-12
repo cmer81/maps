@@ -16,7 +16,6 @@ import { omProtocolSettings } from '$lib/stores/om-protocol-settings';
 import { sounding, soundingButtonEnabled } from '$lib/stores/sounding';
 import { convertValue, getDisplayUnit, unitPreferences } from '$lib/stores/units';
 import { selectedDomain, variable as v } from '$lib/stores/variables';
-import { windOverlayEnabled } from '$lib/stores/vector';
 
 import { isSoundingDomain } from '$lib/constants';
 
@@ -24,6 +23,7 @@ import { textWhite } from './helpers';
 import { arrowManager, rasterManager } from './layers';
 import { terraDrawActive } from './stores/clipping';
 import { desktop, opacity } from './stores/preferences';
+import { resolveWindArrowLevel } from './url';
 
 let el: HTMLDivElement | undefined;
 let wrapperDiv: HTMLDivElement | undefined;
@@ -106,11 +106,11 @@ const updatePopupContent = async (coordinates: maplibregl.LngLat): Promise<void>
 	const activeUrl = rasterManager?.getActiveSourceUrl();
 	if (!activeUrl) return;
 
-	// L'overlay vent rend ses flèches via l'arrowManager (source = niveau de vent
-	// dédié) ; le vectorManager porte désormais la variable affichée. On lit donc la
-	// vitesse du vent depuis l'arrowManager — sinon on lirait la valeur de la variable
-	// affichée (p. ex. la température) et on l'afficherait comme du vent.
-	const showWind = get(windOverlayEnabled) && !WIND_VARIABLE_REGEX.test(get(v));
+	// L'arrowManager dessine dès qu'un niveau de vent est résolu (overlay explicite OU
+	// fallback « selon la variable affichée » sur variable non-vent). On lit alors le
+	// vent depuis lui, sauf si la variable affichée est elle-même une composante u/v
+	// (sa valeur principale est déjà du vent).
+	const showWind = resolveWindArrowLevel() !== null && !WIND_VARIABLE_REGEX.test(get(v));
 	const windUrl = showWind ? arrowManager?.getActiveSourceUrl() : undefined;
 
 	const [{ value }, windResult] = await Promise.all([
