@@ -1,4 +1,8 @@
 <script lang="ts">
+	import { MediaQuery } from 'svelte/reactivity';
+	import { slide } from 'svelte/transition';
+
+	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
 	import { toast } from 'svelte-sonner';
 
@@ -86,6 +90,8 @@
 	}
 
 	let editing: { index: number; rect: DOMRect } | null = $state(null);
+	let styleOpen = $state(false);
+	const reducedMotion = new MediaQuery('(prefers-reduced-motion: reduce)');
 
 	function setColor(index: number, hex: string, alpha: number) {
 		arrowStyle.update((s) => ({
@@ -149,51 +155,74 @@
 				</Select.Content>
 			</Select.Root>
 		</div>
-		<div class="mt-2 flex flex-col gap-1.5 border-t border-white/10 pt-2 pl-1">
-			<div class="flex items-center justify-between">
-				<span class="text-xs text-white/70">Style des flèches</span>
-				<button
-					type="button"
-					class="flex cursor-pointer items-center gap-1 text-xs text-white/50 hover:text-white/80"
-					onclick={resetArrowStyle}
+		<div class="mt-2 border-t border-white/10 pt-2 pl-1">
+			<button
+				type="button"
+				class="flex min-h-11 w-full cursor-pointer items-center justify-between gap-2 text-xs text-white/70 hover:text-white/90 md:min-h-0"
+				aria-expanded={styleOpen}
+				onclick={() => (styleOpen = !styleOpen)}
+			>
+				<span>Style des flèches</span>
+				<ChevronDownIcon
+					class={[
+						'size-4 transition-transform duration-200 motion-reduce:transition-none',
+						styleOpen && 'rotate-180'
+					]
+						.filter(Boolean)
+						.join(' ')}
+					aria-hidden="true"
+				/>
+			</button>
+			{#if styleOpen}
+				<div
+					class="mt-1.5 flex flex-col gap-1.5"
+					transition:slide={{ duration: reducedMotion.current ? 0 : 200 }}
 				>
-					<RotateCcwIcon class="size-3" /> Réinitialiser
-				</button>
-			</div>
-			{#each $arrowStyle.levels as level, i (level.label)}
-				<div class="flex items-center gap-2">
-					<span class="w-10 shrink-0 text-xs text-white/60">{level.label}</span>
-					<div class="relative">
+					<div class="flex justify-end">
 						<button
 							type="button"
-							aria-label={`Couleur ${level.label}`}
-							class="size-5 cursor-pointer rounded border border-white/20"
-							style="background: {level.darkColor};"
-							onclick={(e) =>
-								(editing = { index: i, rect: e.currentTarget.getBoundingClientRect() })}
-						></button>
-						{#if editing?.index === i}
-							<ColorPicker
-								portalToBody
-								anchorRect={editing.rect}
-								color={rgbaStringToHex(level.darkColor)}
-								alpha={parseRgbaOpacity(level.darkColor)}
-								onchange={(hex, alpha) => setColor(i, hex, alpha)}
-								onclose={() => (editing = null)}
-							/>
-						{/if}
+							class="flex cursor-pointer items-center gap-1 text-xs text-white/50 hover:text-white/80"
+							onclick={resetArrowStyle}
+						>
+							<RotateCcwIcon class="size-3" aria-hidden="true" /> Réinitialiser
+						</button>
 					</div>
-					<Input
-						class="h-7 w-16 shrink-0 bg-background/60"
-						type="number"
-						step="0.1"
-						min="0"
-						value={level.width}
-						onchange={(e) => setWidth(i, Number(e.currentTarget.value))}
-						aria-label={`Largeur ${level.label}`}
-					/>
+					{#each $arrowStyle.levels as level, i (level.label)}
+						<div class="flex items-center gap-2">
+							<span class="w-10 shrink-0 text-xs text-white/60">{level.label}</span>
+							<div class="relative">
+								<button
+									type="button"
+									aria-label={`Couleur ${level.label}`}
+									class="size-5 cursor-pointer rounded border border-white/20"
+									style="background: {level.darkColor};"
+									onclick={(e) =>
+										(editing = { index: i, rect: e.currentTarget.getBoundingClientRect() })}
+								></button>
+								{#if editing?.index === i}
+									<ColorPicker
+										portalToBody
+										anchorRect={editing.rect}
+										color={rgbaStringToHex(level.darkColor)}
+										alpha={parseRgbaOpacity(level.darkColor)}
+										onchange={(hex, alpha) => setColor(i, hex, alpha)}
+										onclose={() => (editing = null)}
+									/>
+								{/if}
+							</div>
+							<Input
+								class="h-7 w-16 shrink-0 bg-background/60"
+								type="number"
+								step="0.1"
+								min="0"
+								value={level.width}
+								onchange={(e) => setWidth(i, Number(e.currentTarget.value))}
+								aria-label={`Largeur ${level.label}`}
+							/>
+						</div>
+					{/each}
 				</div>
-			{/each}
+			{/if}
 		</div>
 	{/if}
 </div>
