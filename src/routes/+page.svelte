@@ -83,7 +83,7 @@
 
 	let viewportW = $state(0);
 	let viewportH = $state(0);
-	const captureRect = $derived(computeCaptureRect(viewportW, viewportH));
+	const captureRect = $derived(computeCaptureRect(viewportW, viewportH - $bottomChromeHeight));
 
 	onMount(async () => {
 		$url = new URL(document.location.href);
@@ -259,7 +259,7 @@
 		if (!mapInstance) return;
 		const handleClick = (e: maplibregl.MapMouseEvent) => {
 			if (!get(exportFrameVisible)) return;
-			const r = computeCaptureRect(window.innerWidth, window.innerHeight);
+			const r = computeCaptureRect(window.innerWidth, window.innerHeight - get(bottomChromeHeight));
 			const { x, y } = e.point;
 			const inside = x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
 			if (!inside) exportFrameVisible.set(false);
