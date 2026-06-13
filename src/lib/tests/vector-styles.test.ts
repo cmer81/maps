@@ -8,7 +8,9 @@ import {
 	buildContourWidthExpr,
 	defaultArrowStyle,
 	defaultContourStyle,
+	deriveDisplayedWindLevel,
 	hexToRgbaString,
+	isWindVariable,
 	parseRgbaOpacity,
 	rgbaStringToHex
 } from '$lib/vector-styles';
@@ -169,5 +171,44 @@ describe('rgba helpers', () => {
 		const hex = rgbaStringToHex('rgba(0,0,0, 0.3)');
 		const a = parseRgbaOpacity('rgba(0,0,0, 0.3)');
 		expect(hexToRgbaString(hex, a)).toBe('rgba(0, 0, 0, 0.3)');
+	});
+});
+
+describe('isWindVariable', () => {
+	it('reconnaît les composantes u/v et speed/direction comme vent', () => {
+		expect(isWindVariable('wind_u_component_10m')).toBe(true);
+		expect(isWindVariable('wind_v_component_850hPa')).toBe(true);
+		expect(isWindVariable('wind_speed_10m')).toBe(true);
+		expect(isWindVariable('wind_direction_100m')).toBe(true);
+	});
+
+	it('exclut les rafales (pas de direction) et les non-vent', () => {
+		expect(isWindVariable('wind_gusts_10m')).toBe(false);
+		expect(isWindVariable('temperature_2m')).toBe(false);
+		expect(isWindVariable('precipitation')).toBe(false);
+	});
+});
+
+describe('deriveDisplayedWindLevel', () => {
+	const WIND = ['wind_u_component_10m', 'wind_u_component_100m', 'wind_u_component_850hPa'];
+
+	it('retombe sur 10 m pour une variable de surface 2 m', () => {
+		expect(deriveDisplayedWindLevel('temperature_2m', WIND)).toBe('10m');
+	});
+
+	it('retombe sur 10 m pour une variable de surface sans niveau', () => {
+		expect(deriveDisplayedWindLevel('precipitation', WIND)).toBe('10m');
+	});
+
+	it('utilise le niveau de pression de la variable quand le vent y est publié', () => {
+		expect(deriveDisplayedWindLevel('temperature_850hPa', WIND)).toBe('850hPa');
+	});
+
+	it("retombe sur 10 m quand le vent du niveau de pression n'est pas publié", () => {
+		expect(deriveDisplayedWindLevel('temperature_500hPa', WIND)).toBe('10m');
+	});
+
+	it('renvoie null quand le modèle ne publie aucun vent', () => {
+		expect(deriveDisplayedWindLevel('temperature_2m', ['cape', 'precipitation'])).toBe(null);
 	});
 });

@@ -1,8 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { modelRun as mR, time } from '$lib/stores/time';
+import { metaJson as mJ, modelRun as mR, time } from '$lib/stores/time';
 import { domain as d, variable as v } from '$lib/stores/variables';
-import { vectorOptions, windOverlayEnabled, windOverlayLevel } from '$lib/stores/vector';
+import {
+	defaultVectorOptions,
+	vectorOptions,
+	windOverlayEnabled,
+	windOverlayLevel
+} from '$lib/stores/vector';
 
 import { getOMUrl, getOMUrlFor, getWindOverlayUrl } from '$lib/url';
 
@@ -117,5 +122,57 @@ describe('getWindOverlayUrl', () => {
 	it('leaves the displayed-variable URL (getOMUrl) with its contour flags intact', () => {
 		expect(getOMUrl()).toContain('variable=temperature_2m');
 		expect(getOMUrl()).toContain('contours=true');
+	});
+});
+
+const meta = (variables: string[]) => ({
+	completed: true,
+	last_modified_time: '',
+	reference_time: '2026-06-01T00:00:00Z',
+	valid_times: ['2026-06-01T01:00'],
+	variables
+});
+
+describe('getWindOverlayUrl — fallback « selon la variable affichée »', () => {
+	beforeEach(() => {
+		vi.stubEnv('VITE_OM_WORKER_URL', 'http://localhost:8080');
+		d.set('meteofrance_arome_france_hd');
+		mR.set(new Date('2026-05-23T00:00:00Z'));
+		time.set(new Date('2026-05-23T15:00:00Z'));
+		windOverlayEnabled.set(false); // mode « selon la variable affichée »
+		vectorOptions.update((o) => ({ ...o, arrows: true }));
+		mJ.set(meta(['temperature_2m', 'wind_u_component_10m', 'wind_u_component_850hPa']));
+	});
+
+	afterEach(() => {
+		vi.unstubAllEnvs();
+		windOverlayEnabled.set(false);
+		windOverlayLevel.set('10m');
+		vectorOptions.set(defaultVectorOptions);
+		mJ.set(undefined);
+	});
+
+	it('dérive le vent 10 m pour une variable de surface non-vent', () => {
+		v.set('temperature_2m');
+		const url = getWindOverlayUrl();
+		expect(url).toContain('variable=wind_u_component_10m');
+		expect(url).not.toContain('contours=true');
+		expect(url).not.toContain('grid=true');
+	});
+
+	it('dérive le vent au niveau de pression de la variable affichée', () => {
+		v.set('temperature_850hPa');
+		expect(getWindOverlayUrl()).toContain('variable=wind_u_component_850hPa');
+	});
+
+	it('ne dessine rien quand la variable affichée est déjà du vent', () => {
+		v.set('wind_u_component_10m');
+		expect(getWindOverlayUrl()).toBeUndefined();
+	});
+
+	it('ne dessine rien quand les flèches sont désactivées', () => {
+		vectorOptions.update((o) => ({ ...o, arrows: false }));
+		v.set('temperature_2m');
+		expect(getWindOverlayUrl()).toBeUndefined();
 	});
 });

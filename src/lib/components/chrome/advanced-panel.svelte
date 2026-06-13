@@ -105,6 +105,7 @@
 	<section class="flex flex-col gap-1">
 		<h3 class="text-xs font-semibold tracking-wide text-white/60 uppercase">Calques carte</h3>
 		<ArrowsSettings />
+		<div class="my-1 h-px bg-white/10"></div>
 		<ContourSettings />
 		<div class="my-1 h-px bg-white/10"></div>
 		<SecondaryLayerPanel />

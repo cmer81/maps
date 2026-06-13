@@ -33,6 +33,7 @@ import { getModelsBucketUrl } from './runtime-env';
 import { clippingCountryCodes } from './stores/clipping';
 import { omProtocolSettings } from './stores/om-protocol-settings';
 import { parseISOWithoutTimezone } from './time-format';
+import { deriveDisplayedWindLevel, isWindVariable } from './vector-styles';
 
 export const updateUrl = async (
 	urlParam?: string,
@@ -325,17 +326,30 @@ export const getOMUrlFor = (
 export const getOMUrl = (): string | undefined => getOMUrlFor(get(v));
 
 /**
- * Builds the om:// URL for the wind-overlay vector layer at the configured level.
- * Returns undefined when wind overlay is disabled or model run is unknown.
+ * Niveau de vent que l'`arrowManager` doit rendre, ou `null` s'il ne dessine pas
+ * les flèches :
+ *  - flèches désactivées → null ;
+ *  - overlay vent explicite → le niveau choisi (inchangé) ;
+ *  - mode « selon la variable affichée » + variable déjà de vent → null
+ *    (le vectorManager rend les flèches, comportement historique) ;
+ *  - mode « selon la variable affichée » + variable non-vent → niveau dérivé
+ *    (`deriveDisplayedWindLevel`), ou null si aucun vent publié.
+ */
+export const resolveWindArrowLevel = (): string | null => {
+	if (!get(vO).arrows) return null;
+	if (get(windOverlayEnabled)) return get(windOverlayLevel);
+	const displayed = get(v);
+	if (isWindVariable(displayed)) return null;
+	return deriveDisplayedWindLevel(displayed, get(mJ)?.variables ?? []);
+};
+
+/**
+ * URL om:// flèches-seules pour l'arrowManager, ou `undefined` si aucune flèche
+ * d'overlay/fallback à dessiner. On force `contours`/`grid` à false : contours et
+ * étiquettes suivent la variable affichée (rendus par le vectorManager).
  */
 export const getWindOverlayUrl = (): string | undefined => {
-	if (!get(windOverlayEnabled)) return undefined;
-	const level = get(windOverlayLevel);
-	// weather-map-layer reads U/V components and renders arrows when arrows=true.
-	// Overlay = FLÈCHES uniquement : on force `contours`/`grid` à false pour ne PAS
-	// générer un source-layer `contours` à partir de wind_u_component. Les contours
-	// et leurs étiquettes doivent suivre la variable affichée (rendus par
-	// vectorManager depuis getOMUrl()) — sinon des isocontours/valeurs parasites du
-	// vent s'affichent par-dessus la carte.
+	const level = resolveWindArrowLevel();
+	if (!level) return undefined;
 	return getOMUrlFor(`wind_u_component_${level}`, undefined, { contours: false, grid: false });
 };

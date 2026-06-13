@@ -16,7 +16,7 @@ import {
 	layer2Enabled,
 	variable2
 } from '$lib/stores/variables';
-import { vectorOptions as vO, windOverlayEnabled } from '$lib/stores/vector';
+import { vectorOptions as vO } from '$lib/stores/vector';
 import { arrowStyle, contourStyle } from '$lib/stores/vector-styles';
 
 import {
@@ -41,7 +41,14 @@ import {
 
 import { refreshPopup } from './popup';
 import { currentOmUrl, currentOmUrl2 } from './stores/om-url';
-import { anomalyPhase, getOMUrl, getOMUrlFor, getWindOverlayUrl, provisionalDateSet } from './url';
+import {
+	anomalyPhase,
+	getOMUrl,
+	getOMUrlFor,
+	getWindOverlayUrl,
+	provisionalDateSet,
+	resolveWindArrowLevel
+} from './url';
 
 // =============================================================================
 // Expression helpers
@@ -119,10 +126,13 @@ const rasterLayer2 = (): SlotLayer => ({
 });
 
 // Les flèches sont rendues par EXACTEMENT un manager à la fois :
-//  - `forOverlay = true`  → arrowManager (source = niveau de vent dédié) quand l'overlay est actif ;
-//  - `forOverlay = false` → vectorManager (source = variable affichée) sinon (mode « Selon la variable affichée »).
-// Le garde `windOverlayEnabled !== forOverlay` évite de dessiner les flèches en double et permet aux
-// contours/étiquettes du vectorManager de suivre la variable affichée pendant que l'overlay vent gère les flèches.
+//  - `forOverlay = true`  → arrowManager (niveau de vent dédié) quand un niveau est
+//    résolu : overlay vent explicite, OU mode « selon la variable affichée » sur une
+//    variable non-vent (fallback niveau dérivé, cf. resolveWindArrowLevel) ;
+//  - `forOverlay = false` → vectorManager (source = variable affichée) quand la
+//    variable affichée est elle-même du vent.
+// Le garde `arrowsOnOverlay !== forOverlay` évite de dessiner les
+// flèches en double et laisse contours/étiquettes du vectorManager suivre la variable.
 const vectorArrowLayer = (forOverlay: boolean): SlotLayer => ({
 	id: forOverlay ? 'omWindOverlayArrowLayer' : 'omVectorArrowLayer',
 	opacityProp: 'line-opacity',
@@ -130,7 +140,8 @@ const vectorArrowLayer = (forOverlay: boolean): SlotLayer => ({
 	add: (map, sourceId, layerId, beforeLayer) => {
 		const vectorOptions = get(vO);
 		if (!vectorOptions.arrows) return;
-		if (get(windOverlayEnabled) !== forOverlay) return;
+		const arrowsOnOverlay = resolveWindArrowLevel() !== null;
+		if (arrowsOnOverlay !== forOverlay) return;
 		map.addLayer(
 			{
 				id: layerId,
