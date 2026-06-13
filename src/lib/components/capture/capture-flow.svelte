@@ -35,7 +35,7 @@
 
 	let busy = $state(false);
 
-	// Cadre carré affiché → le bouton bascule en action « Exporter ».
+	// Cadre de cadrage affiché → le bouton bascule en action « Exporter ».
 	const framing = $derived($exportFrameVisible);
 
 	const capture = async () => {

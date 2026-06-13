@@ -1,4 +1,4 @@
-import { computeSourceCrop } from '$lib/capture-geometry';
+import { type CaptureOrientation, computeSourceCrop } from '$lib/capture-geometry';
 
 import type { Map as MaplibreMap } from 'maplibre-gl';
 
@@ -223,7 +223,7 @@ export interface PngCaptureRegion {
 	y: number;
 	w: number;
 	h: number;
-	orientation: 'landscape' | 'portrait';
+	orientation: CaptureOrientation;
 	/** dimensions CSS du viewport — le canvas MapLibre les couvre entièrement */
 	viewportW: number;
 	viewportH: number;
