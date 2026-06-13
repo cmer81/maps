@@ -326,7 +326,7 @@
 			<div
 				class="absolute left-1/2 top-2 -translate-x-1/2 rounded bg-black/70 px-2 py-0.5 text-xs font-bold text-white shadow"
 			>
-				PNG 4:3
+				PNG {captureRect.orientation === 'landscape' ? '4:3' : '3:4'}
 			</div>
 			<!-- Bande recouverte par le filigrane Infoclimat dans le PNG final
 			     (~13 % en paysage 1440×1080, ~8 % en portrait 1080×1440). -->

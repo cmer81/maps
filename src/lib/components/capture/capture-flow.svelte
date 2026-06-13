@@ -95,7 +95,7 @@
 
 	const onClick = () => {
 		if (busy) return;
-		// Premier clic : afficher le cadre carré pour cadrer. Second clic : capturer.
+		// Premier clic : afficher le cadre de cadrage. Second clic : capturer.
 		if (!get(exportFrameVisible)) {
 			exportFrameVisible.set(true);
 			toast.info('Cadrez la carte, puis cliquez à nouveau pour capturer');
