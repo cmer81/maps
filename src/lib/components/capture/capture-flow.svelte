@@ -5,7 +5,7 @@
 	import { toast } from 'svelte-sonner';
 
 	import { map as mapStore } from '$lib/stores/map';
-	import { exportFrameVisible } from '$lib/stores/preferences';
+	import { bottomChromeHeight, exportFrameVisible } from '$lib/stores/preferences';
 	import { modelRun, time } from '$lib/stores/time';
 	import {
 		domain as domainStore,
@@ -63,10 +63,17 @@
 			const variableLabel = get(selectedVariable).label ?? variableValue;
 
 			const details = buildWatermarkDetails(run, currentTime, 0, 1, domainLabel, variableLabel);
-			const blob = await captureWatermarkedPng(map, details, 'social');
+			const rect = computeCaptureRect(
+				window.innerWidth,
+				window.innerHeight - get(bottomChromeHeight)
+			);
+			const blob = await captureWatermarkedPng(map, details, {
+				...rect,
+				viewportW: window.innerWidth,
+				viewportH: window.innerHeight
+			});
 			playShutter();
 
-			const orientation = computeCaptureRect(window.innerWidth, window.innerHeight).orientation;
 			const filename =
 				[
 					'infoclimat',
@@ -75,7 +82,7 @@
 					formatUtcStamp(run),
 					formatLeadTimeForFilename(run, currentTime),
 					formatISOWithoutTimezone(currentTime),
-					orientation === 'landscape' ? 'paysage' : 'portrait'
+					rect.orientation === 'landscape' ? 'paysage' : 'portrait'
 				].join('_') + '.png';
 
 			const file = new File([blob], filename, { type: 'image/png' });
