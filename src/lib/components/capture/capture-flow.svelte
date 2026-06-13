@@ -5,7 +5,7 @@
 	import { toast } from 'svelte-sonner';
 
 	import { map as mapStore } from '$lib/stores/map';
-	import { exportFrameVisible } from '$lib/stores/preferences';
+	import { bottomChromeHeight, exportFrameVisible } from '$lib/stores/preferences';
 	import { modelRun, time } from '$lib/stores/time';
 	import {
 		domain as domainStore,
@@ -14,6 +14,7 @@
 		variable as variableStore
 	} from '$lib/stores/variables';
 
+	import { computeCaptureRect } from '$lib/capture-geometry';
 	import { playShutter } from '$lib/capture-sound';
 	import { PRERENDER_FRAME_TIMEOUT_MS } from '$lib/constants';
 	import { waitForIdle } from '$lib/playback-renderer';
@@ -34,7 +35,7 @@
 
 	let busy = $state(false);
 
-	// Cadre carré affiché → le bouton bascule en action « Exporter ».
+	// Cadre de cadrage affiché → le bouton bascule en action « Exporter ».
 	const framing = $derived($exportFrameVisible);
 
 	const capture = async () => {
@@ -62,7 +63,15 @@
 			const variableLabel = get(selectedVariable).label ?? variableValue;
 
 			const details = buildWatermarkDetails(run, currentTime, 0, 1, domainLabel, variableLabel);
-			const blob = await captureWatermarkedPng(map, details, 'square');
+			const rect = computeCaptureRect(
+				window.innerWidth,
+				window.innerHeight - get(bottomChromeHeight)
+			);
+			const blob = await captureWatermarkedPng(map, details, {
+				...rect,
+				viewportW: window.innerWidth,
+				viewportH: window.innerHeight
+			});
 			playShutter();
 
 			const filename =
@@ -73,7 +82,7 @@
 					formatUtcStamp(run),
 					formatLeadTimeForFilename(run, currentTime),
 					formatISOWithoutTimezone(currentTime),
-					'square'
+					rect.orientation === 'landscape' ? 'paysage' : 'portrait'
 				].join('_') + '.png';
 
 			const file = new File([blob], filename, { type: 'image/png' });
@@ -93,7 +102,7 @@
 
 	const onClick = () => {
 		if (busy) return;
-		// Premier clic : afficher le cadre carré pour cadrer. Second clic : capturer.
+		// Premier clic : afficher le cadre de cadrage. Second clic : capturer.
 		if (!get(exportFrameVisible)) {
 			exportFrameVisible.set(true);
 			toast.info('Cadrez la carte, puis cliquez à nouveau pour capturer');

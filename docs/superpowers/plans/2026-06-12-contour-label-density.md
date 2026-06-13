@@ -15,6 +15,7 @@
 ### Task 1: Densifier et haloter les étiquettes de contours
 
 **Files:**
+
 - Modify: `src/lib/layers.ts:195-225` (factory `vectorContourLabelsLayer`)
 
 - [ ] **Step 1: Modifier layout et paint de la couche labels**
@@ -72,6 +73,7 @@ par :
 ```
 
 Détails :
+
 - `text-offset` est supprimé (défaut `[0, 0]`) : l'étiquette se pose sur la ligne au lieu de flotter au-dessus.
 - `lightOrDark(light, dark)` est le helper module défini en `src/lib/layers.ts:50` — il suit le thème du **fond de carte** (`basemapTheme`), déjà utilisé pour `text-color` ; ne pas le remplacer par un test sur le thème du chrome.
 
@@ -86,6 +88,7 @@ Run: `npm run dev`
 Ouvrir : `http://localhost:5173/?domain=meteofrance_arpege_europe&variable=temperature_850hPa&contours=true&interval=2`
 
 Vérifier :
+
 1. Plusieurs étiquettes le long d'une même isoligne (pas une seule par ligne), sans chevauchement.
 2. Halo clair autour du texte, valeurs lisibles sur les zones saturées du raster.
 3. Basculer le fond de carte en sombre (réglages) : texte clair + halo sombre.

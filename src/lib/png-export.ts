@@ -1,3 +1,5 @@
+import { type CaptureOrientation, computeSourceCrop } from '$lib/capture-geometry';
+
 import type { Map as MaplibreMap } from 'maplibre-gl';
 
 export interface PngLegendEntry {
@@ -21,8 +23,6 @@ export interface PngWatermarkDetails {
 		entries: PngLegendEntry[];
 	};
 }
-
-export type PngExportFormat = 'current-view' | 'square';
 
 type PngWatermarkRenderDetails = PngWatermarkDetails & {
 	logo?: HTMLImageElement;
@@ -217,35 +217,40 @@ const drawWatermark = (
 	ctx.restore();
 };
 
+export interface PngCaptureRegion {
+	/** px CSS dans le repère viewport (origine en haut à gauche) */
+	x: number;
+	y: number;
+	w: number;
+	h: number;
+	orientation: CaptureOrientation;
+	/** dimensions CSS du viewport — le canvas MapLibre les couvre entièrement */
+	viewportW: number;
+	viewportH: number;
+}
+
 export const captureWatermarkedPng = async (
 	map: MaplibreMap,
 	details: PngWatermarkDetails,
-	format: PngExportFormat = 'current-view'
+	region: PngCaptureRegion
 ): Promise<Blob> => {
 	const source = map.getCanvas();
-	const canvas = document.createElement('canvas');
-	const sourceWidth = source.width;
-	const sourceHeight = source.height;
+	const { sx, sy, sw, sh } = computeSourceCrop(
+		region,
+		region.viewportW,
+		region.viewportH,
+		source.width,
+		source.height
+	);
 
-	if (format === 'square') {
-		canvas.width = 1080;
-		canvas.height = 1080;
-	} else {
-		canvas.width = sourceWidth;
-		canvas.height = sourceHeight;
-	}
+	const landscape = region.orientation === 'landscape';
+	const canvas = document.createElement('canvas');
+	canvas.width = landscape ? 1440 : 1080;
+	canvas.height = landscape ? 1080 : 1440;
 
 	const ctx = canvas.getContext('2d');
 	if (!ctx) throw new Error('2D canvas context unavailable');
-
-	if (format === 'square') {
-		const cropSize = Math.min(sourceWidth, sourceHeight);
-		const sx = Math.round((sourceWidth - cropSize) / 2);
-		const sy = Math.round((sourceHeight - cropSize) / 2);
-		ctx.drawImage(source, sx, sy, cropSize, cropSize, 0, 0, canvas.width, canvas.height);
-	} else {
-		ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
-	}
+	ctx.drawImage(source, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
 	drawWatermark(ctx, canvas.width, canvas.height, {
 		...details,
 		logo: await loadInfoclimatLogo()

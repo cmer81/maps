@@ -120,13 +120,13 @@ les ~750 ms sont du pipeline pur.
      octets via `Range: bytes=-N` et déduit fileSize du `Content-Range` → trailer + taille
      en **une** requête, sans HEAD, dès la 1ʳᵉ lecture. Repli HEAD si le serveur n'envoie
      pas `Content-Range`.
-   **Mesuré (Chrome réel, cache vidé)** : changement de variable → **0 HEAD** (a) ;
-   1ʳᵉ lecture d'un fichier neuf → **0 HEAD + 1 suffix-range** au lieu de HEAD + lecture
-   trailer (b) ; re-visite / 2ᵉ accès → 0 requête de métadonnée. **Le HEAD est éliminé sur
-   tous les chemins.** R2/S3 confirmé : `206` + `Content-Range … /total` + `accept-ranges`.
-   **Consommation maps** : `overrides` `@openmeteo/file-reader` → `file:` local (force aussi
-   weather-map-layer). ⚠️ **Local uniquement, non committé** : la CI de maps ne résout pas
-   ce chemin — stratégie de publication (npm / gitpkg / vendor) à trancher avant merge.
+     **Mesuré (Chrome réel, cache vidé)** : changement de variable → **0 HEAD** (a) ;
+     1ʳᵉ lecture d'un fichier neuf → **0 HEAD + 1 suffix-range** au lieu de HEAD + lecture
+     trailer (b) ; re-visite / 2ᵉ accès → 0 requête de métadonnée. **Le HEAD est éliminé sur
+     tous les chemins.** R2/S3 confirmé : `206` + `Content-Range … /total` + `accept-ranges`.
+     **Consommation maps** : `overrides` `@openmeteo/file-reader` → `file:` local (force aussi
+     weather-map-layer). ⚠️ **Local uniquement, non committé** : la CI de maps ne résout pas
+     ce chemin — stratégie de publication (npm / gitpkg / vendor) à trancher avant merge.
 
 3. **Cold load mobile** : (i) lancer la 1ʳᵉ requête `.om` plus tôt (elle part aujourd'hui
    après tout le boot : +1,4 s fibre, +6,7 s 4G) — préconnect + déclenchement dès
