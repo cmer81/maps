@@ -2,9 +2,8 @@ import type { BreakpointColorScale } from '@openmeteo/weather-map-layer';
 
 // Palettes du domaine `agroclimato_france` (indices agroclimatologiques
 // journaliers, grille AROME France 0,025°). Les indices ont des palettes
-// dédiées (gel, ET0, VPD, THI) ; la température et les heures de chaleur
-// s'alignent en revanche sur la palette température infoclimat (cohérence
-// visuelle avec le reste de l'app, cf. ci-dessous).
+// dédiées (gel, chaleur, ET0, VPD, THI) ; seule la température s'aligne sur la
+// palette température infoclimat (cohérence visuelle avec le reste de l'app).
 //
 // Quirks de rendu :
 //  - océan / hors-domaine = NaN → transparent (comportement moteur par défaut) ;
@@ -14,7 +13,6 @@ import type { BreakpointColorScale } from '@openmeteo/weather-map-layer';
 //
 // `temperature_2m_min` / `temperature_2m_max` n'ont PAS de palette ici : elles
 // réutilisent directement `infoclimatTemperatureScale` (cf. om-protocol-settings.ts).
-// `heat_hours` reprend les teintes chaudes de cette même palette, recalées en heures.
 
 /** Heures de gel par jour (0–24 h). Comptage discret, palette froide bleu →
  *  violet. < 1 h transparent (masque l'océan à 0 h et la terre sans gel). */
@@ -36,32 +34,23 @@ export const agroFrostHoursScale: BreakpointColorScale = {
 	]
 };
 
-/** Heures de chaleur par jour (0–24 h). Reprend les **teintes chaudes de la
- *  palette température infoclimat** (jaune 14 °C → orange → rouge → magenta →
- *  rose 38 °C, cf. `infoclimatTemperatureScale`) mais graduées en heures et
- *  calées sur 0–24 h — cohérence visuelle avec la température, fort impact sur
- *  la végétation. **Alpha croissant** : les faibles nombres d'heures restent
- *  semi-transparents (le fond de carte transparaît), l'opacité monte avec
- *  l'intensité. Unité `h`, < 1 h transparent (masque l'océan à 0 h et la terre
- *  sans chaleur). */
+/** Heures de chaleur par jour (0–24 h). Comptage discret, palette chaude jaune →
+ *  rouge. < 1 h transparent (masque l'océan à 0 h et la terre sans chaleur). */
 export const agroHeatHoursScale: BreakpointColorScale = {
 	type: 'breakpoint',
 	unit: 'h',
-	breakpoints: [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24],
+	breakpoints: [1, 2, 4, 6, 8, 10, 12, 16, 20, 24],
 	colors: [
-		[255, 255, 0, 0.5], // 1 h  jaune        (= 14 °C infoclimat)
-		[255, 203, 0, 0.6], // 2                 (16 °C)
-		[255, 150, 0, 0.68], // 4   orange clair  (18 °C)
-		[241, 112, 0, 0.74], // 6                 (20 °C)
-		[215, 87, 0, 0.79], // 8    orange        (22 °C)
-		[188, 60, 0, 0.84], // 10                 (24 °C)
-		[162, 36, 0, 0.88], // 12                 (26 °C)
-		[132, 12, 0, 0.91], // 14   rouge sombre  (28 °C)
-		[150, 0, 48, 0.93], // 16   magenta foncé (30 °C)
-		[203, 0, 124, 0.95], // 18                (32 °C)
-		[255, 0, 174, 0.97], // 20  magenta       (34 °C)
-		[255, 0, 255, 0.99], // 22  rose vif       (36 °C)
-		[255, 97, 255, 1] // 24 h rose            (38 °C — chaleur permanente)
+		[255, 250, 180, 0.55], // 1 h
+		[255, 235, 130, 0.7], // 2
+		[255, 210, 80, 0.8], // 4
+		[255, 180, 40, 0.85], // 6
+		[255, 150, 0, 0.9], // 8
+		[255, 110, 0, 0.92], // 10
+		[255, 70, 0, 0.94], // 12
+		[230, 30, 0, 0.96], // 16
+		[190, 0, 0, 0.98], // 20
+		[140, 0, 0, 1] // 24 h rouge foncé (chaleur permanente)
 	]
 };
 
