@@ -87,6 +87,16 @@ export class SlotManager {
 		return source?.url;
 	}
 
+	/**
+	 * Ids des couches du slot actif (pour interroger leur rendu réel via
+	 * `queryRenderedFeatures`). Vide tant qu'aucun slot n'est committé.
+	 */
+	getActiveLayerIds(): string[] {
+		const slot = this.activeSlot;
+		if (!slot) return [];
+		return this.slotLayers[slot].map((layer) => this.layerId(layer, slot));
+	}
+
 	setBeforeLayer(beforeLayer: string): void {
 		this.opts.beforeLayer = beforeLayer;
 	}

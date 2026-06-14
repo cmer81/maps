@@ -106,3 +106,49 @@ export const renderFrameAt = async (deps: {
 		if (err instanceof DOMException && err.name === 'AbortError') throw err;
 	}
 };
+
+/**
+ * Résout quand `predicate()` devient vrai (polling à `pollMs`) ou au `timeoutMs`
+ * (best-effort : on ne fait pas échouer l'export pour une condition de rendu non
+ * remplie). Rejette uniquement sur abort. Sert à attendre une condition de rendu
+ * réelle — p. ex. que les symboles-flèches du vent soient effectivement placés —
+ * que `commit`/`idle` ne garantissent pas (placement des symboles asynchrone).
+ */
+export const waitForCondition = (
+	predicate: () => boolean,
+	timeoutMs: number,
+	signal?: AbortSignal,
+	pollMs = 50
+): Promise<void> =>
+	new Promise<void>((resolve, reject) => {
+		if (signal?.aborted) {
+			reject(new DOMException('waitForCondition aborted', 'AbortError'));
+			return;
+		}
+		if (predicate()) {
+			resolve();
+			return;
+		}
+		let elapsed = 0;
+		const cleanup = () => {
+			clearInterval(timer);
+			signal?.removeEventListener('abort', onAbort);
+		};
+		const onAbort = () => {
+			cleanup();
+			reject(new DOMException('waitForCondition aborted', 'AbortError'));
+		};
+		const timer = setInterval(() => {
+			if (predicate()) {
+				cleanup();
+				resolve();
+				return;
+			}
+			elapsed += pollMs;
+			if (elapsed >= timeoutMs) {
+				cleanup();
+				resolve(); // best-effort : on capture quand même
+			}
+		}, pollMs);
+		signal?.addEventListener('abort', onAbort);
+	});

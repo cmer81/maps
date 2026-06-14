@@ -24,8 +24,8 @@
 		VIDEO_EXPORT_FPS,
 		VIDEO_EXPORT_FRAME_WARN
 	} from '$lib/constants';
-	import { changeOMfileURL } from '$lib/layers';
-	import { renderFrameAt } from '$lib/playback-renderer';
+	import { changeOMfileURL, windArrowsRendered } from '$lib/layers';
+	import { renderFrameAt, waitForCondition } from '$lib/playback-renderer';
 	import {
 		downloadBlob,
 		drawCaptureFrame,
@@ -38,7 +38,7 @@
 	import { shareOrDownload } from '$lib/share';
 	import { slotEvents } from '$lib/slot-events';
 	import { formatISOWithoutTimezone } from '$lib/time-format';
-	import { getOMUrlFor, updateUrl } from '$lib/url';
+	import { getOMUrlFor, resolveWindArrowLevel, updateUrl } from '$lib/url';
 	import {
 		createVideoSink,
 		detectMp4Codec,
@@ -129,17 +129,37 @@
 			// MAX_STATES_WITH_DATA=24 du protocole (marche aussi pour les plages > 24).
 			const PREDECODE_LOOKAHEAD = 8;
 			const settings = get(omProtocolSettings);
+			// Niveau de vent attendu pour cet export (stable : pas de changement de réglage
+			// en cours de rendu). Si non nul, on pré-décode aussi l'URL flèches-seules et on
+			// attend que les flèches soient réellement peintes avant la capture.
+			const windLevel = resolveWindArrowLevel();
+			// URLs om:// à décoder pour une frame : variable affichée + overlay vent. Mêmes
+			// arguments que les sources MapLibre (getWindOverlayUrl) → clés stateByKey identiques.
+			const frameUrls = (date: Date): string[] => {
+				const urls: string[] = [];
+				const main = getOMUrlFor(variableValue, date);
+				if (main) urls.push(main);
+				if (windLevel) {
+					const wind = getOMUrlFor(`wind_u_component_${windLevel}`, date, {
+						contours: false,
+						grid: false
+					});
+					if (wind) urls.push(wind);
+				}
+				return urls;
+			};
 			const decodeJobs: Array<Promise<void> | undefined> = [];
 			const ensureDecoded = (i: number): Promise<void> => {
 				if (i < 0 || i >= pendingFrames.length) return Promise.resolve();
 				let job = decodeJobs[i];
 				if (!job) {
-					const omUrl = getOMUrlFor(variableValue, pendingFrames[i]);
-					job = omUrl
-						? omProtocol({ url: 'om://' + omUrl, type: 'json' }, controller, settings)
-								.then(() => undefined)
-								.catch(() => undefined)
-						: Promise.resolve();
+					job = Promise.all(
+						frameUrls(pendingFrames[i]).map((u) =>
+							omProtocol({ url: 'om://' + u, type: 'json' }, controller, settings).catch(
+								() => undefined
+							)
+						)
+					).then(() => undefined);
 					decodeJobs[i] = job;
 				}
 				return job;
@@ -166,6 +186,15 @@
 						timeoutMs: PRERENDER_FRAME_TIMEOUT_MS,
 						signal
 					});
+					// commit/idle ne garantissent pas le placement des symboles-flèches
+					// (asynchrone). Si le vent est attendu, on attend qu'il soit peint.
+					if (windLevel) {
+						await waitForCondition(
+							() => windArrowsRendered(map),
+							PRERENDER_FRAME_TIMEOUT_MS,
+							signal
+						);
+					}
 				},
 				drawFrame: (date, index, total) => {
 					const details = buildWatermarkDetails(
