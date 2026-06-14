@@ -300,3 +300,8 @@ export const PRERENDER_FRAME_TIMEOUT_MS = 10_000;
 
 // Calendar display constants
 export const DAY_NAMES = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+
+/** Cadence (frames/s) de la vidéo exportée — découplée du playback écran (1,2 s/frame). */
+export const VIDEO_EXPORT_FPS = 6;
+/** Au-delà de ce nombre de frames, l'overlay avertit avant de lancer (vidéo longue). */
+export const VIDEO_EXPORT_FRAME_WARN = 60;
