@@ -78,9 +78,26 @@ démarre sans attendre et se lisse à mesure que le cache rattrape, en plus de `
 et du préchargement manuel.
 
 L'ancien player **pré-rendu** (diaporama : capture canvas, overlay, gel de la carte) reste retiré.
-Vestige : `src/lib/playback-renderer.ts` ne contient plus que `waitForIdle(map, timeoutMs, signal?)`,
-utilisé par `capture-flow.svelte` pour attendre la mise au repos de la carte avant la capture PNG du
-canvas (`preserveDrawingBuffer` reste activé sur la map — voir `+page.svelte`).
+`src/lib/playback-renderer.ts` expose désormais `waitForIdle(map, timeoutMs, signal?)` (utilisé par
+`capture-flow.svelte` pour attendre la mise au repos de la carte avant la capture PNG —
+`preserveDrawingBuffer` reste activé sur la map, voir `+page.svelte`), `waitForCommit(map, signal?)`
+(attend l'événement `commit` du SlotManager) et `renderFrameAt(map, time, signal?)` (avance la
+carte via le même chemin que `playbackAdvance` — `time` + `updateUrl` + `changeOMfileURL` —, puis
+enchaîne `waitForCommit` et `waitForIdle`).
+
+**Export vidéo animé (MP4).** `src/lib/components/capture/video-export-flow.svelte` (bouton dédié
+monté à côté de la capture photo dans `chrome/app-chrome.svelte`) exporte la plage de lecture
+courante (`prefetchMode`) en MP4 H.264, rendu **frame-par-frame hors-temps-réel**. La boucle pure
+`exportAnimation` (`src/lib/video-export.ts`, testée) enchaîne pour chaque échéance :
+`renderFrameAt` (`playback-renderer.ts` — avance la carte via le même chemin que `playbackAdvance`
+— `time` + `updateUrl` + `changeOMfileURL` —, attend le `commit` du SlotManager via `waitForCommit`
+puis l'`idle` via `waitForIdle`), puis composition de la frame (crop 4:3/3:4 + watermark **redessiné
+par frame**, donc l'horodatage défile) via `drawCaptureFrame` (`png-export.ts`, partagé avec la
+capture PNG), puis encodage WebCodecs/MP4 via mediabunny (`createVideoSink`). Cadence fixe
+`VIDEO_EXPORT_FPS` (10), garde-fou `VIDEO_EXPORT_FRAME_WARN` (overlay de confirmation au-delà).
+Détection de support via `detectMp4Codec` (bouton désactivé si H.264 indisponible, pas de fallback
+WebM). Annulation par `AbortController` ; le `time` initial est restauré dans un `finally`. Le
+`prefetchData` de la plage est lancé en pré-chauffe fire-and-forget avant la boucle.
 
 **Préchargement (prefetch) — réintroduit seul.** `src/lib/prefetch.ts` + `src/lib/components/time/prefetch-button.svelte` ont été restaurés (sans le player d'animation). Le bouton vit dans la barre de run (`time-selector.svelte`, dans le `<div>` `-top-4.5` à côté du sélecteur de run) : un `Select` de mode (Aujourd'hui / 24 h suivantes / 24 h précédentes / Run complet — store persisté `prefetchMode`, partagé avec la lecture, libellés dans `PREFETCH_MODE_LABELS` de `prefetch.ts`) + un bouton télécharger qui appelle `prefetchData()`. `getDateRangeForMode()` traduit le mode en plage `[startDate, endDate]`, `prefetchData()` filtre les `valid_times` du `metaJson` dans cette plage et précharge chaque pas via `omFileReader.prefetchVariable()` (8 workers concurrents, annulable via `AbortController`). Sans `metaJson`/`modelRun` chargés, un toast d'avertissement s'affiche.
 
