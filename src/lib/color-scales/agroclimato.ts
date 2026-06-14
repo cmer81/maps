@@ -9,50 +9,10 @@ import type { BreakpointColorScale } from '@openmeteo/weather-map-layer';
 //  - `frost_hours` / `heat_hours` valent 0 (pas NaN) sur l'océan : le premier
 //    breakpoint est posé à 1 h, donc toute valeur < 1 h (océan ET terre sans
 //    gel/chaleur) est rendue transparente — l'océan est masqué « gratuitement ».
-
-/** Température minimale journalière (°C). Rampe froide → chaude, biaisée vers les
- *  basses valeurs (violet/bleu pour le gel). Bornes −10 → 30 °C. */
-export const agroTemperatureMinScale: BreakpointColorScale = {
-	type: 'breakpoint',
-	unit: '°C',
-	breakpoints: [-10, -5, 0, 3, 6, 9, 12, 15, 18, 22, 26, 30],
-	colors: [
-		[80, 0, 120, 1], // -10 violet (gel sévère)
-		[40, 40, 170, 1], // -5
-		[40, 110, 210, 1], // 0
-		[80, 170, 230, 1], // 3
-		[120, 200, 230, 1], // 6
-		[150, 220, 180, 1], // 9
-		[200, 230, 140, 1], // 12
-		[245, 235, 120, 1], // 15
-		[250, 200, 80, 1], // 18
-		[250, 150, 50, 1], // 22
-		[235, 90, 40, 1], // 26
-		[200, 30, 30, 1] // 30
-	]
-};
-
-/** Température maximale journalière (°C). Rampe froide → chaude étendue vers les
- *  fortes chaleurs (magenta foncé). Bornes 0 → 45 °C. */
-export const agroTemperatureMaxScale: BreakpointColorScale = {
-	type: 'breakpoint',
-	unit: '°C',
-	breakpoints: [0, 5, 10, 15, 20, 24, 28, 31, 34, 37, 40, 45],
-	colors: [
-		[60, 130, 210, 1], // 0
-		[90, 180, 225, 1], // 5
-		[140, 210, 210, 1], // 10
-		[180, 225, 160, 1], // 15
-		[225, 235, 130, 1], // 20
-		[250, 225, 100, 1], // 24
-		[252, 190, 70, 1], // 28
-		[250, 150, 50, 1], // 31
-		[240, 100, 40, 1], // 34
-		[220, 50, 35, 1], // 37
-		[180, 20, 40, 1], // 40
-		[130, 0, 60, 1] // 45 magenta foncé (canicule extrême)
-	]
-};
+//
+// `temperature_2m_min` / `temperature_2m_max` n'ont PAS de palette ici : elles
+// réutilisent la palette température des modèles actuels (`infoclimatTemperatureScale`,
+// cf. om-protocol-settings.ts) pour rester cohérentes avec le reste de l'app.
 
 /** Heures de gel par jour (0–24 h). Comptage discret, palette froide bleu →
  *  violet. < 1 h transparent (masque l'océan à 0 h et la terre sans gel). */

@@ -14,8 +14,6 @@ import {
 	agroEt0FaoScale,
 	agroFrostHoursScale,
 	agroHeatHoursScale,
-	agroTemperatureMaxScale,
-	agroTemperatureMinScale,
 	agroThiLivestockScale,
 	agroVpdScale
 } from '$lib/color-scales/agroclimato';
@@ -120,10 +118,12 @@ export const standardColorScales = {
 	precipitation_type_severe: precipitationTypeScale,
 
 	// Domaine agroclimato_france — clés exactes (priment sur la résolution par
-	// préfixe du package, qui mapperait sinon temperature_2m_min/max sur l'échelle
-	// température). Palettes dédiées, cf. color-scales/agroclimato.ts.
-	temperature_2m_min: agroTemperatureMinScale,
-	temperature_2m_max: agroTemperatureMaxScale,
+	// préfixe du package). temperature_2m_min/max réutilisent la palette
+	// température des modèles actuels (infoclimatTemperatureScale, clé `temperature`)
+	// pour rester cohérentes avec le reste de l'app ; les indices ont des palettes
+	// dédiées, cf. color-scales/agroclimato.ts.
+	temperature_2m_min: infoclimatTemperatureScale,
+	temperature_2m_max: infoclimatTemperatureScale,
 	frost_hours: agroFrostHoursScale,
 	heat_hours: agroHeatHoursScale,
 	et0_fao: agroEt0FaoScale,
