@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { type VideoSink, exportAnimation, getExportFrames } from '$lib/video-export';
+import {
+	type VideoSink,
+	detectMp4Codec,
+	exportAnimation,
+	getExportFrames
+} from '$lib/video-export';
 
 const makeSink = (): VideoSink & { calls: Array<[number, number]> } => {
 	const calls: Array<[number, number]> = [];
@@ -122,5 +127,29 @@ describe('getExportFrames', () => {
 			'2026-06-14T01:00:00.000Z',
 			'2026-06-14T02:00:00.000Z'
 		]);
+	});
+});
+
+describe('detectMp4Codec', () => {
+	it('retourne le codec quand le sondage en trouve un', async () => {
+		const codec = await detectMp4Codec(
+			{ width: 1440, height: 1080 },
+			{
+				supportedCodecs: async () => ['avc', 'hevc'],
+				probe: async (codecs) => codecs[0]
+			}
+		);
+		expect(codec).toBe('avc');
+	});
+
+	it('retourne null quand aucun codec encodable', async () => {
+		const codec = await detectMp4Codec(
+			{ width: 1440, height: 1080 },
+			{
+				supportedCodecs: async () => ['avc'],
+				probe: async () => null
+			}
+		);
+		expect(codec).toBeNull();
 	});
 });

@@ -29,6 +29,41 @@ export interface ExportAnimationDeps {
 export const getExportFrames = (metaJson: DomainMetaDataJson, start: Date, end: Date): Date[] =>
 	getTimeStepsInRange(metaJson, start, end);
 
+export interface CodecProbeDeps {
+	/** Codecs vidéo contenables par le format MP4. */
+	supportedCodecs: () => string[] | Promise<string[]>;
+	/** Premier codec réellement encodable par WebCodecs sous ces contraintes (ou null). */
+	probe: (
+		codecs: string[],
+		constraints: { width: number; height: number }
+	) => Promise<string | null>;
+}
+
+// mediabunny chargé paresseusement : garde le module importable en environnement `node`.
+const defaultCodecProbe: CodecProbeDeps = {
+	supportedCodecs: async () => {
+		const { Mp4OutputFormat } = await import('mediabunny');
+		return new Mp4OutputFormat().getSupportedVideoCodecs() as string[];
+	},
+	probe: async (codecs, constraints) => {
+		const { getFirstEncodableVideoCodec } = await import('mediabunny');
+		return (await getFirstEncodableVideoCodec(codecs as never, constraints)) as string | null;
+	}
+};
+
+/**
+ * Codec H.264 (avc) encodable par WebCodecs pour ces dimensions, ou `null` si
+ * le navigateur ne sait pas encoder du MP4 (ex. WebCodecs absent) → l'UI désactive
+ * alors l'export. `deps` injectable pour les tests.
+ */
+export const detectMp4Codec = async (
+	constraints: { width: number; height: number },
+	deps: CodecProbeDeps = defaultCodecProbe
+): Promise<string | null> => {
+	const codecs = await deps.supportedCodecs();
+	return deps.probe(codecs, constraints);
+};
+
 /**
  * Rend la séquence frame-par-frame de façon déterministe : pour chaque pas, on
  * attend le rendu réel (`renderFrame`), on compose (`drawFrame`) puis on pousse
