@@ -72,14 +72,19 @@ export const createVideoSink = async (
 	canvas: HTMLCanvasElement,
 	codec: string
 ): Promise<VideoSink> => {
-	const { Output, Mp4OutputFormat, BufferTarget, CanvasSource, QUALITY_HIGH } =
+	const { Output, Mp4OutputFormat, BufferTarget, CanvasSource, QUALITY_VERY_HIGH } =
 		await import('mediabunny');
 
 	const output = new Output<typeof Mp4OutputFormat.prototype, typeof BufferTarget.prototype>({
-		format: new Mp4OutputFormat(),
+		// fastStart: 'in-memory' place le moov atom en tête → lecture en streaming
+		// immédiate (X/Instagram/navigateur) sans télécharger tout le fichier d'abord.
+		format: new Mp4OutputFormat({ fastStart: 'in-memory' }),
 		target: new BufferTarget()
 	});
-	const videoSource = new CanvasSource(canvas, { codec: codec as never, bitrate: QUALITY_HIGH });
+	const videoSource = new CanvasSource(canvas, {
+		codec: codec as never,
+		bitrate: QUALITY_VERY_HIGH
+	});
 	output.addVideoTrack(videoSource);
 	await output.start();
 
