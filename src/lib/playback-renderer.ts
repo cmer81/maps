@@ -27,7 +27,8 @@ export const waitForIdle = (
 			fn();
 		};
 		const onIdle = () => settle(() => resolve());
-		const onAbort = () => settle(() => reject(new DOMException('waitForIdle aborted', 'AbortError')));
+		const onAbort = () =>
+			settle(() => reject(new DOMException('waitForIdle aborted', 'AbortError')));
 		const timeoutId = setTimeout(
 			() => settle(() => reject(new Error(`waitForIdle timeout after ${timeoutMs}ms`))),
 			timeoutMs
@@ -97,5 +98,11 @@ export const renderFrameAt = async (deps: {
 	const committed = waitForCommit(events, timeoutMs, signal);
 	advance(date);
 	await committed;
-	await waitForIdle(map, timeoutMs, signal);
+	// L'idle est un filet de peinture après le commit (frame déjà chargée) : un
+	// timeout ne doit pas faire échouer l'export, seul l'abort se propage.
+	try {
+		await waitForIdle(map, timeoutMs, signal);
+	} catch (err) {
+		if (err instanceof DOMException && err.name === 'AbortError') throw err;
+	}
 };

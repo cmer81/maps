@@ -5,6 +5,7 @@
 	import { toast } from 'svelte-sonner';
 
 	import { map as mapStore } from '$lib/stores/map';
+	import { currentOmUrl } from '$lib/stores/om-url';
 	import { bottomChromeHeight } from '$lib/stores/preferences';
 	import { prefetchMode } from '$lib/stores/prefetch';
 	import { metaJson, modelRun, time } from '$lib/stores/time';
@@ -124,6 +125,10 @@
 			const sink = await createVideoSink(canvas, codec);
 
 			const signal = abort.signal;
+			// La 1ʳᵉ frame égale souvent le `time` courant : sans invalidation,
+			// changeOMfileURL() dédupe sur currentOmUrl et n'émet pas de `commit`,
+			// donc renderFrameAt timeout. On force le rechargement de la 1ʳᵉ frame.
+			currentOmUrl.set('');
 			const blob = await exportAnimation({
 				frames: pendingFrames,
 				fps: VIDEO_EXPORT_FPS,
