@@ -206,9 +206,9 @@
 		void run();
 	};
 
+	// L'abort fait lever AbortError dans run(), dont le `finally` repasse phase à 'idle'.
 	const cancel = () => {
 		abort?.abort();
-		phase = 'idle';
 	};
 
 	const label = 'Exporter en vidéo';

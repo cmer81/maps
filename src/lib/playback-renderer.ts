@@ -27,13 +27,13 @@ export const waitForIdle = (
 			fn();
 		};
 		const onIdle = () => settle(() => resolve());
-		const onAbort = () => settle(() => reject(new Error('waitForIdle aborted')));
+		const onAbort = () => settle(() => reject(new DOMException('waitForIdle aborted', 'AbortError')));
 		const timeoutId = setTimeout(
 			() => settle(() => reject(new Error(`waitForIdle timeout after ${timeoutMs}ms`))),
 			timeoutMs
 		);
 		if (signal?.aborted) {
-			settle(() => reject(new Error('waitForIdle aborted')));
+			settle(() => reject(new DOMException('waitForIdle aborted', 'AbortError')));
 			return;
 		}
 		signal?.addEventListener('abort', onAbort);
