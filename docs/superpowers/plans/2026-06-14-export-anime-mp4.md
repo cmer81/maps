@@ -45,28 +45,34 @@ export const VIDEO_EXPORT_FRAME_WARN = 60;
 ## Task 1 : Dépendance mediabunny + constantes
 
 **Files:**
+
 - Modify: `package.json`
 - Modify: `src/lib/constants.ts`
 
 - [ ] **Step 1 : Installer mediabunny**
 
 Run :
+
 ```bash
 npm install mediabunny
 ```
+
 Expected : `package.json` gagne une entrée `"mediabunny": "^x.y.z"` dans `dependencies`, `package-lock.json` mis à jour, exit 0.
 
 - [ ] **Step 2 : Vérifier que mediabunny expose les symboles attendus**
 
 Run :
+
 ```bash
 node -e "const m=require('mediabunny'); console.log(['Output','Mp4OutputFormat','BufferTarget','CanvasSource','QUALITY_HIGH','getFirstEncodableVideoCodec'].map(k=>k+':'+(k in m)).join(' '))"
 ```
+
 Expected : toutes les clés à `true`. (Si l'import CJS échoue, vérifier avec un `import` ESM dans un fichier `.mjs` — mediabunny est ESM-first.)
 
 - [ ] **Step 3 : Ajouter les constantes**
 
 Dans `src/lib/constants.ts`, ajouter en fin de fichier :
+
 ```ts
 /** Cadence (frames/s) de la vidéo exportée — découplée du playback écran (1,2 s/frame). */
 export const VIDEO_EXPORT_FPS = 10;
@@ -91,15 +97,19 @@ git commit -m "chore(video-export): ajoute mediabunny + constantes fps/seuil"
 ## Task 2 : Exporter `getTimeStepsInRange`
 
 **Files:**
+
 - Modify: `src/lib/prefetch.ts:89`
 
 - [ ] **Step 1 : Rendre la fonction publique**
 
 Dans `src/lib/prefetch.ts`, remplacer la déclaration privée (ligne ~89) :
+
 ```ts
 const getTimeStepsInRange = (
 ```
+
 par :
+
 ```ts
 /**
  * Pas de temps des `valid_times` tombant dans `[startDate, endDate]` inclus.
@@ -107,6 +117,7 @@ par :
  */
 export const getTimeStepsInRange = (
 ```
+
 (Aucun autre changement : le corps et les usages internes restent identiques.)
 
 - [ ] **Step 2 : Typecheck**
@@ -126,6 +137,7 @@ git commit -m "refactor(prefetch): exporte getTimeStepsInRange"
 ## Task 3 : Refactor `png-export.ts` (composition de frame réutilisable)
 
 **Files:**
+
 - Modify: `src/lib/png-export.ts:232-259`
 
 But : extraire la composition d'une frame (crop + watermark sur un `ctx` fourni) et les dimensions, sans changer la sortie de `captureWatermarkedPng`. Pas de test unitaire (canvas indisponible en `node`) — la non-régression est garantie par réutilisation à l'identique + typecheck.
@@ -135,6 +147,7 @@ But : extraire la composition d'une frame (crop + watermark sur un `ctx` fourni)
 Dans `src/lib/png-export.ts`, transformer la déclaration de `loadInfoclimatLogo` (ligne ~67) en `export const loadInfoclimatLogo = ...` (ajouter `export` devant `const`).
 
 Puis ajouter, juste avant `captureWatermarkedPng` (vers la ligne 231) :
+
 ```ts
 /** Dimensions du canvas d'export selon l'orientation (4:3 paysage / 3:4 portrait). */
 export const getExportDimensions = (
@@ -167,11 +180,13 @@ export const drawCaptureFrame = (
 	drawWatermark(ctx, destW, destH, { ...details, logo });
 };
 ```
+
 (`CaptureOrientation` est déjà importé en tête de fichier ; `PngCaptureRegion`, `PngWatermarkDetails`, `computeSourceCrop`, `drawWatermark` sont déjà dans le module.)
 
 - [ ] **Step 2 : Réécrire `captureWatermarkedPng` pour réutiliser les helpers**
 
 Remplacer le corps de `captureWatermarkedPng` (lignes ~232-259) par :
+
 ```ts
 export const captureWatermarkedPng = async (
 	map: MaplibreMap,
@@ -215,16 +230,18 @@ git commit -m "refactor(png-export): extrait drawCaptureFrame + getExportDimensi
 ## Task 4 : `exportAnimation` (boucle pure orchestrée) — TDD
 
 **Files:**
+
 - Create: `src/lib/video-export.ts`
 - Test: `src/lib/tests/video-export.test.ts`
 
 - [ ] **Step 1 : Écrire le test qui échoue**
 
 Créer `src/lib/tests/video-export.test.ts` :
+
 ```ts
 import { describe, expect, it, vi } from 'vitest';
 
-import { exportAnimation, getExportFrames, type VideoSink } from '$lib/video-export';
+import { type VideoSink, exportAnimation, getExportFrames } from '$lib/video-export';
 
 const makeSink = (): VideoSink & { calls: Array<[number, number]> } => {
 	const calls: Array<[number, number]> = [];
@@ -237,7 +254,11 @@ const makeSink = (): VideoSink & { calls: Array<[number, number]> } => {
 	};
 };
 
-const frames = [new Date('2026-06-14T00:00Z'), new Date('2026-06-14T01:00Z'), new Date('2026-06-14T02:00Z')];
+const frames = [
+	new Date('2026-06-14T00:00Z'),
+	new Date('2026-06-14T01:00Z'),
+	new Date('2026-06-14T02:00Z')
+];
 
 describe('exportAnimation', () => {
 	it('rend chaque frame puis pousse les timestamps à la cadence fps', async () => {
@@ -329,7 +350,12 @@ describe('exportAnimation', () => {
 describe('getExportFrames', () => {
 	it('filtre les valid_times dans la plage inclusive', () => {
 		const meta = {
-			valid_times: ['2026-06-14T00:00Z', '2026-06-14T01:00Z', '2026-06-14T02:00Z', '2026-06-14T03:00Z']
+			valid_times: [
+				'2026-06-14T00:00Z',
+				'2026-06-14T01:00Z',
+				'2026-06-14T02:00Z',
+				'2026-06-14T03:00Z'
+			]
 		} as never;
 		const got = getExportFrames(meta, new Date('2026-06-14T01:00Z'), new Date('2026-06-14T02:00Z'));
 		expect(got.map((d) => d.toISOString())).toEqual([
@@ -348,10 +374,11 @@ Expected : FAIL — `Cannot find module '$lib/video-export'`.
 - [ ] **Step 3 : Implémenter la boucle pure + `getExportFrames`**
 
 Créer `src/lib/video-export.ts` :
-```ts
-import type { DomainMetaDataJson } from '@openmeteo/weather-map-layer';
 
+```ts
 import { getTimeStepsInRange } from '$lib/prefetch';
+
+import type { DomainMetaDataJson } from '@openmeteo/weather-map-layer';
 
 /** Abstraction d'un encodeur vidéo : reçoit des frames et produit un Blob. */
 export interface VideoSink {
@@ -377,11 +404,8 @@ export interface ExportAnimationDeps {
 }
 
 /** Pas de temps de la plage `[start, end]` (réutilise le filtre du prefetch). */
-export const getExportFrames = (
-	metaJson: DomainMetaDataJson,
-	start: Date,
-	end: Date
-): Date[] => getTimeStepsInRange(metaJson, start, end);
+export const getExportFrames = (metaJson: DomainMetaDataJson, start: Date, end: Date): Date[] =>
+	getTimeStepsInRange(metaJson, start, end);
 
 /**
  * Rend la séquence frame-par-frame de façon déterministe : pour chaque pas, on
@@ -422,17 +446,19 @@ git commit -m "feat(video-export): boucle d'export frame-par-frame (pure, testé
 ## Task 5 : `detectMp4Codec` (détection de support) — TDD
 
 **Files:**
+
 - Modify: `src/lib/video-export.ts`
 - Test: `src/lib/tests/video-export.test.ts`
 
 - [ ] **Step 1 : Ajouter le test qui échoue**
 
 Ajouter à `src/lib/tests/video-export.test.ts` :
+
 ```ts
 import { detectMp4Codec } from '$lib/video-export';
 
 describe('detectMp4Codec', () => {
-	it("retourne le codec quand le sondage en trouve un", async () => {
+	it('retourne le codec quand le sondage en trouve un', async () => {
 		const codec = await detectMp4Codec(
 			{ width: 1440, height: 1080 },
 			{
@@ -464,6 +490,7 @@ Expected : FAIL — `detectMp4Codec` n'est pas exporté.
 - [ ] **Step 3 : Implémenter `detectMp4Codec`**
 
 Ajouter à `src/lib/video-export.ts` :
+
 ```ts
 export interface CodecProbeDeps {
 	/** Codecs vidéo contenables par le format MP4. */
@@ -518,6 +545,7 @@ git commit -m "feat(video-export): détection de support MP4/H.264 (injectable)"
 ## Task 6 : `createVideoSink` (encodeur mediabunny réel)
 
 **Files:**
+
 - Modify: `src/lib/video-export.ts`
 
 Colle d'I/O autour de mediabunny — pas de test unitaire (WebCodecs/canvas absents en `node`). Validée à l'exécution dans la Task 9.
@@ -525,6 +553,7 @@ Colle d'I/O autour de mediabunny — pas de test unitaire (WebCodecs/canvas abse
 - [ ] **Step 1 : Implémenter `createVideoSink`**
 
 Ajouter à `src/lib/video-export.ts` :
+
 ```ts
 /**
  * Crée un encodeur MP4/H.264 adossé à `canvas` via mediabunny. Chaque `add()`
@@ -534,9 +563,8 @@ export const createVideoSink = async (
 	canvas: HTMLCanvasElement,
 	codec: string
 ): Promise<VideoSink> => {
-	const { Output, Mp4OutputFormat, BufferTarget, CanvasSource, QUALITY_HIGH } = await import(
-		'mediabunny'
-	);
+	const { Output, Mp4OutputFormat, BufferTarget, CanvasSource, QUALITY_HIGH } =
+		await import('mediabunny');
 
 	const output = new Output({ format: new Mp4OutputFormat(), target: new BufferTarget() });
 	const videoSource = new CanvasSource(canvas, { codec: codec as never, bitrate: QUALITY_HIGH });
@@ -572,18 +600,19 @@ git commit -m "feat(video-export): encodeur MP4 mediabunny (createVideoSink)"
 ## Task 7 : `waitForCommit` + `renderFrameAt` — TDD pour le premier
 
 **Files:**
+
 - Modify: `src/lib/playback-renderer.ts`
 - Test: `src/lib/tests/playback-renderer.test.ts`
 
 - [ ] **Step 1 : Écrire le test qui échoue**
 
 Créer `src/lib/tests/playback-renderer.test.ts` :
+
 ```ts
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { SLOT_EVENT_COMMIT, SLOT_EVENT_ERROR } from '$lib/slot-events';
-
 import { waitForCommit } from '$lib/playback-renderer';
+import { SLOT_EVENT_COMMIT, SLOT_EVENT_ERROR } from '$lib/slot-events';
 
 describe('waitForCommit', () => {
 	beforeEach(() => vi.useFakeTimers());
@@ -628,10 +657,13 @@ Expected : FAIL — `waitForCommit` n'est pas exporté.
 - [ ] **Step 3 : Implémenter `waitForCommit` et `renderFrameAt`**
 
 Dans `src/lib/playback-renderer.ts`, ajouter en tête l'import :
+
 ```ts
 import { SLOT_EVENT_COMMIT, SLOT_EVENT_ERROR } from '$lib/slot-events';
 ```
+
 Puis ajouter à la fin du fichier :
+
 ```ts
 /**
  * Résout au prochain `commit` du SlotManager, rejette sur `error`, timeout ou
@@ -658,7 +690,8 @@ export const waitForCommit = (
 		};
 		const onCommit = () => settle(resolve);
 		const onError = () => settle(() => reject(new Error('slot error during frame render')));
-		const onAbort = () => settle(() => reject(new DOMException('waitForCommit aborted', 'AbortError')));
+		const onAbort = () =>
+			settle(() => reject(new DOMException('waitForCommit aborted', 'AbortError')));
 		const timeoutId = setTimeout(
 			() => settle(() => reject(new Error(`waitForCommit timeout after ${timeoutMs}ms`))),
 			timeoutMs
@@ -710,6 +743,7 @@ git commit -m "feat(playback-renderer): waitForCommit + renderFrameAt détermini
 ## Task 8 : Composant `video-export-flow.svelte`
 
 **Files:**
+
 - Create: `src/lib/components/capture/video-export-flow.svelte`
 
 Composant de colle (câble stores + helpers). Validé à l'exécution (Task 9). Suivre les conventions Svelte 5 runes du projet ; déléguer l'édition à l'agent `svelte-file-editor` si disponible et valider avec `svelte-autofixer`.
@@ -735,8 +769,13 @@ Composant de colle (câble stores + helpers). Validé à l'exécution (Task 9). 
 	} from '$lib/stores/variables';
 
 	import { computeCaptureRect } from '$lib/capture-geometry';
-	import { PRERENDER_FRAME_TIMEOUT_MS, VIDEO_EXPORT_FPS, VIDEO_EXPORT_FRAME_WARN } from '$lib/constants';
+	import {
+		PRERENDER_FRAME_TIMEOUT_MS,
+		VIDEO_EXPORT_FPS,
+		VIDEO_EXPORT_FRAME_WARN
+	} from '$lib/constants';
 	import { changeOMfileURL } from '$lib/layers';
+	import { renderFrameAt } from '$lib/playback-renderer';
 	import {
 		downloadBlob,
 		drawCaptureFrame,
@@ -745,13 +784,17 @@ Composant de colle (câble stores + helpers). Validé à l'exécution (Task 9). 
 		loadInfoclimatLogo,
 		sanitizeFilenamePart
 	} from '$lib/png-export';
-	import { renderFrameAt } from '$lib/playback-renderer';
 	import { getDateRangeForMode, prefetchData } from '$lib/prefetch';
 	import { shareOrDownload } from '$lib/share';
 	import { slotEvents } from '$lib/slot-events';
 	import { formatISOWithoutTimezone } from '$lib/time-format';
 	import { updateUrl } from '$lib/url';
-	import { createVideoSink, detectMp4Codec, exportAnimation, getExportFrames } from '$lib/video-export';
+	import {
+		createVideoSink,
+		detectMp4Codec,
+		exportAnimation,
+		getExportFrames
+	} from '$lib/video-export';
 	import { buildWatermarkDetails, formatLeadTimeForFilename } from '$lib/watermark-details';
 
 	interface Props {
@@ -795,7 +838,10 @@ Composant de colle (câble stores + helpers). Validé à l'exécution (Task 9). 
 		abort = new AbortController();
 		const initialTime = get(time);
 
-		const rect = computeCaptureRect(window.innerWidth, window.innerHeight - get(bottomChromeHeight));
+		const rect = computeCaptureRect(
+			window.innerWidth,
+			window.innerHeight - get(bottomChromeHeight)
+		);
 		const region = { ...rect, viewportW: window.innerWidth, viewportH: window.innerHeight };
 		const dims = getExportDimensions(rect.orientation);
 
@@ -845,7 +891,14 @@ Composant de colle (câble stores + helpers). Validé à l'exécution (Task 9). 
 						signal
 					}),
 				drawFrame: (date, index, total) => {
-					const details = buildWatermarkDetails(run, date, index, total, domainLabel, variableLabel);
+					const details = buildWatermarkDetails(
+						run,
+						date,
+						index,
+						total,
+						domainLabel,
+						variableLabel
+					);
 					drawCaptureFrame(ctx, map.getCanvas(), region, details, logo, dims.width, dims.height);
 				},
 				onProgress: (current, total) => {
@@ -945,7 +998,9 @@ Composant de colle (câble stores + helpers). Validé à l'exécution (Task 9). 
 		role="dialog"
 		aria-modal="true"
 	>
-		<div class="w-80 max-w-[90vw] rounded-xl bg-glass/80 p-5 text-white shadow-xl ring-1 ring-white/15 backdrop-blur-xl">
+		<div
+			class="w-80 max-w-[90vw] rounded-xl bg-glass/80 p-5 text-white shadow-xl ring-1 ring-white/15 backdrop-blur-xl"
+		>
 			{#if phase === 'confirm'}
 				<p class="mb-4 text-sm">
 					Cette plage contient {pendingFrames.length} images : la vidéo sera longue et sa préparation
@@ -999,22 +1054,29 @@ git commit -m "feat(video-export): composant bouton + overlay de progression"
 ## Task 9 : Monter le composant + vérification de bout en bout
 
 **Files:**
+
 - Modify: `src/lib/components/chrome/app-chrome.svelte`
 
 - [ ] **Step 1 : Monter `VideoExportFlow` à côté de `CaptureFlow`**
 
 Dans `src/lib/components/chrome/app-chrome.svelte`, ajouter l'import après celui de `CaptureFlow` (ligne 4) :
+
 ```ts
-	import VideoExportFlow from '$lib/components/capture/video-export-flow.svelte';
+import VideoExportFlow from '$lib/components/capture/video-export-flow.svelte';
 ```
+
 Puis mettre à jour les deux snippets `capture` :
+
 ```svelte
-		{#snippet capture()}<CaptureFlow /><VideoExportFlow />{/snippet}
+{#snippet capture()}<CaptureFlow /><VideoExportFlow />{/snippet}
 ```
+
 (ligne 13, variante bar) et
+
 ```svelte
-		{#snippet capture()}<CaptureFlow variant="fab" /><VideoExportFlow variant="fab" />{/snippet}
+{#snippet capture()}<CaptureFlow variant="fab" /><VideoExportFlow variant="fab" />{/snippet}
 ```
+
 (ligne 18, variante fab).
 
 - [ ] **Step 2 : Typecheck + lint + suite de tests**
@@ -1025,12 +1087,14 @@ Expected : 0 erreur, tous les tests verts (dont `video-export` et `playback-rend
 - [ ] **Step 3 : Vérification manuelle de l'export vidéo**
 
 Run : `npm run dev`. Dans l'app :
+
 1. Choisir un domaine horaire (ex. AROME France) et une variable avec dégradé (température / précipitations).
 2. Régler la plage de lecture sur « Aujourd'hui » ou « 24 h suivantes » (sélecteur de préchargement).
 3. Cliquer le bouton **Vidéo** → l'overlay de progression s'affiche, le compteur avance.
 4. À la fin : la vidéo est partagée (mobile) ou téléchargée (`.mp4`).
 
 Vérifier :
+
 - Expected : MP4 lisible, ~10 fps, watermark présent et **horodatage qui défile** frame par frame, cadrage 4:3/3:4 identique à la capture photo.
 - Tester **Annuler** pendant la préparation → l'overlay se ferme, la carte revient sur l'échéance initiale.
 - Tester une plage > 60 images (« Run complet ») → l'overlay de confirmation apparaît avant lancement.
