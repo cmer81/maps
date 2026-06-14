@@ -2,9 +2,11 @@
 	import { get } from 'svelte/store';
 
 	import FilmIcon from '@lucide/svelte/icons/film';
+	import { omProtocol } from '@openmeteo/weather-map-layer';
 	import { toast } from 'svelte-sonner';
 
 	import { map as mapStore } from '$lib/stores/map';
+	import { omProtocolSettings } from '$lib/stores/om-protocol-settings';
 	import { currentOmUrl } from '$lib/stores/om-url';
 	import { bottomChromeHeight } from '$lib/stores/preferences';
 	import { prefetchMode } from '$lib/stores/prefetch';
@@ -32,11 +34,11 @@
 		loadInfoclimatLogo,
 		sanitizeFilenamePart
 	} from '$lib/png-export';
-	import { getDateRangeForMode, prefetchData } from '$lib/prefetch';
+	import { getDateRangeForMode } from '$lib/prefetch';
 	import { shareOrDownload } from '$lib/share';
 	import { slotEvents } from '$lib/slot-events';
 	import { formatISOWithoutTimezone } from '$lib/time-format';
-	import { updateUrl } from '$lib/url';
+	import { getOMUrlFor, updateUrl } from '$lib/url';
 	import {
 		createVideoSink,
 		detectMp4Codec,
@@ -83,7 +85,8 @@
 
 		phase = 'rendering';
 		progress = { current: 0, total: pendingFrames.length };
-		abort = new AbortController();
+		const controller = new AbortController();
+		abort = controller;
 		const initialTime = get(time);
 
 		const rect = computeCaptureRect(
@@ -105,17 +108,6 @@
 				return;
 			}
 
-			// Pré-chauffe la plage en arrière-plan (fire-and-forget, accélère le rendu).
-			void prefetchData({
-				startDate: pendingFrames[0],
-				endDate: pendingFrames[pendingFrames.length - 1],
-				metaJson: meta,
-				modelRun: modelRunValue,
-				domain: domainValue,
-				variable: variableValue,
-				signal: abort.signal
-			});
-
 			const canvas = document.createElement('canvas');
 			canvas.width = dims.width;
 			canvas.height = dims.height;
@@ -124,24 +116,64 @@
 			const logo = await loadInfoclimatLogo();
 			const sink = await createVideoSink(canvas, codec);
 
-			const signal = abort.signal;
+			const signal = controller.signal;
 			// La 1ʳᵉ frame égale souvent le `time` courant : sans invalidation,
 			// changeOMfileURL() dédupe sur currentOmUrl et n'émet pas de `commit`,
 			// donc renderFrameAt timeout. On force le rechargement de la 1ʳᵉ frame.
 			currentOmUrl.set('');
+
+			// Pré-décodage pipeliné : on peuple `state.data` du protocole `om://` pour les
+			// frames à venir (look-ahead), en parallèle et toujours en avance sur le curseur
+			// de rendu. Chaque frame rendue est alors « chaude » (~250 ms GPU) au lieu de
+			// « froide » (~1 s+). Borné par PREDECODE_LOOKAHEAD → respecte le cap
+			// MAX_STATES_WITH_DATA=24 du protocole (marche aussi pour les plages > 24).
+			const PREDECODE_LOOKAHEAD = 8;
+			const settings = get(omProtocolSettings);
+			const decodeJobs: Array<Promise<void> | undefined> = [];
+			const ensureDecoded = (i: number): Promise<void> => {
+				if (i < 0 || i >= pendingFrames.length) return Promise.resolve();
+				let job = decodeJobs[i];
+				if (!job) {
+					const omUrl = getOMUrlFor(variableValue, pendingFrames[i]);
+					job = omUrl
+						? omProtocol({ url: 'om://' + omUrl, type: 'json' }, controller, settings)
+								.then(() => undefined)
+								.catch(() => undefined)
+						: Promise.resolve();
+					decodeJobs[i] = job;
+				}
+				return job;
+			};
+			// Amorce le 1er lot avant la boucle de rendu.
+			for (let i = 0; i <= PREDECODE_LOOKAHEAD && i < pendingFrames.length; i++) {
+				void ensureDecoded(i);
+			}
+
+			let renderCursor = 0;
+			const exportStart = performance.now();
 			const blob = await exportAnimation({
 				frames: pendingFrames,
 				fps: VIDEO_EXPORT_FPS,
 				sink,
-				renderFrame: (date) =>
-					renderFrameAt({
+				renderFrame: async (date) => {
+					const i = renderCursor++;
+					void ensureDecoded(i + PREDECODE_LOOKAHEAD); // garde le look-ahead devant
+					await ensureDecoded(i); // s'assure que la frame courante est chaude
+					const t = performance.now();
+					await renderFrameAt({
 						map,
 						events: slotEvents,
 						advance,
 						date,
 						timeoutMs: PRERENDER_FRAME_TIMEOUT_MS,
 						signal
-					}),
+					});
+					console.log(
+						`[video-export] frame ${i + 1}/${pendingFrames.length} en ${Math.round(
+							performance.now() - t
+						)}ms`
+					);
+				},
 				drawFrame: (date, index, total) => {
 					const details = buildWatermarkDetails(
 						modelRunValue,
@@ -159,6 +191,11 @@
 				restore: () => advance(initialTime),
 				signal
 			});
+			console.log(
+				`[video-export] ${pendingFrames.length} frames en ${Math.round(
+					performance.now() - exportStart
+				)}ms (${Math.round((performance.now() - exportStart) / pendingFrames.length)}ms/frame)`
+			);
 
 			const filename =
 				[
