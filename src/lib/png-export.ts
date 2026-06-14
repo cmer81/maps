@@ -242,13 +242,12 @@ export const getExportDimensions = (
  */
 export const drawCaptureFrame = (
 	ctx: CanvasRenderingContext2D,
-	source: CanvasImageSource & { width: number; height: number },
+	source: HTMLCanvasElement,
 	region: PngCaptureRegion,
 	details: PngWatermarkDetails,
-	logo: HTMLImageElement | undefined,
-	destW: number,
-	destH: number
+	logo: HTMLImageElement | undefined
 ): void => {
+	const { width, height } = getExportDimensions(region.orientation);
 	const { sx, sy, sw, sh } = computeSourceCrop(
 		region,
 		region.viewportW,
@@ -256,8 +255,8 @@ export const drawCaptureFrame = (
 		source.width,
 		source.height
 	);
-	ctx.drawImage(source, sx, sy, sw, sh, 0, 0, destW, destH);
-	drawWatermark(ctx, destW, destH, { ...details, logo });
+	ctx.drawImage(source, sx, sy, sw, sh, 0, 0, width, height);
+	drawWatermark(ctx, width, height, { ...details, logo });
 };
 
 export const captureWatermarkedPng = async (
@@ -275,7 +274,7 @@ export const captureWatermarkedPng = async (
 	const ctx = canvas.getContext('2d');
 	if (!ctx) throw new Error('2D canvas context unavailable');
 
-	drawCaptureFrame(ctx, source, region, details, await loadInfoclimatLogo(), width, height);
+	drawCaptureFrame(ctx, source, region, details, await loadInfoclimatLogo());
 	return blobFromCanvas(canvas, 'image/png');
 };
 
