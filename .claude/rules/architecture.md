@@ -80,10 +80,11 @@ et du préchargement manuel.
 L'ancien player **pré-rendu** (diaporama : capture canvas, overlay, gel de la carte) reste retiré.
 `src/lib/playback-renderer.ts` expose désormais `waitForIdle(map, timeoutMs, signal?)` (utilisé par
 `capture-flow.svelte` pour attendre la mise au repos de la carte avant la capture PNG —
-`preserveDrawingBuffer` reste activé sur la map, voir `+page.svelte`), `waitForCommit(map, signal?)`
-(attend l'événement `commit` du SlotManager) et `renderFrameAt(map, time, signal?)` (avance la
-carte via le même chemin que `playbackAdvance` — `time` + `updateUrl` + `changeOMfileURL` —, puis
-enchaîne `waitForCommit` et `waitForIdle`).
+`preserveDrawingBuffer` reste activé sur la map, voir `+page.svelte`), `waitForCommit(events,
+timeoutMs, signal?)` (attend l'événement `commit` du bus `slotEvents` du SlotManager) et
+`renderFrameAt({ map, events, advance, date, timeoutMs, signal? })` (avance la carte via le
+callback `advance` injecté — même chemin que `playbackAdvance` : `time` + `updateUrl` +
+`changeOMfileURL` —, puis enchaîne `waitForCommit` et `waitForIdle`).
 
 **Export vidéo animé (MP4).** `src/lib/components/capture/video-export-flow.svelte` (bouton dédié
 monté à côté de la capture photo dans `chrome/app-chrome.svelte`) exporte la plage de lecture
