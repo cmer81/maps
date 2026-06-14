@@ -28,6 +28,19 @@ export const AROME_FRANCE_CONVECTION_DOMAIN = 'arome_france_convection';
  *  d'Open-Meteo (`meteofrance_arome_france*`). */
 export const AROME_FRANCE_DOMAIN = 'arome_france';
 
+/** Pseudo-domaine agroclimatologique France métropole (servi depuis le bucket
+ *  maison par le pipeline `agroclimato-forecast`). 7 indices **journaliers**
+ *  (1 OMfile par jour, nommé `YYYY-MM-DD.om` = minuit UTC), même grille AROME
+ *  France 1121×717 à 0,025°. C'est le seul domaine maison à granularité
+ *  journalière avec un nom de fichier = date (cf. `DAILY_FILE_DOMAINS`). */
+export const AGROCLIMATO_FRANCE_DOMAIN = 'agroclimato_france';
+
+/** Domaines dont l'OMfile est nommé par **date** (`YYYY-MM-DD.om`) et non par
+ *  timestamp horaire (`…THHMM.om`). `getOMUrlFor()` bascule la construction du
+ *  nom de fichier sur `fmtDateYMD` pour ces domaines. (L'anomalie a son propre
+ *  layout `/anomaly/…` géré séparément et n'est pas listée ici.) */
+export const DAILY_FILE_DOMAINS: ReadonlySet<string> = new Set([AGROCLIMATO_FRANCE_DOMAIN]);
+
 /** Vue de carte recommandée par domaine — appliquée via `flyTo` quand l'utilisateur
  *  bascule manuellement sur le domaine. Utile pour les pseudo-domaines régionaux
  *  dont le centre de grille tombe sur une zone océan/peu lisible.
@@ -39,7 +52,8 @@ export const DOMAIN_DEFAULT_VIEWS: Record<string, { center: [number, number]; zo
 	[AROME_OM_NCALEDONIE_DOMAIN]: { center: [165.0, -19.9], zoom: 5.3 },
 	[AROME_OM_POLYNESIE_DOMAIN]: { center: [-151.0, -18.9], zoom: 5.3 },
 	[AROME_FRANCE_CONVECTION_DOMAIN]: { center: [2.3, 46.6], zoom: 5 },
-	[AROME_FRANCE_DOMAIN]: { center: [2.3, 46.6], zoom: 5 }
+	[AROME_FRANCE_DOMAIN]: { center: [2.3, 46.6], zoom: 5 },
+	[AGROCLIMATO_FRANCE_DOMAIN]: { center: [2.3, 46.6], zoom: 5 }
 };
 
 /** Variable affichée par défaut quand l'utilisateur bascule sur un domaine et que
@@ -47,7 +61,8 @@ export const DOMAIN_DEFAULT_VIEWS: Record<string, { center: [number, number]; zo
  *  `matchVariableOrFirst()` avant le fallback `variables[0]`. */
 export const DOMAIN_DEFAULT_VARIABLES: Record<string, string> = {
 	[AROME_FRANCE_CONVECTION_DOMAIN]: 'radar_reflectivity',
-	[AROME_FRANCE_DOMAIN]: 'temperature_2m'
+	[AROME_FRANCE_DOMAIN]: 'temperature_2m',
+	[AGROCLIMATO_FRANCE_DOMAIN]: 'temperature_2m_max'
 };
 
 /** Variables masquées du sélecteur (display-only), même si publiées dans le
@@ -242,6 +257,10 @@ export const MODEL_SELECTOR_GROUPS = [
 	{
 		label: 'Anomalie',
 		domains: [{ value: ANOMALY_DOMAIN, label: 'Anomalie T°C (Europe ERA/Arpège)' }]
+	},
+	{
+		label: 'Agroclimatologie',
+		domains: [{ value: AGROCLIMATO_FRANCE_DOMAIN, label: 'Agroclimato France (Infoclimat)' }]
 	}
 ] as const satisfies readonly {
 	label: string;
@@ -269,6 +288,8 @@ export const MODEL_DESCRIPTIONS: Record<string, string> = {
 		'Infoclimat · 0,025° (~2,5 km), France métropole · convection / orage · ~51 h',
 	arome_france:
 		'Infoclimat · 0,025° (~2,5 km), France métropole · surface · ~51 h · émagramme (sondage)',
+	agroclimato_france:
+		'Infoclimat · 0,025° (~2,5 km), France métropole · indices agroclimatologiques · pas journalier',
 	meteofrance_arome_france_hd:
 		'Météo-France · ~1,5 km, France · détaille les phénomènes locaux · échéance ~2 j',
 	meteofrance_arome_france0025:

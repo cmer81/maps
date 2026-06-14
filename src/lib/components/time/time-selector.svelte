@@ -19,6 +19,7 @@
 
 	import {
 		ANOMALY_DOMAIN,
+		DAILY_FILE_DOMAINS,
 		DAY_NAMES,
 		MILLISECONDS_PER_DAY,
 		MILLISECONDS_PER_HOUR,
@@ -182,6 +183,36 @@
 
 	const checkClosestModelRun = async () => {
 		let timeStep = new Date($time);
+
+		// Domaines journaliers servis via le run-path standard (DAILY_FILE_DOMAINS,
+		// ex. agroclimato) : produit à run unique `latest`, valid_times = minuits
+		// UTC, run pas forcément aligné sur minuit (agroclimato : 06:00Z). Passer
+		// par `closestModelRun` (aligné sur le pas depuis minuit) recalerait modelRun
+		// vers un run inexistant → meta.json 404 dès qu'on sélectionne un valid_time
+		// antérieur à l'heure du run (le 1ᵉʳ jour à 00Z précède le run 06Z). On ne
+		// navigue pas entre runs ici : on clampe le temps dans la plage disponible
+		// et on reste sur le run latest. (L'anomalie a un run aligné minuit + son
+		// propre layout → pas concernée, elle suit le chemin générique ci-dessous.)
+		if (DAILY_FILE_DOMAINS.has($selectedDomain.value)) {
+			if ($metaJson) {
+				const clampTo = (target: Date, message: string) => {
+					toast.warning(message);
+					const clamped = new SvelteDate(target);
+					time.set(clamped);
+					currentDate = clamped;
+					// Re-synchronise l'URL/scrubber : onDateChange a déjà écrit le temps
+					// hors-plage avant ce clamp — sans ça l'URL resterait désynchronisée.
+					updateUrl('time', formatISOWithoutTimezone(clamped));
+					centerDateButton(clamped);
+				};
+				if (timeStep.getTime() < metaFirstTime.getTime()) {
+					clampTo(metaFirstTime, 'Date trop ancienne, recalée sur la plus ancienne disponible');
+				} else if (timeStep.getTime() > metaLastTime.getTime()) {
+					clampTo(metaLastTime, 'Date trop récente, recalée sur la dernière disponible');
+				}
+			}
+			return;
+		}
 
 		let nearestModelRun = closestModelRun(timeStep, $selectedDomain.model_interval);
 		if (nearestModelRun.getTime() > latestReferenceTime.getTime()) {
@@ -388,9 +419,11 @@
 	const metaReferenceTime = $derived(new Date($metaJson?.reference_time as string));
 
 	const metaFirstTime = $derived(new Date($metaJson?.valid_times[0] as string));
-	// Domaine journalier (anomalie) : on affiche le jour, pas l'heure (la valeur
-	// est une moyenne sur 24h ; l'heure 00Z affichée en local trouble l'utilisateur).
-	const isDailyDomain = $derived($selectedDomain.value === ANOMALY_DOMAIN);
+	// Domaine journalier (anomalie, agroclimato) : on affiche le jour, pas l'heure
+	// (les `valid_times` sont des minuits UTC ; afficher l'heure 00Z en local
+	// troublerait l'utilisateur). Dérivé de `time_interval` → couvre tous les
+	// domaines journaliers sans liste en dur.
+	const isDailyDomain = $derived($selectedDomain.time_interval === 'daily');
 	const formatStepLabel = (date: Date): string =>
 		isDailyDomain ? formatLocalDate(date) : formatLocalTime(date);
 	const metaFirstResolution = $derived.by(() => {

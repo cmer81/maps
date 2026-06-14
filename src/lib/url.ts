@@ -21,14 +21,19 @@ import { metaJson as mJ, modelRun as mR, modelRunLocked as mRL, time } from '$li
 import { domain as d, layer2Enabled, variable as v, variable2 } from '$lib/stores/variables';
 import { vectorOptions as vO, windOverlayEnabled, windOverlayLevel } from '$lib/stores/vector';
 
-import { ANOMALY_DOMAIN, ANOMALY_VARIABLE, DEFAULT_PREFERENCES } from '$lib/constants';
+import {
+	ANOMALY_DOMAIN,
+	ANOMALY_VARIABLE,
+	DAILY_FILE_DOMAINS,
+	DEFAULT_PREFERENCES
+} from '$lib/constants';
 
 import {
 	CLIP_COUNTRIES_PARAM,
 	parseClipCountriesParam,
 	serializeClipCountriesParam
 } from './clipping';
-import { fmtModelRun, fmtSelectedTime, getBaseUri, hashValue, pad } from './helpers';
+import { fmtDateYMD, fmtModelRun, fmtSelectedTime, getBaseUri, hashValue } from './helpers';
 import { getModelsBucketUrl } from './runtime-env';
 import { clippingCountryCodes } from './stores/clipping';
 import { omProtocolSettings } from './stores/om-protocol-settings';
@@ -215,9 +220,9 @@ const memorisedHash = (json: string, cachedJson: string, cachedHash: string) => 
 	return { json, hash: hashValue(json) };
 };
 
-/** Formate une date en `YYYY-MM-DD` (UTC). */
-export const fmtDateYMD = (d: Date): string =>
-	`${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+// `fmtDateYMD` vit dans helpers.ts (à côté de fmtSelectedTime) ; ré-exporté ici
+// pour les consommateurs historiques (tests, modules) qui l'importent de `$lib/url`.
+export { fmtDateYMD };
 
 /** Début du jour UTC courant. */
 const startOfUTCDay = (d: Date): Date =>
@@ -289,7 +294,12 @@ export const getOMUrlFor = (
 	}
 
 	const base = `${getBaseUri(domain)}/data_spatial/${domain}`;
-	let result = `${base}/${fmtModelRun(modelRun)}/${fmtSelectedTime(selectedTime)}.om`;
+	// Domaines journaliers : 1 OMfile par jour nommé `YYYY-MM-DD.om` (= minuit
+	// UTC), pas `…THHMM.om`. Le run (`fmtModelRun`) reste identique.
+	const fileName = DAILY_FILE_DOMAINS.has(domain)
+		? fmtDateYMD(selectedTime)
+		: fmtSelectedTime(selectedTime);
+	let result = `${base}/${fmtModelRun(modelRun)}/${fileName}.om`;
 	result += `?variable=${variable}`;
 
 	if (mode.current === 'dark') result += '&dark=true';
