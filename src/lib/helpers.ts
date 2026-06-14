@@ -1,6 +1,7 @@
 import { browser, dev } from '$app/environment';
 
 import {
+	AGROCLIMATO_FRANCE_DOMAIN,
 	ANOMALY_DOMAIN,
 	AROME_FRANCE_CONVECTION_DOMAIN,
 	AROME_FRANCE_DOMAIN,
@@ -20,7 +21,8 @@ const BUCKET_DOMAINS: ReadonlySet<string> = new Set([
 	AROME_OM_NCALEDONIE_DOMAIN,
 	AROME_OM_POLYNESIE_DOMAIN,
 	AROME_FRANCE_CONVECTION_DOMAIN,
-	AROME_FRANCE_DOMAIN
+	AROME_FRANCE_DOMAIN,
+	AGROCLIMATO_FRANCE_DOMAIN
 ]);
 
 /**
@@ -33,6 +35,11 @@ export const fmtModelRun = (modelRun: Date): string =>
 
 export const fmtSelectedTime = (t: Date): string =>
 	`${t.getUTCFullYear()}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())}T${pad(t.getUTCHours())}${pad(t.getUTCMinutes())}`;
+
+/** Formate une date en `YYYY-MM-DD` (UTC) — nom de fichier des domaines
+ *  journaliers (`DAILY_FILE_DOMAINS`) et préfixe bucket des anomalies. */
+export const fmtDateYMD = (d: Date): string =>
+	`${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
 
 /**
  * URL `.om` path-style (sans query) pour une lecture de sondage : domaine + run +

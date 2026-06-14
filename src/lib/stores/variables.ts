@@ -9,6 +9,7 @@ import {
 } from '@openmeteo/weather-map-layer';
 import { type Persisted, persisted } from 'svelte-persisted-store';
 
+import { registerAgroclimatoFranceDomain } from '$lib/agroclimato-france-domain';
 import { registerAnomalyDomain } from '$lib/anomaly-domain';
 import { registerAromeFranceConvectionDomain } from '$lib/arome-france-convection-domain';
 import { registerAromeFranceDomain } from '$lib/arome-france-domain';
@@ -21,6 +22,7 @@ registerAnomalyDomain();
 registerAromeOmDomain();
 registerAromeFranceConvectionDomain();
 registerAromeFranceDomain();
+registerAgroclimatoFranceDomain();
 applyModelSelectorLabels();
 
 export const defaultDomain = DEFAULT_DOMAIN;

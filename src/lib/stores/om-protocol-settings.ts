@@ -10,6 +10,13 @@ import { persisted } from 'svelte-persisted-store';
 
 import { browser } from '$app/environment';
 
+import {
+	agroEt0FaoScale,
+	agroFrostHoursScale,
+	agroHeatHoursScale,
+	agroThiLivestockScale,
+	agroVpdScale
+} from '$lib/color-scales/agroclimato';
 import { brightnessTemperatureScale } from '$lib/color-scales/brightness-temperature';
 import { brightnessTemperatureWvScale } from '$lib/color-scales/brightness-temperature-wv';
 import { capeScale } from '$lib/color-scales/cape';
@@ -108,7 +115,20 @@ export const standardColorScales = {
 	visibility: visibilityScale,
 	lightning_density: lightningDensityScale,
 	precipitation_type: precipitationTypeScale,
-	precipitation_type_severe: precipitationTypeScale
+	precipitation_type_severe: precipitationTypeScale,
+
+	// Domaine agroclimato_france — clés exactes (priment sur la résolution par
+	// préfixe du package). temperature_2m_min/max réutilisent la palette
+	// température des modèles actuels (infoclimatTemperatureScale, clé `temperature`)
+	// pour rester cohérentes avec le reste de l'app ; les indices ont des palettes
+	// dédiées, cf. color-scales/agroclimato.ts.
+	temperature_2m_min: infoclimatTemperatureScale,
+	temperature_2m_max: infoclimatTemperatureScale,
+	frost_hours: agroFrostHoursScale,
+	heat_hours: agroHeatHoursScale,
+	et0_fao: agroEt0FaoScale,
+	vpd: agroVpdScale,
+	thi_livestock: agroThiLivestockScale
 };
 
 export const omProtocolSettings: Writable<OmProtocolSettings> = writable({
