@@ -65,6 +65,36 @@ export const detectMp4Codec = async (
 };
 
 /**
+ * Crée un encodeur MP4/H.264 adossé à `canvas` via mediabunny. Chaque `add()`
+ * encode le contenu **courant** du canvas ; `finalize()` rend le MP4 complet.
+ */
+export const createVideoSink = async (
+	canvas: HTMLCanvasElement,
+	codec: string
+): Promise<VideoSink> => {
+	const { Output, Mp4OutputFormat, BufferTarget, CanvasSource, QUALITY_HIGH } =
+		await import('mediabunny');
+
+	const output = new Output<typeof Mp4OutputFormat.prototype, typeof BufferTarget.prototype>({
+		format: new Mp4OutputFormat(),
+		target: new BufferTarget()
+	});
+	const videoSource = new CanvasSource(canvas, { codec: codec as never, bitrate: QUALITY_HIGH });
+	output.addVideoTrack(videoSource);
+	await output.start();
+
+	return {
+		add: (timestamp, duration) => videoSource.add(timestamp, duration),
+		finalize: async () => {
+			await output.finalize();
+			const buffer = output.target.buffer;
+			if (!buffer) throw new Error('mediabunny: buffer MP4 vide');
+			return new Blob([buffer], { type: 'video/mp4' });
+		}
+	};
+};
+
+/**
  * Rend la séquence frame-par-frame de façon déterministe : pour chaque pas, on
  * attend le rendu réel (`renderFrame`), on compose (`drawFrame`) puis on pousse
  * dans l'encodeur. `restore()` est garanti (try/finally). Renvoie le Blob MP4.
