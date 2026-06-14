@@ -150,7 +150,6 @@
 			}
 
 			let renderCursor = 0;
-			const exportStart = performance.now();
 			const blob = await exportAnimation({
 				frames: pendingFrames,
 				fps: VIDEO_EXPORT_FPS,
@@ -159,7 +158,6 @@
 					const i = renderCursor++;
 					void ensureDecoded(i + PREDECODE_LOOKAHEAD); // garde le look-ahead devant
 					await ensureDecoded(i); // s'assure que la frame courante est chaude
-					const t = performance.now();
 					await renderFrameAt({
 						map,
 						events: slotEvents,
@@ -168,11 +166,6 @@
 						timeoutMs: PRERENDER_FRAME_TIMEOUT_MS,
 						signal
 					});
-					console.log(
-						`[video-export] frame ${i + 1}/${pendingFrames.length} en ${Math.round(
-							performance.now() - t
-						)}ms`
-					);
 				},
 				drawFrame: (date, index, total) => {
 					const details = buildWatermarkDetails(
@@ -191,11 +184,6 @@
 				restore: () => advance(initialTime),
 				signal
 			});
-			console.log(
-				`[video-export] ${pendingFrames.length} frames en ${Math.round(
-					performance.now() - exportStart
-				)}ms (${Math.round((performance.now() - exportStart) / pendingFrames.length)}ms/frame)`
-			);
 
 			const filename =
 				[
