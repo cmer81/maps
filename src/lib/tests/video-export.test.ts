@@ -27,7 +27,9 @@ describe('exportAnimation', () => {
 			frames,
 			fps: 10,
 			sink,
-			renderFrame: async (d) => order.push('render:' + d.toISOString()),
+			renderFrame: async (d) => {
+				order.push('render:' + d.toISOString());
+			},
 			drawFrame: (d) => order.push('draw:' + d.toISOString()),
 			restore: () => order.push('restore')
 		});

@@ -16,7 +16,7 @@ export interface ExportAnimationDeps {
 	/** Encodeur cible. */
 	sink: VideoSink;
 	/** Avance la carte sur `date` et attend que la frame soit rendue. */
-	renderFrame: (date: Date) => Promise<unknown>;
+	renderFrame: (date: Date) => Promise<void>;
 	/** Compose la frame courante sur le canvas d'export. */
 	drawFrame: (date: Date, index: number, total: number) => void;
 	/** Restaure l'état initial (temps + couches) — appelé en succès comme en échec. */
