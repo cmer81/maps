@@ -64,7 +64,7 @@ const blobFromCanvas = (canvas: HTMLCanvasElement, type: string, quality?: numbe
 		);
 	});
 
-const loadInfoclimatLogo = (): Promise<HTMLImageElement | undefined> => {
+export const loadInfoclimatLogo = (): Promise<HTMLImageElement | undefined> => {
 	if (logoPromise) return logoPromise;
 	logoPromise = new Promise((resolve) => {
 		const img = new Image();
@@ -229,12 +229,26 @@ export interface PngCaptureRegion {
 	viewportH: number;
 }
 
-export const captureWatermarkedPng = async (
-	map: MaplibreMap,
+/** Dimensions du canvas d'export selon l'orientation (4:3 paysage / 3:4 portrait). */
+export const getExportDimensions = (
+	orientation: CaptureOrientation
+): { width: number; height: number } =>
+	orientation === 'landscape' ? { width: 1440, height: 1080 } : { width: 1080, height: 1440 };
+
+/**
+ * Compose une frame sur un `ctx` existant : crop de la zone visible de la carte
+ * (px viewport → px canvas source) puis watermark daté. Partagé par la capture
+ * PNG unitaire et l'export vidéo (un seul rendu de filigrane à maintenir).
+ */
+export const drawCaptureFrame = (
+	ctx: CanvasRenderingContext2D,
+	source: CanvasImageSource & { width: number; height: number },
+	region: PngCaptureRegion,
 	details: PngWatermarkDetails,
-	region: PngCaptureRegion
-): Promise<Blob> => {
-	const source = map.getCanvas();
+	logo: HTMLImageElement | undefined,
+	destW: number,
+	destH: number
+): void => {
 	const { sx, sy, sw, sh } = computeSourceCrop(
 		region,
 		region.viewportW,
@@ -242,19 +256,26 @@ export const captureWatermarkedPng = async (
 		source.width,
 		source.height
 	);
+	ctx.drawImage(source, sx, sy, sw, sh, 0, 0, destW, destH);
+	drawWatermark(ctx, destW, destH, { ...details, logo });
+};
 
-	const landscape = region.orientation === 'landscape';
+export const captureWatermarkedPng = async (
+	map: MaplibreMap,
+	details: PngWatermarkDetails,
+	region: PngCaptureRegion
+): Promise<Blob> => {
+	const source = map.getCanvas();
+	const { width, height } = getExportDimensions(region.orientation);
+
 	const canvas = document.createElement('canvas');
-	canvas.width = landscape ? 1440 : 1080;
-	canvas.height = landscape ? 1080 : 1440;
+	canvas.width = width;
+	canvas.height = height;
 
 	const ctx = canvas.getContext('2d');
 	if (!ctx) throw new Error('2D canvas context unavailable');
-	ctx.drawImage(source, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
-	drawWatermark(ctx, canvas.width, canvas.height, {
-		...details,
-		logo: await loadInfoclimatLogo()
-	});
+
+	drawCaptureFrame(ctx, source, region, details, await loadInfoclimatLogo(), width, height);
 	return blobFromCanvas(canvas, 'image/png');
 };
 
