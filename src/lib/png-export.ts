@@ -17,6 +17,9 @@ export interface PngWatermarkDetails {
 	frameIndex: number;
 	frameCount: number;
 	credits?: string;
+	/** Aveu du « Mode Confort » (?giec=non) gravé en haut du PNG. Présent ⟺ mode actif :
+	 *  garantit qu'un export de la carte miroitée porte toujours sa propre punchline. */
+	comfortNote?: string;
 	legend?: {
 		unit?: string;
 		opacity: number;
@@ -217,6 +220,43 @@ const drawWatermark = (
 	ctx.restore();
 };
 
+/** Bandeau « Mode Confort » gravé en haut du PNG : pastille ambre + texte sombre,
+ *  police réduite jusqu'à tenir dans la largeur. Symétrique du bandeau écran. */
+const drawComfortBanner = (ctx: CanvasRenderingContext2D, width: number, note: string): void => {
+	const scale = Math.max(1, Math.min(width / 1200, 2));
+	const padX = Math.round(18 * scale);
+	const padY = Math.round(8 * scale);
+	const maxTextWidth = width - padX * 4;
+
+	ctx.save();
+	let fontSize = Math.round(15 * scale);
+	const fontFor = (size: number) =>
+		`600 ${size}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+	ctx.font = fontFor(fontSize);
+	while (fontSize > 9 && ctx.measureText(note).width > maxTextWidth) {
+		fontSize -= 1;
+		ctx.font = fontFor(fontSize);
+	}
+
+	const textWidth = ctx.measureText(note).width;
+	const bandHeight = fontSize + padY * 2;
+	const pillWidth = Math.min(width - padX * 2, textWidth + padX * 2);
+	const pillX = (width - pillWidth) / 2;
+	const top = Math.round(10 * scale);
+	const radius = bandHeight / 2;
+
+	ctx.fillStyle = 'rgba(245, 158, 11, 0.92)';
+	ctx.beginPath();
+	ctx.roundRect(pillX, top, pillWidth, bandHeight, radius);
+	ctx.fill();
+
+	ctx.fillStyle = '#451a03';
+	ctx.textAlign = 'center';
+	ctx.textBaseline = 'middle';
+	ctx.fillText(note, width / 2, top + bandHeight / 2 + 1);
+	ctx.restore();
+};
+
 export interface PngCaptureRegion {
 	/** px CSS dans le repère viewport (origine en haut à gauche) */
 	x: number;
@@ -255,6 +295,7 @@ export const captureWatermarkedPng = async (
 		...details,
 		logo: await loadInfoclimatLogo()
 	});
+	if (details.comfortNote) drawComfortBanner(ctx, canvas.width, details.comfortNote);
 	return blobFromCanvas(canvas, 'image/png');
 };
 

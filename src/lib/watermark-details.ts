@@ -3,6 +3,7 @@ import { get } from 'svelte/store';
 import { type RenderableColorScale, getColor, getColorScale } from '@openmeteo/weather-map-layer';
 import { mode } from 'mode-watcher';
 
+import { COMFORT_BANNER_TEXT, comfortMode } from '$lib/stores/comfort';
 import { omProtocolSettings } from '$lib/stores/om-protocol-settings';
 import { opacity } from '$lib/stores/preferences';
 import { convertValue, getDisplayUnit, unitPreferences } from '$lib/stores/units';
@@ -98,5 +99,6 @@ export const buildWatermarkDetails = (
 	validTime,
 	frameIndex,
 	frameCount,
+	comfortNote: get(comfortMode) ? COMFORT_BANNER_TEXT : undefined,
 	legend: buildWatermarkLegend()
 });

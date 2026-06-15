@@ -13,6 +13,7 @@ import { browser } from '$app/environment';
 import { brightnessTemperatureScale } from '$lib/color-scales/brightness-temperature';
 import { brightnessTemperatureWvScale } from '$lib/color-scales/brightness-temperature-wv';
 import { capeScale } from '$lib/color-scales/cape';
+import { comfortColorScaleOverrides } from '$lib/color-scales/comfort';
 import { convectiveInhibitionScale } from '$lib/color-scales/convective-inhibition';
 import { infoclimatTemperatureScale } from '$lib/color-scales/infoclimat-temperature';
 import { lightningDensityScale } from '$lib/color-scales/lightning-density';
@@ -139,3 +140,18 @@ export const omProtocolSettings: Writable<OmProtocolSettings> = writable({
 		}
 	}
 });
+
+/**
+ * Active/désactive l'easter egg « Mode Confort » (`?giec=non`) : surcharge les
+ * barèmes de température par leur version miroir (chaud → teintes froides) dans le
+ * canal `colorScales`. La bascule modifie `colorScales`, ce que `colorHashSuffix()`
+ * (url.ts) répercute dans l'URL des tuiles → re-render. Réversible : on repart
+ * toujours de `standardColorScales` + les customisations persistées de l'utilisateur.
+ */
+export const applyComfortColorScales = (enabled: boolean): void => {
+	const overrides = enabled ? comfortColorScaleOverrides(standardColorScales) : {};
+	omProtocolSettings.update((s) => ({
+		...s,
+		colorScales: { ...standardColorScales, ...get(customColorScales), ...overrides }
+	}));
+};

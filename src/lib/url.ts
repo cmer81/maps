@@ -31,7 +31,8 @@ import {
 import { fmtModelRun, fmtSelectedTime, getBaseUri, hashValue, pad } from './helpers';
 import { getModelsBucketUrl } from './runtime-env';
 import { clippingCountryCodes } from './stores/clipping';
-import { omProtocolSettings } from './stores/om-protocol-settings';
+import { comfortMode } from './stores/comfort';
+import { applyComfortColorScales, omProtocolSettings } from './stores/om-protocol-settings';
 import { parseISOWithoutTimezone } from './time-format';
 import { deriveDisplayedWindLevel, isWindVariable } from './vector-styles';
 
@@ -200,6 +201,13 @@ export const urlParamsToPreferences = () => {
 			url.searchParams.set(CLIP_COUNTRIES_PARAM, serialized);
 		}
 	}
+
+	// Easter egg « Mode Confort » : ?giec=non miroite les barèmes de température.
+	// Lu mais jamais réécrit par updateUrl (pas dans COMPLETE_DEFAULT_VALUES) — le
+	// paramètre reste tel que l'utilisateur l'a tapé, ce qui fait partie du gag.
+	const comfort = params.get('giec') === 'non';
+	comfortMode.set(comfort);
+	applyComfortColorScales(comfort);
 
 	vO.set(vectorOptions);
 	p.set(preferences);
