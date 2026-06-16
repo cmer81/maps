@@ -18,12 +18,12 @@
 		helpOpen,
 		preferences
 	} from '$lib/stores/preferences';
+	import { gridValues, vectorOptions } from '$lib/stores/vector';
 
 	import SecondaryLayerPanel from '$lib/components/secondary-layer/secondary-layer-panel.svelte';
 	import ArrowsSettings from '$lib/components/settings/arrows-settings.svelte';
 	import CacheSettings from '$lib/components/settings/cache-settings.svelte';
 	import ContourSettings from '$lib/components/settings/contour-settings.svelte';
-	import GridSettings from '$lib/components/settings/grid-settings.svelte';
 	import OpacitySetting from '$lib/components/settings/opacity-setting.svelte';
 	import PopupSettings from '$lib/components/settings/popup-settings.svelte';
 	import SoundingSettings from '$lib/components/settings/sounding-settings.svelte';
@@ -33,16 +33,38 @@
 	import * as Sheet from '$lib/components/ui/sheet';
 
 	import { setHillshadeEnabled } from '$lib/hillshade';
+	import { changeOMfileURL, reloadVectorStyle } from '$lib/layers';
 	import { updateUrl } from '$lib/url';
 
 	import LayerToggle from './layer-toggle.svelte';
 
 	// Reactive snapshots driving the toggle UI.
+	const gridDotsOn = $derived($vectorOptions.grid);
+	const gridValuesOn = $derived($gridValues);
 	const departmentsOn = $derived($showDepartments);
 	const labelsOn = $derived($showLabels);
 	const hillshadeOn = $derived($preferences.hillshade);
 	// Thème du FOND DE CARTE (le chrome reste sombre en permanence — cf. basemap-theme.ts).
 	const darkOn = $derived($basemapTheme === 'dark');
+
+	// Points de grille (cercles) : changer le flag `grid` modifie l'URL des tuiles
+	// vecteur → `changeOMfileURL()` recharge la source.
+	function toggleGridDots(next: boolean) {
+		vectorOptions.update((o) => ({ ...o, grid: next }));
+		updateUrl('grid', String(next));
+		changeOMfileURL();
+	}
+
+	// Valeurs aux nœuds : activer force `&grid=true` dans l'URL. Si les points étaient
+	// off, l'URL change → `changeOMfileURL()` refait la source ; s'ils étaient déjà on,
+	// l'URL est inchangée → `reloadVectorStyle()` reconstruit la couche vecteur en place
+	// pour ajouter/retirer le symbol layer. Appeler les deux couvre tous les cas.
+	function toggleGridValues(next: boolean) {
+		gridValues.set(next);
+		updateUrl('grid_values', String(next));
+		changeOMfileURL();
+		reloadVectorStyle();
+	}
 
 	// --- IControl behaviors ported to plain handlers ---
 	function toggleDepartments(next: boolean) {
@@ -109,6 +131,8 @@
 		<ContourSettings />
 		<div class="my-1 h-px bg-white/10"></div>
 		<SecondaryLayerPanel />
+		<LayerToggle label="Points de grille" checked={gridDotsOn} onCheckedChange={toggleGridDots} />
+		<LayerToggle label="Valeurs" checked={gridValuesOn} onCheckedChange={toggleGridValues} />
 		<LayerToggle label="Départements" checked={departmentsOn} onCheckedChange={toggleDepartments} />
 		<LayerToggle label="Villes &amp; pays" checked={labelsOn} onCheckedChange={toggleLabels} />
 		<LayerToggle label="Relief ombré" checked={hillshadeOn} onCheckedChange={toggleHillshade} />
@@ -119,7 +143,6 @@
 	<section class="flex flex-col gap-1">
 		<h3 class="text-xs font-semibold tracking-wide text-white/60 uppercase">Réglages</h3>
 		<UnitSettings />
-		<GridSettings />
 		<PopupSettings />
 		<TileSizeSettings />
 		<SoundingSettings />
