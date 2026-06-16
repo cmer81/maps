@@ -236,25 +236,23 @@ describe('buildGridValueLabelExpr', () => {
 		expect(expr).toEqual(['to-string', ['round', ['to-number', ['get', 'value']]]]);
 	});
 
-	it('°C → °F → number-format affine, 0 décimale', () => {
+	it('°C → °F → round affine (entier, pas number-format)', () => {
 		const expr = buildGridValueLabelExpr('temperature_2m', '°C', {
 			...units,
 			temperature: '°F'
 		});
 		expect(expr).toEqual([
-			'number-format',
-			['+', ['*', ['to-number', ['get', 'value']], 1.8], 32],
-			{ 'max-fraction-digits': 0 }
+			'to-string',
+			['round', ['+', ['*', ['to-number', ['get', 'value']], 1.8], 32]]
 		]);
 	});
 
-	it('vent m/s → km/h → number-format ×3,6, 0 décimale', () => {
+	it('vent m/s → km/h → round(×3,6) entier (et non number-format max-fraction-digits:0)', () => {
+		// Régression : MapLibre traite max-fraction-digits:0 comme « non défini »
+		// (0 falsy) → 3 décimales (« 22,428 km/h »). On arrondit donc via ['round'].
 		const expr = buildGridValueLabelExpr('wind_speed_10m', 'm/s', { ...units, windSpeed: 'km/h' });
-		expect(expr).toEqual([
-			'number-format',
-			['*', ['to-number', ['get', 'value']], 3.6],
-			{ 'max-fraction-digits': 0 }
-		]);
+		expect(expr).toEqual(['to-string', ['round', ['*', ['to-number', ['get', 'value']], 3.6]]]);
+		expect(JSON.stringify(expr)).not.toContain('number-format');
 	});
 });
 

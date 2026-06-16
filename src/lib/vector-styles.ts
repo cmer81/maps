@@ -191,9 +191,13 @@ export function buildContourLabelExpr(
 
 /**
  * Champ texte des étiquettes de valeur — **entier**, dans l'unité d'affichage.
- * Même conversion affine que `buildContourLabelExpr`, mais arrondi à l'entier
- * (`max-fraction-digits: 0`). Sans conversion (unité d'affichage = unité de
- * base), on arrondit la valeur brute via `['round', …]`.
+ * Même conversion affine que `buildContourLabelExpr`, mais arrondi à l'entier.
+ *
+ * On arrondit **explicitement** via `['round', …]` (et non `number-format` avec
+ * `max-fraction-digits: 0`) : dans MapLibre, `max-fraction-digits: 0` est traité
+ * comme « non défini » (le `0` est falsy) et retombe sur 3 décimales par défaut —
+ * d'où des étiquettes type « 22,428 km/h » sur les variables converties (vent…).
+ * `['round', …]` renvoie un entier, `['to-string', …]` le rend sans séparateur.
  */
 export function buildGridValueLabelExpr(
 	variable: string,
@@ -208,7 +212,7 @@ export function buildGridValueLabelExpr(
 	if (factor === 1 && offset === 0) return ['to-string', ['round', VALUE]];
 	const scaled: maplibregl.ExpressionSpecification =
 		offset === 0 ? ['*', VALUE, factor] : ['+', ['*', VALUE, factor], offset];
-	return ['number-format', scaled, { 'max-fraction-digits': 0 }];
+	return ['to-string', ['round', scaled]];
 }
 
 /** Espacement écran cible (px) entre étiquettes de valeur. Le stride 2D vise cet
