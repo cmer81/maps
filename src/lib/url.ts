@@ -19,7 +19,12 @@ import {
 } from '$lib/stores/preferences';
 import { metaJson as mJ, modelRun as mR, modelRunLocked as mRL, time } from '$lib/stores/time';
 import { domain as d, layer2Enabled, variable as v, variable2 } from '$lib/stores/variables';
-import { vectorOptions as vO, windOverlayEnabled, windOverlayLevel } from '$lib/stores/vector';
+import {
+	gridValues,
+	vectorOptions as vO,
+	windOverlayEnabled,
+	windOverlayLevel
+} from '$lib/stores/vector';
 
 import { ANOMALY_DOMAIN, ANOMALY_VARIABLE, DEFAULT_PREFERENCES } from '$lib/constants';
 
@@ -176,6 +181,13 @@ export const urlParamsToPreferences = () => {
 		url.searchParams.set('wind_overlay_level', get(windOverlayLevel));
 	}
 
+	const gridValuesRaw = params.get('grid_values');
+	if (gridValuesRaw !== null) {
+		gridValues.set(gridValuesRaw === 'true');
+	} else if (get(gridValues)) {
+		url.searchParams.set('grid_values', 'true');
+	}
+
 	const departmentsRaw = params.get('departments');
 	if (departmentsRaw !== null) {
 		showDepartments.set(departmentsRaw === 'true');
@@ -294,7 +306,7 @@ export const getOMUrlFor = (
 
 	if (mode.current === 'dark') result += '&dark=true';
 	const vectorOptions = get(vO);
-	const grid = vectorOverride?.grid ?? vectorOptions.grid;
+	const grid = vectorOverride?.grid ?? (vectorOptions.grid || get(gridValues));
 	const arrows = vectorOverride?.arrows ?? vectorOptions.arrows;
 	const contours = vectorOverride?.contours ?? vectorOptions.contours;
 	if (grid) result += '&grid=true';
