@@ -381,3 +381,30 @@ describe('buildGridDecimationFilter — compatibilité moteur MapLibre (featureF
 		expect(compiled.filter({ zoom: 12 }, feat(1121))).toBe(true);
 	});
 });
+
+/**
+ * Continuité de densité : la décimation doit s'adapter à des fractions de zoom,
+ * pas seulement aux zooms entiers. Avec des paliers entiers, le stride reste figé
+ * sur tout `[z, z+1)` → en zoomant dans le palier les étiquettes s'écartent (~×2
+ * d'espacement écran) puis se redensifient d'un coup au palier suivant (effet
+ * « pop »). Des paliers fins resserrent le stride dès le sous-palier → densité
+ * quasi constante en zoom continu.
+ */
+describe('buildGridDecimationFilter — continuité de densité (paliers fins)', () => {
+	const geom = { nx: 1121, ny: 717, dxDeg: 0.025, dyDeg: 0.025, refLat: 46, gaussian: false };
+	const compiled = featureFilter(buildGridDecimationFilter(geom) as FilterSpecification);
+	const countKept = (zoom: number): number => {
+		let n = 0;
+		for (let id = 0; id < 1121 * 16; id++) {
+			if (compiled.filter({ zoom }, { id, type: 1, properties: {} } as Feature)) n++;
+		}
+		return n;
+	};
+
+	it('la densité se resserre DANS le palier de zoom entier (zoom 8,75 > zoom 8)', () => {
+		// Paliers entiers : zoom 8 et 8,75 utiliseraient le même stride → même compte
+		// (densité figée qui s'éclaircit en zoomant). Paliers fins : 8,75 garde
+		// strictement plus de points.
+		expect(countKept(8.75)).toBeGreaterThan(countKept(8));
+	});
+});

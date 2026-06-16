@@ -266,9 +266,18 @@ export function buildGridDecimationFilter(
 		const j: maplibregl.ExpressionSpecification = ['floor', ['/', ['id'], geom.nx]];
 		return ['all', ['==', ['%', i, sx], 0], ['==', ['%', j, sy], 0]];
 	};
+	// Paliers fins (¼ de zoom) : le stride est figé sur chaque palier, donc en
+	// zoomant dans un palier l'espacement écran croît (étiquettes qui s'éclaircissent)
+	// avant de se resserrer au palier suivant. Avec des paliers entiers la densité
+	// varie d'un facteur 2 dans un palier (effet « pop » visible) ; à ¼ de zoom la
+	// variation tombe à 2^0,25 ≈ 1,19 — imperceptible. (Itération par compteur entier
+	// pour éviter la dérive flottante et garantir un dernier stop = zMax exact.)
 	const [zMin, zMax] = zoomRange;
+	const ZOOM_STEP = 0.25;
+	const steps = Math.round((zMax - zMin) / ZOOM_STEP);
 	const stops: unknown[] = ['step', ['zoom'], branch(zMin)];
-	for (let z = zMin + 1; z <= zMax; z++) {
+	for (let k = 1; k <= steps; k++) {
+		const z = zMin + k * ZOOM_STEP;
 		stops.push(z, branch(z));
 	}
 	return stops as unknown as maplibregl.FilterSpecification;
