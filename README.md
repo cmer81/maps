@@ -20,6 +20,25 @@ Client SvelteKit qui rend des OMfiles via MapLibre GL — l'intégralité du ren
 - **Diaporama / playback** — animation pré-rendue avec FPS configurable (4–15 fps), capture côté canvas via `preserveDrawingBuffer`.
 - **UI 100 % française.**
 
+### Dépendances forkées
+
+Deux paquets `@openmeteo/*` sont consommés depuis des forks maison (voir `package.json`), en attendant l'upstream :
+
+- **`@openmeteo/file-reader` → `npm:@cm3r/file-reader`** — cache de l'en-tête (HEAD) par URL pour accélérer le scrubbing (le reader officiel refait HEAD + trailer à chaque fichier). PR proposée upstream : [typescript-omfiles#93](https://github.com/open-meteo/typescript-omfiles/pull/93).
+- **`@openmeteo/weather-map-layer` → `npm:@cm3r/weather-map-layer@0.1.0`** (fork publié npm, source : [`cmer81/weather-map-layer`](https://github.com/cmer81/weather-map-layer) branche `feat/grid-global-id`, base upstream `e65e070`) — les points de la source-layer `grid` portent désormais un **`id` global stable** (`globalIndex = rangée_globale·nx + colonne_globale`) au lieu de l'index local de la sous-grille rognée aux tuiles. Sans ça, un même nœud changeait d'`id` selon les tuiles chargées (`nxClip` variable) → l'index de symboles inter-tuiles de MapLibre ne pouvait plus l'apparier (étiquettes qui se replacent au pan) et tout décodage `(i, j)` côté client produisait des bandes horizontales sur les domaines monde. Le fork **découple** l'`id` (global, pour MapLibre) de l'index local (qui sert encore à lire la valeur). Patch minimal : `src/grids/{regular,projected}.ts` + `src/utils/grid-points.ts`. C'est ce qui permet la couche « valeurs aux points de grille » figée (voir `## Architecture`). Version **épinglée** (comme `@cm3r/file-reader`).
+
+  La ligne `@cm3r` est versionnée **indépendamment** de l'upstream (le fork est figé sur la base `e65e070`, stable et compatible avec ce code). Monter vers un upstream plus récent est un **chantier dédié** (l'API publique a rétréci entre-temps : `readSimpleVariable` devenu privé, types color-scales déplacés…) à faire et tester séparément. Pour repasser à l'upstream officiel : restaurer `github:open-meteo/weather-map-layer#<sha>` une fois le `globalIndex` mergé en amont.
+
+#### Faire évoluer un fork (modification non triviale de la lib)
+
+Quand un correctif/feature ne peut pas se faire côté `maps` et exige de toucher la lib, on **modifie le fork** puis on **monte la version npm** — ne jamais consommer une lib forkée autrement que par une version npm publiée et épinglée (sinon CI et autres devs ne sont pas reproductibles).
+
+1. Dans le repo du fork (`cmer81/weather-map-layer`, branche `main`) : coder la modif (patch **petit et isolé** pour garder un futur rebase upstream gérable), `npm run build && npx vitest run`.
+2. `npm version patch` (→ tag git) puis `npm publish` (public, OTP si 2FA) et `git push origin main --tags`.
+3. Dans `maps` : `npm install -D @openmeteo/weather-map-layer@npm:@cm3r/weather-map-layer@<nouvelle-version>`, puis `npm run check && npm run test && npm run build`, commit.
+
+Pour itérer **avant** de publier, on peut pointer temporairement `maps` sur `file:../wml-fork` ou `github:cmer81/weather-map-layer#<sha>` ; on ne publie sur npm + bump le pin qu'une fois stable. Même principe pour `@cm3r/file-reader`.
+
 ## Démarrage
 
 ```bash

@@ -127,7 +127,8 @@ export const COMPLETE_DEFAULT_VALUES: { [key: string]: boolean | string | number
 	wind_overlay: 'false',
 	wind_overlay_level: '10m',
 	labels: 'false',
-	departments: 'true'
+	departments: 'true',
+	grid_values: 'false'
 };
 
 // Contours départements FR — GeoJSON dérivé d'OpenStreetMap (admin_level=6,

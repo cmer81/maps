@@ -140,10 +140,13 @@ export const reloadStyles = () => {
 				if (preferences.hillshade) {
 					addHillshadeLayer();
 				}
-				addOmFileLayers();
-				// La couche départements est retirée par setStyle ; on la recrée (avec la
-				// couleur du nouveau thème de fond de carte) si l'overlay est actif.
+				// Départements AVANT les couches OMfile : même ancre (BEFORE_LAYER_VECTOR)
+				// → le dernier inséré coiffe l'autre. Les ajouter d'abord garde les couches
+				// météo vecteur (contours, flèches, points, valeurs) au-dessus de la ligne
+				// admin. (setStyle a retiré la couche départements ; refreshDepartments la
+				// recrée avec la couleur du nouveau thème de fond si l'overlay est actif.)
 				refreshDepartments();
+				addOmFileLayers();
 				// setStyle a recréé les labels du basemap en `visible` ; on ré-applique
 				// le choix de l'utilisateur (toggle « Villes & pays »).
 				applyLabelsVisibility();

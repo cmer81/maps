@@ -16,3 +16,7 @@ export const vectorOptions = persisted('vector-options', defaultVectorOptions);
 
 export const windOverlayEnabled = persisted('windOverlayEnabled', false);
 export const windOverlayLevel = persisted('windOverlayLevel', '10m');
+
+/** Calque « valeurs aux points de grille » (façon Météociel). Indépendant du
+ *  toggle `vectorOptions.grid` (points orange) : les deux sont orthogonaux. */
+export const gridValues = persisted('gridValues', false);

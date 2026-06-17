@@ -187,6 +187,112 @@ export function buildContourLabelExpr(
 	return ['number-format', scaled, { 'max-fraction-digits': 1 }];
 }
 
+// ── Calque « valeurs aux points de grille » (façon Météociel) ───────────────
+
+/**
+ * Champ texte des étiquettes de valeur — **entier**, dans l'unité d'affichage.
+ * Même conversion affine que `buildContourLabelExpr`, mais arrondi à l'entier.
+ *
+ * On arrondit **explicitement** via `['round', …]` (et non `number-format` avec
+ * `max-fraction-digits: 0`) : dans MapLibre, `max-fraction-digits: 0` est traité
+ * comme « non défini » (le `0` est falsy) et retombe sur 3 décimales par défaut —
+ * d'où des étiquettes type « 22,428 km/h » sur les variables converties (vent…).
+ * `['round', …]` renvoie un entier, `['to-string', …]` le rend sans séparateur.
+ */
+export function buildGridValueLabelExpr(
+	variable: string,
+	baseUnit: string,
+	units: UnitPreferences
+): maplibregl.ExpressionSpecification {
+	const round = (n: number): number => Math.round(n * 1e6) / 1e6;
+	const offset = round(convertValue(0, baseUnit, units, variable));
+	const factor = round(
+		convertValue(1, baseUnit, units, variable) - convertValue(0, baseUnit, units, variable)
+	);
+	if (factor === 1 && offset === 0) return ['to-string', ['round', VALUE]];
+	const scaled: maplibregl.ExpressionSpecification =
+		offset === 0 ? ['*', VALUE, factor] : ['+', ['*', VALUE, factor], offset];
+	return ['to-string', ['round', scaled]];
+}
+
+/** Espacement écran cible (px) entre étiquettes de valeur. Le stride 2D vise cet
+ *  écart dans chaque axe → grille régulière à densité ~constante à l'écran.
+ *  Plus petit = plus d'étiquettes. Plancher pratique ~40 px : en dessous, comme
+ *  `text-allow-overlap: true`, les libellés à 2-3 chiffres commencent à se toucher. */
+export const GRID_VALUE_TARGET_PX = 48;
+
+/** Pixels par degré de longitude en web-mercator (tuiles 512 px) au zoom donné.
+ *  `x` mercator est linéaire en longitude → indépendant de la latitude. */
+export const pxPerDegLon = (zoom: number): number => (512 * Math.pow(2, zoom)) / 360;
+
+/** Stride d'échantillonnage (entier ≥ 1) pour viser `targetPx` à l'écran.
+ *  `stepDeg` = pas de la grille sur l'axe considéré ; `pxPerDeg` = densité écran. */
+export const computeStride = (stepDeg: number, pxPerDeg: number, targetPx: number): number => {
+	const screenStep = pxPerDeg * stepDeg;
+	if (!(screenStep > 0)) return 1;
+	return Math.max(1, Math.round(targetPx / screenStep));
+};
+
+/** Géométrie de grille nécessaire à la décimation 2D, dérivée du domaine. */
+export interface GridGeometry {
+	/** Largeur **globale** de la grille (`grid.nx`), pour décoder `id → (i, j)`. */
+	nx: number;
+	ny: number;
+	/** Pas longitude (degrés), bornes / (nx − 1). */
+	dxDeg: number;
+	/** Pas latitude (degrés), bornes / (ny − 1). */
+	dyDeg: number;
+	/** Latitude de référence (centre) pour la correction mercator du stride Y. */
+	refLat: number;
+	/** Grille gaussienne → pas d'`id = j·nx+i` exploitable → repli décimation 1D. */
+	gaussian: boolean;
+}
+
+/**
+ * Filtre de **décimation 2D** sur l'`id` GLOBAL du point de grille
+ * (`id = j·nx + i`, émis de façon stable par le fork du package — cf.
+ * `GridPoint.globalIndex`). Garde un **sous-réseau régulier fixe**
+ * `i % strideX == 0 && j % strideY == 0`, indépendant du viewport → grille figée.
+ * Combiné à `text-allow-overlap: true` (aucune collision), les étiquettes sont
+ * épinglées aux nœuds : un pan ne fait que les translater, zéro recalcul.
+ *
+ * Structuré en `['step', ['zoom'], …]` (seule forme acceptant `['zoom']` en filtre
+ * MapLibre), à **paliers entiers** : le stride ne change qu'aux zooms entiers, qui
+ * coïncident avec les rechargements de tuiles → pas de recalcul en cours de zoom.
+ * Les grilles gaussiennes (largeur de ligne variable, pas d'`id = j·nx+i`) →
+ * repli décimation 1D `id % strideX`.
+ *
+ * **Prérequis** : `id` global stable. Sans le fork (id ré-indexé par sous-grille
+ * rognée, `nxClip` variable), `floor(id/nx)` produirait des bandes horizontales.
+ */
+export function buildGridDecimationFilter(
+	geom: GridGeometry,
+	zoomRange: [number, number] = [2, 12],
+	targetPx: number = GRID_VALUE_TARGET_PX
+): maplibregl.FilterSpecification {
+	const branch = (zoom: number): maplibregl.ExpressionSpecification => {
+		const pxLon = pxPerDegLon(zoom);
+		const sx = computeStride(geom.dxDeg, pxLon, targetPx);
+		if (geom.gaussian) {
+			return ['==', ['%', ['id'], sx], 0];
+		}
+		const pxLat = pxLon / Math.cos((geom.refLat * Math.PI) / 180);
+		const sy = computeStride(geom.dyDeg, pxLat, targetPx);
+		const i: maplibregl.ExpressionSpecification = ['%', ['id'], geom.nx];
+		const j: maplibregl.ExpressionSpecification = ['floor', ['/', ['id'], geom.nx]];
+		return ['all', ['==', ['%', i, sx], 0], ['==', ['%', j, sy], 0]];
+	};
+	const [zMin, zMax] = zoomRange;
+	const ZOOM_STEP = 1;
+	const steps = Math.round((zMax - zMin) / ZOOM_STEP);
+	const stops: unknown[] = ['step', ['zoom'], branch(zMin)];
+	for (let k = 1; k <= steps; k++) {
+		const z = zMin + k * ZOOM_STEP;
+		stops.push(z, branch(z));
+	}
+	return stops as unknown as maplibregl.FilterSpecification;
+}
+
 /** Couleur des flèches : plus grand seuil testé en premier, base en dernier. */
 export function buildArrowColorExpr(style: ArrowStyle, dark: boolean): ColorOrExpr {
 	const base = style.levels.find((l) => l.minSpeed === 0);

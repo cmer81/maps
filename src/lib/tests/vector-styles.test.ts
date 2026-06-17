@@ -1,3 +1,8 @@
+import {
+	type Feature,
+	type FilterSpecification,
+	featureFilter
+} from '@maplibre/maplibre-gl-style-spec';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -6,12 +11,16 @@ import {
 	buildContourColorExpr,
 	buildContourLabelExpr,
 	buildContourWidthExpr,
+	buildGridDecimationFilter,
+	buildGridValueLabelExpr,
+	computeStride,
 	defaultArrowStyle,
 	defaultContourStyle,
 	deriveDisplayedWindLevel,
 	hexToRgbaString,
 	isWindVariable,
 	parseRgbaOpacity,
+	pxPerDegLon,
 	rgbaStringToHex
 } from '$lib/vector-styles';
 
@@ -212,3 +221,112 @@ describe('deriveDisplayedWindLevel', () => {
 		expect(deriveDisplayedWindLevel('temperature_2m', ['cape', 'precipitation'])).toBe(null);
 	});
 });
+
+describe('buildGridValueLabelExpr', () => {
+	const units = {
+		temperature: '°C',
+		precipitation: 'mm',
+		windSpeed: 'km/h',
+		distance: 'm',
+		geopotential: 'gpm'
+	} as const;
+
+	it('°C → °C (identité) → to-string(round(value))', () => {
+		const expr = buildGridValueLabelExpr('temperature_2m', '°C', units);
+		expect(expr).toEqual(['to-string', ['round', ['to-number', ['get', 'value']]]]);
+	});
+
+	it('°C → °F → round affine (entier, pas number-format)', () => {
+		const expr = buildGridValueLabelExpr('temperature_2m', '°C', {
+			...units,
+			temperature: '°F'
+		});
+		expect(expr).toEqual([
+			'to-string',
+			['round', ['+', ['*', ['to-number', ['get', 'value']], 1.8], 32]]
+		]);
+	});
+
+	it('vent m/s → km/h → round(×3,6) entier (et non number-format max-fraction-digits:0)', () => {
+		// Régression : MapLibre traite max-fraction-digits:0 comme « non défini »
+		// (0 falsy) → 3 décimales (« 22,428 km/h »). On arrondit donc via ['round'].
+		const expr = buildGridValueLabelExpr('wind_speed_10m', 'm/s', { ...units, windSpeed: 'km/h' });
+		expect(expr).toEqual(['to-string', ['round', ['*', ['to-number', ['get', 'value']], 3.6]]]);
+		expect(JSON.stringify(expr)).not.toContain('number-format');
+	});
+});
+
+describe('computeStride', () => {
+	it('grille fine (0,025°) très dézoomée → stride élevé', () => {
+		expect(computeStride(0.025, pxPerDegLon(2), 48)).toBeGreaterThan(100);
+	});
+	it('grille fine (0,025°) fortement zoomée → stride 1', () => {
+		expect(computeStride(0.025, pxPerDegLon(12), 48)).toBe(1);
+	});
+	it('grille 0,25° au zoom 5 → 4', () => {
+		expect(computeStride(0.25, pxPerDegLon(5), 48)).toBe(4);
+	});
+	it('jamais inférieur à 1 (pas grossier)', () => {
+		expect(computeStride(10, pxPerDegLon(12), 48)).toBe(1);
+	});
+});
+
+describe('buildGridDecimationFilter (2D, id global stable)', () => {
+	const geom = { nx: 1440, ny: 721, dxDeg: 0.25, dyDeg: 0.25, refLat: 46, gaussian: false };
+	const filter = buildGridDecimationFilter(geom, [2, 12], 48);
+
+	it('a la forme step(zoom)', () => {
+		expect((filter as unknown[])[0]).toBe('step');
+		expect((filter as unknown[])[1]).toEqual(['zoom']);
+	});
+
+	it("chaque branche décode (i, j) = (id%nx, floor(id/nx)) et décime les deux axes", () => {
+		// step = ['step', ['zoom'], branch0, z1, branch1, …] → branches aux indices pairs ≥ 2.
+		const stops = filter as unknown[];
+		for (let i = 2; i < stops.length; i += 2) {
+			const branch = stops[i] as unknown[];
+			// ['all', ['==', ['%', ['%',['id'],nx], sx], 0], ['==', ['%', ['floor',['/',['id'],nx]], sy], 0]]
+			expect(branch[0]).toBe('all');
+			const s = JSON.stringify(branch);
+			expect(s).toContain('floor'); // décodage de la rangée j
+			expect(s).toContain('1440'); // nx global
+		}
+	});
+
+	it('grille gaussienne → repli décimation 1D (pas de floor)', () => {
+		const g = buildGridDecimationFilter(
+			{ nx: 6599680, ny: 1, dxDeg: 0.0001, dyDeg: 180, refLat: 0, gaussian: true },
+			[2, 12],
+			48
+		);
+		expect(JSON.stringify(g)).not.toContain('floor');
+	});
+});
+
+/**
+ * Garde-fou runtime : on compile le filtre 2D avec le VRAI moteur d'expressions de
+ * MapLibre (`featureFilter`, celui du rendu) — verrouille que MapLibre accepte
+ * `['step', ['zoom'], …]` + `['id']` + `['floor']`/`['%']` en filtre et l'évalue
+ * comme prévu (sous-réseau régulier `i%sx==0 && j%sy==0`).
+ */
+describe('buildGridDecimationFilter — compatibilité moteur MapLibre (featureFilter)', () => {
+	const geom = { nx: 1440, ny: 721, dxDeg: 0.25, dyDeg: 0.25, refLat: 46, gaussian: false };
+	const compiled = featureFilter(buildGridDecimationFilter(geom, [2, 12], 48) as FilterSpecification);
+	const feat = (id: number): Feature => ({ id, type: 1, properties: {} });
+
+	it('MapLibre accepte le filtre (compile sans géométrie requise)', () => {
+		expect(compiled.needGeometry).toBe(false);
+	});
+
+	it('au zoom 2 : garde id=0 (i=0,j=0), rejette i=1 (id=1) et j=1 (id=1440)', () => {
+		expect(compiled.filter({ zoom: 2 }, feat(0))).toBe(true);
+		expect(compiled.filter({ zoom: 2 }, feat(1))).toBe(false);
+		expect(compiled.filter({ zoom: 2 }, feat(1440))).toBe(false);
+	});
+
+	it('densifie au zoom (zoom 12 : stride 1, tous gardés)', () => {
+		expect(compiled.filter({ zoom: 12 }, feat(1))).toBe(true);
+		expect(compiled.filter({ zoom: 12 }, feat(1440))).toBe(true);
+	});
+});
+

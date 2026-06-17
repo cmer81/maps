@@ -159,11 +159,16 @@
 			stopNeighborPrefetch = initNeighborPrefetch();
 			clippingPanel?.initTerraDraw();
 
+			// Départements AVANT les couches OMfile : les deux s'ancrent à
+			// BEFORE_LAYER_VECTOR, donc le DERNIER inséré passe au-dessus. En ajoutant
+			// les départements en premier, les couches météo vecteur (contours, flèches,
+			// points, valeurs) restent au-dessus de la ligne admin → valeurs lisibles.
+			refreshDepartments();
+
 			addOmFileLayers();
 			addPopup();
 			changeOMfileURL();
 
-			refreshDepartments();
 			applyLabelsVisibility();
 		});
 	});

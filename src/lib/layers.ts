@@ -1,6 +1,6 @@
 import { get } from 'svelte/store';
 
-import { getColorScale } from '@openmeteo/weather-map-layer';
+import { GridFactory, getColorScale } from '@openmeteo/weather-map-layer';
 import * as maplibregl from 'maplibre-gl';
 import { toast } from 'svelte-sonner';
 
@@ -14,9 +14,10 @@ import {
 	domain as d,
 	variable as displayedVariable,
 	layer2Enabled,
+	selectedDomain,
 	variable2
 } from '$lib/stores/variables';
-import { vectorOptions as vO } from '$lib/stores/vector';
+import { gridValues, vectorOptions as vO } from '$lib/stores/vector';
 import { arrowStyle, contourStyle } from '$lib/stores/vector-styles';
 
 import {
@@ -32,11 +33,14 @@ import { type SlotLayer, SlotManager } from '$lib/slot-manager';
 import {
 	type ArrowStyle,
 	type ContourStyle,
+	type GridGeometry,
 	buildArrowColorExpr,
 	buildArrowWidthExpr,
 	buildContourColorExpr,
 	buildContourLabelExpr,
-	buildContourWidthExpr
+	buildContourWidthExpr,
+	buildGridDecimationFilter,
+	buildGridValueLabelExpr
 } from '$lib/vector-styles';
 
 import { refreshPopup } from './popup';
@@ -258,6 +262,76 @@ const vectorContourLabelsLayer = (): SlotLayer => ({
 	}
 });
 
+/** Géométrie de grille du domaine, dérivée des bornes (agnostique du type :
+ *  régulière, projetée ou gaussienne). `nx`/`ny` sont les dimensions **globales**
+ *  du domaine (pour décoder l'`id` global stable en `(i, j)`) ; le pas en degrés
+ *  vient des bornes / (n − 1), valable même pour une grille projetée. */
+const gridGeometryOf = (grid: Parameters<typeof GridFactory.create>[0]): GridGeometry => {
+	const [minLon, minLat, maxLon, maxLat] = GridFactory.create(grid).getBounds();
+	const nx = grid.nx;
+	const ny = grid.ny;
+	return {
+		nx,
+		ny,
+		dxDeg: Math.abs(maxLon - minLon) / Math.max(1, nx - 1),
+		dyDeg: Math.abs(maxLat - minLat) / Math.max(1, ny - 1),
+		refLat: (minLat + maxLat) / 2,
+		gaussian: grid.type === 'gaussian'
+	};
+};
+
+const vectorGridValuesLayer = (): SlotLayer => ({
+	id: 'omVectorGridValuesLayer',
+	opacityProp: 'text-opacity',
+	commitOpacity: 1,
+	add: (map, sourceId, layerId, beforeLayer) => {
+		if (!get(gridValues)) return;
+		// Décimation **2D** sur l'`id` GLOBAL stable (émis par le fork du package) :
+		// `i % sx == 0 && j % sy == 0` → sous-réseau régulier fixe, indépendant du
+		// viewport. Avec `text-allow-overlap: true` (aucune collision), les étiquettes
+		// sont épinglées aux nœuds : un pan ne fait que les translater → zéro churn,
+		// zéro recalcul. (Sans le fork, l'`id` était ré-indexé par sous-grille rognée
+		// → `floor(id/nx)` donnait des bandes horizontales + churn au pan.)
+		map.addLayer(
+			{
+				id: layerId,
+				type: 'symbol',
+				source: sourceId,
+				'source-layer': 'grid',
+				// Masqué seulement sous z3 (la décimation 2D borne déjà le nombre de
+				// nœuds, donc pas de souci de perf à bas zoom). Plus bas, les valeurs
+				// seraient illisibles.
+				minzoom: 3,
+				filter: buildGridDecimationFilter(gridGeometryOf(get(selectedDomain).grid)),
+				layout: {
+					'symbol-placement': 'point',
+					'text-field': buildGridValueLabelExpr(
+						get(displayedVariable),
+						getColorScale(get(displayedVariable), isDark(), get(omProtocolSettings).colorScales)
+							.unit,
+						get(unitPreferences)
+					),
+					'text-font': ['Noto Sans Regular'],
+					'text-size': 11,
+					// Grille déjà régulière et espacée par la décimation → on désactive la
+					// collision : placement déterministe, figé, aucun recalcul au pan/zoom.
+					'text-allow-overlap': true,
+					'text-ignore-placement': true,
+					'text-padding': 2
+				},
+				paint: {
+					'text-opacity': 0,
+					'text-opacity-transition': { duration: 200, delay: 0 },
+					'text-color': lightOrDark('rgba(0,0,0, 0.85)', 'rgba(255,255,255, 0.9)'),
+					'text-halo-color': lightOrDark('rgba(255,255,255, 0.85)', 'rgba(0,0,0, 0.7)'),
+					'text-halo-width': 1.5
+				}
+			},
+			beforeLayer
+		);
+	}
+});
+
 // =============================================================================
 // Coordinateur de commit : fade-in synchronisé des couches actives
 // =============================================================================
@@ -385,7 +459,8 @@ export const createManagers = (): void => {
 			vectorArrowLayer(false),
 			vectorGridLayer(),
 			vectorContourLayer(),
-			vectorContourLabelsLayer()
+			vectorContourLabelsLayer(),
+			vectorGridValuesLayer()
 		],
 		sourceSpec: (sourceUrl) => ({ url: sourceUrl, type: 'vector' }),
 		removeDelayMs: 250,
