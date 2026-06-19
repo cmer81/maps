@@ -1,5 +1,7 @@
 import { get } from 'svelte/store';
 
+import type { IControl, Map as MaplibreMap } from 'maplibre-gl';
+
 import { map as mapStore } from '$lib/stores/map';
 import { defaultPreferences, preferences } from '$lib/stores/preferences';
 
@@ -38,4 +40,42 @@ export function applyView3D(on: boolean): void {
 	}
 	preferences.update((p) => ({ ...p, terrain: on }));
 	updateUrl('terrain', String(on), String(defaultPreferences.terrain));
+}
+
+/**
+ * Bouton IControl « 3D » : un clic bascule le préset (applyView3D). La classe
+ * active reflète `preferences.terrain` — y compris quand l'état change via le
+ * TerrainControl natif (abonnement au store).
+ */
+export class View3DControl implements IControl {
+	private container: HTMLElement | undefined;
+	private unsubscribe: (() => void) | undefined;
+
+	onAdd(_map: MaplibreMap): HTMLElement {
+		const container = document.createElement('div');
+		container.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+
+		const button = document.createElement('button');
+		button.type = 'button';
+		button.title = 'Vue 3D (relief incliné)';
+		button.setAttribute('aria-label', 'Vue 3D (relief incliné)');
+		button.className = 'maplibregl-ctrl-view3d';
+		button.innerHTML = '<span aria-hidden="true">3D</span>';
+		button.addEventListener('click', () => applyView3D(!get(preferences).terrain));
+		container.appendChild(button);
+
+		this.unsubscribe = preferences.subscribe((p) =>
+			button.classList.toggle('maplibregl-ctrl-view3d--active', p.terrain)
+		);
+
+		this.container = container;
+		return container;
+	}
+
+	onRemove(): void {
+		this.unsubscribe?.();
+		this.container?.parentNode?.removeChild(this.container);
+		this.container = undefined;
+		this.unsubscribe = undefined;
+	}
 }

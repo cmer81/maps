@@ -14,6 +14,7 @@ import { refreshDepartments } from './departments-layer';
 import { applyLabelsVisibility } from './labels-layer';
 import { addOmFileLayers } from './layers';
 import { updateUrl } from './url';
+import { View3DControl } from './view-3d';
 
 export const setMapControlSettings = () => {
 	const map = get(m);
@@ -54,6 +55,8 @@ export const setMapControlSettings = () => {
 	const globeControl = new maplibregl.GlobeControl();
 	map.addControl(globeControl);
 	globeControl._globeButton.addEventListener('click', () => globeHandler());
+
+	map.addControl(new View3DControl());
 
 	map.scrollZoom.setZoomRate(1 / 85);
 	map.scrollZoom.setWheelZoomRate(1 / 85);

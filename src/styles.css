@@ -503,3 +503,13 @@
 		scroll-behavior: auto !important;
 	}
 }
+
+/* Bouton « 3D » (IControl custom) — texte centré dans le carré 29px MapLibre. */
+.maplibregl-ctrl-view3d {
+	font-weight: 700;
+	font-size: 12px;
+	line-height: 1;
+}
+.maplibregl-ctrl-view3d--active {
+	color: #1d4ed8;
+}
