@@ -16,17 +16,17 @@ qualité dépendante de la machine ne l'est pas.
 
 ## Décisions (arbitrages validés)
 
-| Sujet | Décision | Raison |
-|---|---|---|
-| Méthode de capture | **Frame-par-frame déterministe** (pas MediaRecorder temps réel) | Qualité identique sur toutes machines, zéro frame sautée ; le coût (temps de préparation) est rendu visible via un overlay |
-| Plage exportée | **Plage de lecture courante** (`prefetchMode`) | Cohérent avec le playback ; pas de nouvelle UI de bornes |
-| Format de sortie | **MP4 H.264 (avc)** | Universel, accepté par X/Twitter, Instagram, WhatsApp |
-| Encodage | **mediabunny** (au-dessus de WebCodecs) | `mp4-muxer` est déprécié ; mediabunny fait encodage + muxing, zéro dépendance, pas de ffmpeg.wasm 25 Mo |
-| Cadrage | **Réutiliser 4:3 / 3:4 existant** (`computeCaptureRect`, watermark) | Code déjà testé, cohérence visuelle avec la photo |
-| Cadence | **Fixe ~10 fps** | Vidéo punchy (~2,5 s pour 24h), découplée du playback écran (1200 ms/frame) |
-| UI | **Bouton dédié + overlay de progression bloquant** | Isolé du flow photo ; interaction bloquée car la carte sert au rendu |
-| Garde-fou plage longue | **Avertir, laisser passer** | Liberté maximale ; l'utilisateur confirme si la vidéo est longue |
-| Fallback codec | **Aucun (pas de WebM)** | WebM refusé par X/IG ; si H.264 indisponible → bouton désactivé + explication |
+| Sujet                  | Décision                                                            | Raison                                                                                                                     |
+| ---------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Méthode de capture     | **Frame-par-frame déterministe** (pas MediaRecorder temps réel)     | Qualité identique sur toutes machines, zéro frame sautée ; le coût (temps de préparation) est rendu visible via un overlay |
+| Plage exportée         | **Plage de lecture courante** (`prefetchMode`)                      | Cohérent avec le playback ; pas de nouvelle UI de bornes                                                                   |
+| Format de sortie       | **MP4 H.264 (avc)**                                                 | Universel, accepté par X/Twitter, Instagram, WhatsApp                                                                      |
+| Encodage               | **mediabunny** (au-dessus de WebCodecs)                             | `mp4-muxer` est déprécié ; mediabunny fait encodage + muxing, zéro dépendance, pas de ffmpeg.wasm 25 Mo                    |
+| Cadrage                | **Réutiliser 4:3 / 3:4 existant** (`computeCaptureRect`, watermark) | Code déjà testé, cohérence visuelle avec la photo                                                                          |
+| Cadence                | **Fixe ~10 fps**                                                    | Vidéo punchy (~2,5 s pour 24h), découplée du playback écran (1200 ms/frame)                                                |
+| UI                     | **Bouton dédié + overlay de progression bloquant**                  | Isolé du flow photo ; interaction bloquée car la carte sert au rendu                                                       |
+| Garde-fou plage longue | **Avertir, laisser passer**                                         | Liberté maximale ; l'utilisateur confirme si la vidéo est longue                                                           |
+| Fallback codec         | **Aucun (pas de WebM)**                                             | WebM refusé par X/IG ; si H.264 indisponible → bouton désactivé + explication                                              |
 
 ## Vue d'ensemble
 
@@ -46,7 +46,7 @@ finalise en MP4 partagé via le `share.ts` existant.
      est réellement rendue dans le canvas MapLibre.
    - **Composer** sur le canvas d'export (1440×1080 paysage ou 1080×1440 portrait) :
      `computeSourceCrop` + `drawImage(mapCanvas, …)`, puis `drawWatermark(ctx, details,
-     dims)` avec des `details` **reconstruits pour cette `date`** → l'horodatage défile.
+dims)` avec des `details` **reconstruits pour cette `date`** → l'horodatage défile.
    - `await canvasSource.add(i / fps, 1 / fps)` (fps = 10).
    - `onProgress(i, total)`.
 3. `await output.finalize()` → `output.target.buffer` → `Blob('video/mp4')` → `share.ts`
@@ -57,19 +57,19 @@ finalise en MP4 partagé via le `share.ts` existant.
 
 ```ts
 import {
-  Output,
-  Mp4OutputFormat,
-  BufferTarget,
-  CanvasSource,
-  QUALITY_HIGH,
-  getFirstEncodableVideoCodec
+	BufferTarget,
+	CanvasSource,
+	Mp4OutputFormat,
+	Output,
+	QUALITY_HIGH,
+	getFirstEncodableVideoCodec
 } from 'mediabunny';
 
 // Détection au montage du bouton :
 const fmt = new Mp4OutputFormat();
 const codec = await getFirstEncodableVideoCodec(fmt.getSupportedVideoCodecs(), {
-  width,
-  height
+	width,
+	height
 });
 // codec === null → H.264 indisponible → bouton désactivé.
 
@@ -86,11 +86,11 @@ const blob = new Blob([output.target.buffer], { type: 'video/mp4' });
 
 ## Découpage en modules
 
-- **`src/lib/video-export.ts`** *(nouveau)* — orchestrateur. Fonction
+- **`src/lib/video-export.ts`** _(nouveau)_ — orchestrateur. Fonction
   `exportAnimation({ map, range, fps, onProgress, signal })` : boucle frames, gère
   `Output`/`CanvasSource`, propage `onProgress`, respecte `AbortSignal`, restaure le `time`
   initial dans un `finally`. Renvoie un `Blob`.
-- **`src/lib/png-export.ts`** *(refactor léger)* — extraire le dessin du watermark en
+- **`src/lib/png-export.ts`** _(refactor léger)_ — extraire le dessin du watermark en
   `drawWatermark(ctx, details, dims)` réutilisable (sans `toBlob`). Le PNG existant et la
   vidéo le partagent → un seul rendu de watermark à maintenir. La sortie PNG actuelle ne
   doit pas changer.
@@ -98,7 +98,7 @@ const blob = new Blob([output.target.buffer], { type: 'video/mp4' });
   `computeSourceCrop`).
 - **`src/lib/playback-renderer.ts`** — étendu : `renderFrameAt(date)` = avance + attend le
   commit (réutilise `waitForIdle` / `slotEvents`).
-- **`src/lib/components/capture/video-export-flow.svelte`** *(nouveau)* — bouton dédié +
+- **`src/lib/components/capture/video-export-flow.svelte`** _(nouveau)_ — bouton dédié +
   overlay modal bloquant (barre `frame N / total`, bouton **Annuler**, avertissement si
   `total` dépasse le seuil). Détection de support au montage → état désactivé + tooltip si
   `codec === null`.

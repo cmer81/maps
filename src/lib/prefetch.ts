@@ -84,9 +84,10 @@ export const getDateRangeForMode = (
 };
 
 /**
- * Get the time steps to prefetch based on start and end dates
+ * Pas de temps des `valid_times` tombant dans `[startDate, endDate]` inclus.
+ * Exporté pour réutilisation par l'export vidéo (mêmes bornes que le playback).
  */
-const getTimeStepsInRange = (
+export const getTimeStepsInRange = (
 	metaJson: DomainMetaDataJson,
 	startDate: Date,
 	endDate: Date

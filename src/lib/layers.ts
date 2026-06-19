@@ -623,6 +623,18 @@ export const changeOMfileURL = (vectorOnly = false, rasterOnly = false): void =>
 };
 
 /**
+ * `true` si l'overlay vent rend au moins une flèche à l'écran (symboles placés).
+ * Le commit d'un slot survient dès `source.loaded()` (données chargées), mais le
+ * placement des symboles MapLibre est asynchrone et postérieur : l'export vidéo
+ * poll ce prédicat pour ne capturer qu'une fois les flèches réellement peintes.
+ */
+export const windArrowsRendered = (map: maplibregl.Map): boolean => {
+	const layerIds = (arrowManager?.getActiveLayerIds() ?? []).filter((id) => map.getLayer(id));
+	if (layerIds.length === 0) return false;
+	return map.queryRenderedFeatures({ layers: layerIds }).length > 0;
+};
+
+/**
  * Réapplique le style vecteur courant en reconstruisant les couches vecteur en
  * place (le layerFactory relit `getContourStyle()`/`getArrowStyle()`). Utilisé
  * par le drawer réglages quand l'utilisateur édite un style. Tuiles en cache →
