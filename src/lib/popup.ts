@@ -113,12 +113,20 @@ const updatePopupContent = async (coordinates: maplibregl.LngLat): Promise<void>
 	const showWind = resolveWindArrowLevel() !== null && !WIND_VARIABLE_REGEX.test(get(v));
 	const windUrl = showWind ? arrowManager?.getActiveSourceUrl() : undefined;
 
-	const [{ value }, windResult] = await Promise.all([
-		getValueFromLatLong(coordinates.lat, coordinates.lng, activeUrl),
+	const [valueResult, windResult] = await Promise.all([
+		getValueFromLatLong(coordinates.lat, coordinates.lng, activeUrl).catch(() => undefined),
 		windUrl
 			? getValueFromLatLong(coordinates.lat, coordinates.lng, windUrl).catch(() => undefined)
 			: Promise.resolve(undefined)
 	]);
+
+	// L'état décodé de la frame courante peut être absent du cache du protocole `om://`
+	// (capacité ~2 états : un décode anticipé de voisins ou un chargement encore en vol
+	// l'évince) — `getValueFromLatLong` lève alors « State not found for key ». Ce n'est
+	// pas une absence de donnée au point : on conserve le contenu courant du popup plutôt
+	// que d'afficher « Pas de données » à tort (et on coupe le spam d'« uncaught (in promise) »).
+	if (!valueResult) return;
+	const { value } = valueResult;
 
 	if (isFinite(value)) {
 		const omProtocolSettingsState = get(omProtocolSettings);
