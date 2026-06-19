@@ -67,7 +67,7 @@ export const HIDDEN_VARIABLES: readonly string[] = [
 // Vector options defaults
 export const DEFAULT_VECTOR_OPTIONS = {
 	grid: false,
-	arrows: true,
+	arrows: false,
 	contours: false,
 	breakpoints: true,
 	contourInterval: 2

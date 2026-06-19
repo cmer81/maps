@@ -130,6 +130,12 @@
 			keyboard: false,
 			hash: true,
 			maxPitch: 85,
+			// Traduction des libellés des contrôles natifs MapLibre (anglais par défaut).
+			// MapLibre réapplique ces chaînes à chaque bascule du TerrainControl.
+			locale: {
+				'TerrainControl.Enable': 'Activer le relief 3D',
+				'TerrainControl.Disable': 'Désactiver le relief 3D'
+			},
 			// Attribution gérée manuellement en mode compact (voir setMapControlSettings),
 			// pour qu'elle reste un petit bouton « i » et ne passe pas derrière le chrome.
 			attributionControl: false,
