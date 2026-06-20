@@ -153,14 +153,16 @@
 		>
 			<ArrowsSettings />
 			<ContourSettings />
+			<!-- Valeurs voisine des isocontours : c'est une façon de lire le champ
+			     (valeur exacte au nœud) au même titre que les isolignes. -->
+			<LayerToggle label="Valeurs" checked={gridValuesOn} onCheckedChange={toggleGridValues}>
+				{#snippet icon()}<HashIcon class="size-[18px]" aria-hidden="true" />{/snippet}
+			</LayerToggle>
 			<SecondaryLayerPanel />
 		</div>
 		<div
 			class="mt-2.5 overflow-hidden rounded-xl bg-white/[0.04] [&>*+*]:border-t [&>*+*]:border-white/[0.06]"
 		>
-			<LayerToggle label="Valeurs" checked={gridValuesOn} onCheckedChange={toggleGridValues}>
-				{#snippet icon()}<HashIcon class="size-[18px]" aria-hidden="true" />{/snippet}
-			</LayerToggle>
 			<LayerToggle label="Départements" checked={departmentsOn} onCheckedChange={toggleDepartments}>
 				{#snippet icon()}<MapIcon class="size-[18px]" aria-hidden="true" />{/snippet}
 			</LayerToggle>
@@ -278,14 +280,16 @@
 		<!-- Drawer collé au bord droit : glisse entièrement depuis l'extérieur (x = largeur
 		     du rail, w-80 = 320px) et se referme vers la droite. La hauteur reste calée sur
 		     le contenu (max-height) pour ne jamais couvrir la timeline ni la légende en bas. -->
+		<!-- Conteneur flex colonne, SANS scroll : seul le corps défile, l'en-tête (titre + ✕)
+		     reste figé → fermeture toujours accessible sans scroller, quelle que soit la hauteur. -->
 		<div
 			use:portal
-			class="bg-glass/65 scrollbar-thin fixed right-0 z-60 w-80 overflow-x-hidden overflow-y-auto rounded-l-xl border border-r-0 border-white/15 p-3 text-white shadow-lg backdrop-blur-md"
+			class="bg-glass/65 fixed right-0 z-60 flex w-80 flex-col overflow-hidden rounded-l-xl border border-r-0 border-white/15 text-white shadow-lg backdrop-blur-md"
 			style="top: {controlsBottom + 8}px; max-height: calc(100dvh - {controlsBottom + 24}px);"
 			in:fly={{ x: 320, duration: reduceMotion.current ? 0 : 260, easing: cubicOut }}
 			out:fly={{ x: 320, duration: reduceMotion.current ? 0 : 200, easing: cubicIn }}
 		>
-			<div class="mb-3 flex items-center justify-between">
+			<div class="flex shrink-0 items-center justify-between px-3 pt-3 pb-2">
 				<h2 class="text-sm font-semibold">Calques &amp; réglages</h2>
 				<button
 					type="button"
@@ -297,7 +301,7 @@
 					<XIcon class="size-4" aria-hidden="true" />
 				</button>
 			</div>
-			<div class="flex flex-col gap-6">
+			<div class="scrollbar-thin flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-3 pb-3">
 				{@render body()}
 			</div>
 		</div>
