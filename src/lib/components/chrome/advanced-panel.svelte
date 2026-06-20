@@ -280,7 +280,7 @@
 		     le contenu (max-height) pour ne jamais couvrir la timeline ni la légende en bas. -->
 		<div
 			use:portal
-			class="bg-glass/45 scrollbar-thin fixed right-0 z-60 w-80 overflow-x-hidden overflow-y-auto rounded-l-xl border border-r-0 border-white/15 p-3 text-white shadow-lg backdrop-blur-md"
+			class="bg-glass/65 scrollbar-thin fixed right-0 z-60 w-80 overflow-x-hidden overflow-y-auto rounded-l-xl border border-r-0 border-white/15 p-3 text-white shadow-lg backdrop-blur-md"
 			style="top: {controlsBottom + 8}px; max-height: calc(100dvh - {controlsBottom + 24}px);"
 			in:fly={{ x: 320, duration: reduceMotion.current ? 0 : 260, easing: cubicOut }}
 			out:fly={{ x: 320, duration: reduceMotion.current ? 0 : 200, easing: cubicIn }}
