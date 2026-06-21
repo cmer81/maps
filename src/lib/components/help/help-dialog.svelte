@@ -3,20 +3,26 @@
 
 	import BlendIcon from '@lucide/svelte/icons/blend';
 	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
+	import CameraIcon from '@lucide/svelte/icons/camera';
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import ClockIcon from '@lucide/svelte/icons/clock';
+	import CropIcon from '@lucide/svelte/icons/crop';
 	import DatabaseIcon from '@lucide/svelte/icons/database';
 	import DownloadIcon from '@lucide/svelte/icons/download';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import Grid3x3Icon from '@lucide/svelte/icons/grid-3x3';
 	import HashIcon from '@lucide/svelte/icons/hash';
 	import Layers2Icon from '@lucide/svelte/icons/layers-2';
+	import MousePointerClickIcon from '@lucide/svelte/icons/mouse-pointer-click';
 	import PaletteIcon from '@lucide/svelte/icons/palette';
 	import PlayIcon from '@lucide/svelte/icons/play';
 	import ProportionsIcon from '@lucide/svelte/icons/proportions';
 	import RulerIcon from '@lucide/svelte/icons/ruler';
+	import ScissorsIcon from '@lucide/svelte/icons/scissors';
 	import SplineIcon from '@lucide/svelte/icons/spline';
+	import SquareMousePointerIcon from '@lucide/svelte/icons/square-mouse-pointer';
+	import ThermometerIcon from '@lucide/svelte/icons/thermometer';
 	import WindIcon from '@lucide/svelte/icons/wind';
 
 	import { helpOpen } from '$lib/stores/preferences';
@@ -192,6 +198,84 @@
 						>
 					</li>
 				</ul>
+			</section>
+
+			<!-- 4. Interroger la carte -->
+			<section>
+				<h3 class="mb-2 flex items-center gap-1.5 text-lg font-bold">
+					<MousePointerClickIcon class="size-5 opacity-75" /> Interroger la carte
+				</h3>
+				<ul class="flex flex-col gap-1.5">
+					<li class="flex items-start gap-2.5">
+						<SquareMousePointerIcon class="mt-0.5 size-4.5 shrink-0 opacity-75" />
+						<span>
+							<span class="font-medium">Infobulle</span> — valeur sous le curseur.
+							{#if isDesktop.current}
+								<Kbd.Root>p</Kbd.Root> bascule : désactivée / suit la souris / déplaçable.
+							{/if}
+						</span>
+					</li>
+					<li class="flex items-start gap-2.5">
+						<ThermometerIcon class="mt-0.5 size-4.5 shrink-0 opacity-75" />
+						<span
+							><span class="font-medium">Sondage vertical</span> — profil atmosphérique au clic sur la
+							carte</span
+						>
+					</li>
+				</ul>
+				<details class="group mt-2 ml-7">
+					<summary class="flex cursor-pointer list-none items-center gap-1.5 text-sm opacity-90">
+						<ChevronRightIcon
+							class="size-4 opacity-75 transition-transform group-open:rotate-90 motion-reduce:transition-none"
+						/>
+						<h4 class="font-medium">Détails du sondage</h4>
+					</summary>
+					<p class="mt-1.5 ml-5.5 text-sm opacity-80">
+						Trois onglets : <b>Skew-T</b>, <b>hodographe</b> et <b>indices</b> thermodynamiques. Le profil
+						se met à jour en suivant la lecture du temps. Disponible sur les domaines AROME. Le bouton
+						d'accès s'active dans les réglages avancés (« Sondage vertical »).
+					</p>
+				</details>
+			</section>
+
+			<!-- 5. Cadrer & exporter -->
+			<section>
+				<h3 class="mb-2 flex items-center gap-1.5 text-lg font-bold">
+					<CropIcon class="size-5 opacity-75" /> Cadrer &amp; exporter
+				</h3>
+				<ul class="flex flex-col gap-1.5">
+					<li class="flex items-start gap-2.5">
+						<ScissorsIcon class="mt-0.5 size-4.5 shrink-0 opacity-75" />
+						<span
+							><span class="font-medium">Découpage</span> — limiter le rendu à une zone dessinée ou à
+							un pays</span
+						>
+					</li>
+					<li class="flex items-start gap-2.5">
+						<CameraIcon class="mt-0.5 size-4.5 shrink-0 opacity-75" />
+						<span
+							><span class="font-medium">Capture</span> — exporter la vue en image PNG avec filigrane</span
+						>
+					</li>
+				</ul>
+				<details class="group mt-2 ml-7">
+					<summary class="flex cursor-pointer list-none items-center gap-1.5 text-sm opacity-90">
+						<ChevronRightIcon
+							class="size-4 opacity-75 transition-transform group-open:rotate-90 motion-reduce:transition-none"
+						/>
+						<h4 class="font-medium">Détails du découpage et de la capture</h4>
+					</summary>
+					<div class="mt-1.5 ml-5.5 flex flex-col gap-2 text-sm opacity-80">
+						<p>
+							<b>Découpage</b> : modes sélection, rectangle, polygone, main levée ou pinceau, plus un
+							sélecteur de pays. La zone est mémorisée d'une session à l'autre.
+						</p>
+						<p>
+							<b>Capture</b> : cadrage paysage (4:3) ou portrait (3:4), filigrane automatique (run, échéance,
+							domaine et variable), puis téléchargement ou partage.
+						</p>
+					</div>
+				</details>
 			</section>
 		</div>
 	</Dialog.Content>
