@@ -349,6 +349,19 @@
 				</ul>
 			</section>
 
+			<!-- Cache — astuce performance mise en valeur -->
+			<section class="rounded-lg border border-sky-400/30 bg-sky-400/10 p-3">
+				<h3 class="mb-1 flex items-center gap-1.5 font-bold text-sky-700 dark:text-sky-300">
+					<HardDriveIcon class="size-5 opacity-90" /> Cache — fluidifier l'affichage
+				</h3>
+				<p class="text-sm opacity-90">
+					Sur un ordinateur ancien ou si la carte s'affiche par à-coups, augmenter la
+					<b>taille maximale du cache</b> (en Mo) garde plus de données en mémoire et réduit les
+					rechargements ; ajuster la <b>taille des blocs</b> affine ce compromis. À régler dans le panneau
+					« Calques &amp; réglages ».
+				</p>
+			</section>
+
 			<!-- 7. Réglages avancés -->
 			<section>
 				<details class="group">
@@ -363,13 +376,6 @@
 						</h3>
 					</summary>
 					<ul class="mt-2 ml-6 flex flex-col gap-1.5">
-						<li class="flex items-start gap-2.5">
-							<HardDriveIcon class="mt-0.5 size-4.5 shrink-0 opacity-75" />
-							<span
-								><span class="font-medium">Cache</span> — taille des blocs et taille maximale du cache
-								(Mo)</span
-							>
-						</li>
 						<li class="flex items-start gap-2.5">
 							<RotateCcwIcon class="mt-0.5 size-4.5 shrink-0 opacity-75" />
 							<span
