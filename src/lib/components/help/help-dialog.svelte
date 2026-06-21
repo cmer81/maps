@@ -14,9 +14,9 @@
 	import DatabaseIcon from '@lucide/svelte/icons/database';
 	import DownloadIcon from '@lucide/svelte/icons/download';
 	import EyeIcon from '@lucide/svelte/icons/eye';
+	import GaugeIcon from '@lucide/svelte/icons/gauge';
 	import GlobeIcon from '@lucide/svelte/icons/globe';
 	import Grid3x3Icon from '@lucide/svelte/icons/grid-3x3';
-	import HardDriveIcon from '@lucide/svelte/icons/hard-drive';
 	import HashIcon from '@lucide/svelte/icons/hash';
 	import KeyboardIcon from '@lucide/svelte/icons/keyboard';
 	import LandPlotIcon from '@lucide/svelte/icons/land-plot';
@@ -349,17 +349,31 @@
 				</ul>
 			</section>
 
-			<!-- Cache — astuce performance mise en valeur -->
+			<!-- Performances — astuce mise en valeur -->
 			<section class="rounded-lg border border-sky-400/30 bg-sky-400/10 p-3">
-				<h3 class="mb-1 flex items-center gap-1.5 font-bold text-sky-700 dark:text-sky-300">
-					<HardDriveIcon class="size-5 opacity-90" /> Cache — fluidifier l'affichage
+				<h3 class="mb-1.5 flex items-center gap-1.5 font-bold text-sky-700 dark:text-sky-300">
+					<GaugeIcon class="size-5 opacity-90" /> Performances — fluidifier l'affichage
 				</h3>
-				<p class="text-sm opacity-90">
-					Sur un ordinateur ancien ou si la carte s'affiche par à-coups, augmenter la
-					<b>taille maximale du cache</b> (en Mo) garde plus de données en mémoire et réduit les
-					rechargements ; ajuster la <b>taille des blocs</b> affine ce compromis. À régler dans le panneau
-					« Calques &amp; réglages ».
+				<p class="mb-2 text-sm opacity-90">
+					Si la carte rame ou s'affiche par à-coups (ordinateur ancien, carte graphique modeste),
+					trois réglages du panneau « Calques &amp; réglages » améliorent la fluidité :
 				</p>
+				<ul class="flex list-disc flex-col gap-1.5 pl-5 text-sm opacity-90">
+					<li>
+						<b>Taille des tuiles</b> — la <b>réduire</b> (256, voire 128 px au lieu de 512) : moins de
+						pixels à calculer par tuile, donc un rendu nettement plus rapide. C'est le premier levier
+						sur une machine lente.
+					</li>
+					<li>
+						<b>Cache max (Mo)</b> — l'<b>augmenter</b> : garde plus de données en mémoire, donc moins
+						de rechargements pendant l'animation et les déplacements (si l'ordinateur a assez de mémoire).
+					</li>
+					<li>
+						<b>Taille des blocs</b> — des blocs <b>plus gros</b> réduisent le nombre de requêtes
+						réseau (utile si le chargement saccade) ; des blocs <b>plus petits</b> évitent de télécharger
+						des données inutiles sur une connexion lente.
+					</li>
+				</ul>
 			</section>
 
 			<!-- 7. Réglages avancés -->
