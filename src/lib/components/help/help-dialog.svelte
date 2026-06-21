@@ -2,26 +2,39 @@
 	import { MediaQuery } from 'svelte/reactivity';
 
 	import BlendIcon from '@lucide/svelte/icons/blend';
+	import BoxIcon from '@lucide/svelte/icons/box';
+	import Building2Icon from '@lucide/svelte/icons/building-2';
 	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
 	import CameraIcon from '@lucide/svelte/icons/camera';
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import ClockIcon from '@lucide/svelte/icons/clock';
+	import CompassIcon from '@lucide/svelte/icons/compass';
 	import CropIcon from '@lucide/svelte/icons/crop';
 	import DatabaseIcon from '@lucide/svelte/icons/database';
 	import DownloadIcon from '@lucide/svelte/icons/download';
 	import EyeIcon from '@lucide/svelte/icons/eye';
+	import GlobeIcon from '@lucide/svelte/icons/globe';
 	import Grid3x3Icon from '@lucide/svelte/icons/grid-3x3';
+	import HardDriveIcon from '@lucide/svelte/icons/hard-drive';
 	import HashIcon from '@lucide/svelte/icons/hash';
+	import KeyboardIcon from '@lucide/svelte/icons/keyboard';
+	import LandPlotIcon from '@lucide/svelte/icons/land-plot';
 	import Layers2Icon from '@lucide/svelte/icons/layers-2';
+	import LocateFixedIcon from '@lucide/svelte/icons/locate-fixed';
+	import MapIcon from '@lucide/svelte/icons/map';
+	import MountainIcon from '@lucide/svelte/icons/mountain';
 	import MousePointerClickIcon from '@lucide/svelte/icons/mouse-pointer-click';
 	import PaletteIcon from '@lucide/svelte/icons/palette';
 	import PlayIcon from '@lucide/svelte/icons/play';
 	import ProportionsIcon from '@lucide/svelte/icons/proportions';
+	import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
 	import RulerIcon from '@lucide/svelte/icons/ruler';
 	import ScissorsIcon from '@lucide/svelte/icons/scissors';
+	import Settings2Icon from '@lucide/svelte/icons/settings-2';
 	import SplineIcon from '@lucide/svelte/icons/spline';
 	import SquareMousePointerIcon from '@lucide/svelte/icons/square-mouse-pointer';
+	import SunMoonIcon from '@lucide/svelte/icons/sun-moon';
 	import ThermometerIcon from '@lucide/svelte/icons/thermometer';
 	import WindIcon from '@lucide/svelte/icons/wind';
 
@@ -277,6 +290,105 @@
 					</div>
 				</details>
 			</section>
+
+			<!-- 6. Repères & rendu -->
+			<section>
+				<h3 class="mb-2 flex items-center gap-1.5 text-lg font-bold">
+					<MapIcon class="size-5 opacity-75" /> Repères &amp; rendu
+				</h3>
+				<ul class="flex flex-col gap-1.5">
+					<li class="flex items-start gap-2.5">
+						<SunMoonIcon class="mt-0.5 size-4.5 shrink-0 opacity-75" />
+						<span
+							><span class="font-medium">Mode sombre / clair</span> — thème du fond de carte</span
+						>
+					</li>
+					<li class="flex items-start gap-2.5">
+						<MountainIcon class="mt-0.5 size-4.5 shrink-0 opacity-75" />
+						<span><span class="font-medium">Relief ombré</span> — ombrage du relief</span>
+					</li>
+					<li class="flex items-start gap-2.5">
+						<BoxIcon class="mt-0.5 size-4.5 shrink-0 opacity-75" />
+						<span><span class="font-medium">Terrain 3D</span> — relief en perspective</span>
+					</li>
+					<li class="flex items-start gap-2.5">
+						<GlobeIcon class="mt-0.5 size-4.5 shrink-0 opacity-75" />
+						<span
+							><span class="font-medium">Projection globe</span> — vue sphérique de la Terre</span
+						>
+					</li>
+					<li class="flex items-start gap-2.5">
+						<LandPlotIcon class="mt-0.5 size-4.5 shrink-0 opacity-75" />
+						<span
+							><span class="font-medium">Départements</span> — contours administratifs français</span
+						>
+					</li>
+					<li class="flex items-start gap-2.5">
+						<Building2Icon class="mt-0.5 size-4.5 shrink-0 opacity-75" />
+						<span
+							><span class="font-medium">Villes &amp; pays</span> — libellés du fond de carte</span
+						>
+					</li>
+					<li class="flex items-start gap-2.5">
+						<LocateFixedIcon class="mt-0.5 size-4.5 shrink-0 opacity-75" />
+						<span><span class="font-medium">Me localiser</span> — centrer sur ma position</span>
+					</li>
+					<li class="flex items-start gap-2.5">
+						<CompassIcon class="mt-0.5 size-4.5 shrink-0 opacity-75" />
+						<span
+							><span class="font-medium">Zoom &amp; boussole</span> — zoomer / dézoomer ; réinitialiser
+							l'inclinaison et la rotation</span
+						>
+					</li>
+				</ul>
+			</section>
+
+			<!-- 7. Réglages avancés -->
+			<section>
+				<details class="group">
+					<summary class="flex cursor-pointer list-none items-center gap-1.5">
+						<ChevronRightIcon
+							class="size-5 opacity-75 transition-transform group-open:rotate-90 motion-reduce:transition-none"
+						/>
+						<h3 class="flex items-center gap-1.5 text-lg font-bold">
+							<Settings2Icon class="size-5 opacity-75" /> Réglages avancés
+						</h3>
+					</summary>
+					<ul class="mt-2 ml-6 flex flex-col gap-1.5">
+						<li class="flex items-start gap-2.5">
+							<HardDriveIcon class="mt-0.5 size-4.5 shrink-0 opacity-75" />
+							<span
+								><span class="font-medium">Cache</span> — taille des blocs et taille maximale du cache
+								(Mo)</span
+							>
+						</li>
+						<li class="flex items-start gap-2.5">
+							<RotateCcwIcon class="mt-0.5 size-4.5 shrink-0 opacity-75" />
+							<span
+								><span class="font-medium">Réinitialiser</span> — restaurer tous les réglages par défaut</span
+							>
+						</li>
+					</ul>
+				</details>
+			</section>
+
+			{#if isDesktop.current}
+				<!-- Général (raccourcis globaux) -->
+				<section class="border-t border-white/10 pt-3 text-sm opacity-80">
+					<h3 class="mb-2 flex items-center gap-1.5 font-bold">
+						<KeyboardIcon class="size-4.5 opacity-75" /> Général
+					</h3>
+					<ul class="flex flex-col gap-1.5">
+						<li class="flex items-center gap-2.5">
+							<Kbd.Root>h</Kbd.Root> <span>Ouvrir / fermer cette aide</span>
+						</li>
+						<li class="flex items-center gap-2.5">
+							<Kbd.Root>Échap</Kbd.Root>
+							<span>Fermer l'infobulle / réinitialiser le mode infobulle</span>
+						</li>
+					</ul>
+				</section>
+			{/if}
 		</div>
 	</Dialog.Content>
 </Dialog.Root>
