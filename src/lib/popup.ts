@@ -24,6 +24,7 @@ import { arrowManager, rasterManager } from './layers';
 import { terraDrawActive } from './stores/clipping';
 import { desktop, opacity } from './stores/preferences';
 import { resolveWindArrowLevel } from './url';
+import { trueElevation } from './view-3d';
 
 let el: HTMLDivElement | undefined;
 let wrapperDiv: HTMLDivElement | undefined;
@@ -100,7 +101,12 @@ const updatePopupContent = async (coordinates: maplibregl.LngLat): Promise<void>
 
 	const map = get(m);
 
-	const elevation = map?.queryTerrainElevation(coordinates);
+	// `queryTerrainElevation` renvoie l'altitude DEM × exagération du terrain ; on
+	// annule l'exagération (1,4 en vue 3D) pour afficher l'altitude réelle.
+	const elevation = trueElevation(
+		map?.queryTerrainElevation(coordinates),
+		map?.getTerrain()?.exaggeration
+	);
 	const hasElevation = typeof elevation === 'number' && isFinite(elevation);
 
 	const activeUrl = rasterManager?.getActiveSourceUrl();

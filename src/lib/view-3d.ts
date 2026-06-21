@@ -12,6 +12,23 @@ import type { IControl, Map as MaplibreMap } from 'maplibre-gl';
 const TERRAIN_SOURCE = 'terrainSource2';
 
 /**
+ * `map.queryTerrainElevation()` renvoie l'altitude DEM **multipliée par
+ * l'exagération du terrain** (cf. MapLibre `Terrain.getElevation` :
+ * `getDEMElevation(...) * exaggeration`). En vue 3D l'exagération vaut
+ * `VIEW_3D_EXAGGERATION` (1,4), donc l'altitude brute est ~40 % trop élevée.
+ * Cette fonction rétablit l'altitude réelle en divisant par l'exagération
+ * courante (`map.getTerrain()?.exaggeration`, neutre = 1 si absente/nulle).
+ */
+export function trueElevation(
+	rawElevation: number | null | undefined,
+	exaggeration: number | null | undefined
+): number | null {
+	if (typeof rawElevation !== 'number' || !isFinite(rawElevation)) return null;
+	const factor = typeof exaggeration === 'number' && exaggeration > 0 ? exaggeration : 1;
+	return rawElevation / factor;
+}
+
+/**
  * Init-on-load : le hash MapLibre restaure le pitch mais pas le mesh terrain.
  * Si la préférence terrain est active (lien partagé `?terrain=true`), réapplique
  * le relief. Idempotent vis-à-vis du TerrainControl natif.

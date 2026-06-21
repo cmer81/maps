@@ -10,6 +10,7 @@
 	import { fetchColumn } from '$lib/sounding/column';
 	import { computeIndices } from '$lib/sounding/indices';
 	import { liftParcel } from '$lib/sounding/parcel';
+	import { trueElevation } from '$lib/view-3d';
 
 	import Hodograph from './hodograph.svelte';
 	import IndicesTable from './indices-table.svelte';
@@ -35,8 +36,13 @@
 		error = null;
 		try {
 			const map = get(mapStore);
-			const rawElev = map?.queryTerrainElevation(new maplibregl.LngLat(lng, lat));
-			const elev = typeof rawElev === 'number' && isFinite(rawElev) ? rawElev : 0;
+			// `queryTerrainElevation` renvoie l'altitude DEM × exagération (1,4 en vue
+			// 3D) ; on l'annule pour partir de l'altitude de surface réelle.
+			const elev =
+				trueElevation(
+					map?.queryTerrainElevation(new maplibregl.LngLat(lng, lat)),
+					map?.getTerrain()?.exaggeration
+				) ?? 0;
 			const col = await fetchColumn(lat, lng, elev);
 			if (myGen !== generation) return;
 			if (col.levels.length < 3) {

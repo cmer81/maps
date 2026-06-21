@@ -6,7 +6,7 @@ import { map } from '$lib/stores/map';
 import { defaultPreferences, preferences, url as urlStore } from '$lib/stores/preferences';
 
 import { VIEW_3D_EXAGGERATION, VIEW_3D_PITCH } from '$lib/constants';
-import { applyView3D, restoreView3DFromPrefs } from '$lib/view-3d';
+import { applyView3D, restoreView3DFromPrefs, trueElevation } from '$lib/view-3d';
 
 // Fausse carte MapLibre minimale : enregistre les appels caméra/terrain.
 function fakeMap() {
@@ -55,6 +55,25 @@ describe('applyView3D', () => {
 		expect(get(preferences).terrain).toBe(false);
 		// 'false' == défaut → le param est retiré de l'URL.
 		expect(get(urlStore).searchParams.get('terrain')).toBeNull();
+	});
+});
+
+describe('trueElevation', () => {
+	it("annule l'exagération du terrain (queryTerrainElevation renvoie DEM × exagération)", () => {
+		// 1500 m réels affichés 2100 m avec exagération 1,4 → ~600 m de trop.
+		expect(trueElevation(1500 * VIEW_3D_EXAGGERATION, VIEW_3D_EXAGGERATION)).toBeCloseTo(1500);
+	});
+
+	it('exagération absente/nulle → facteur neutre (1)', () => {
+		expect(trueElevation(800, null)).toBe(800);
+		expect(trueElevation(800, undefined)).toBe(800);
+		expect(trueElevation(800, 0)).toBe(800);
+	});
+
+	it('renvoie null si la valeur DEM est absente ou non finie', () => {
+		expect(trueElevation(null, 1.4)).toBeNull();
+		expect(trueElevation(undefined, 1.4)).toBeNull();
+		expect(trueElevation(NaN, 1.4)).toBeNull();
 	});
 });
 
