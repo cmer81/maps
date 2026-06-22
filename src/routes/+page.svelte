@@ -38,6 +38,8 @@
 	import AppChrome from '$lib/components/chrome/app-chrome.svelte';
 	import Scrim from '$lib/components/chrome/scrim.svelte';
 	import ClippingPanel from '$lib/components/clipping/clipping-panel.svelte';
+	import ComfortBanner from '$lib/components/comfort/comfort-banner.svelte';
+	import SnowOverlay from '$lib/components/comfort/snow-overlay.svelte';
 	import Dropzone from '$lib/components/dropzone/dropzone.svelte';
 	import HelpDialog from '$lib/components/help/help-dialog.svelte';
 	import KeyboardHandler from '$lib/components/keyboard/keyboard-handler.svelte';
@@ -305,6 +307,7 @@
 
 <div class="map maplibregl-map" id="#map_container" bind:this={mapContainer}></div>
 <Scrim />
+<SnowOverlay />
 
 {#if $exportFrameVisible}
 	<div
@@ -354,6 +357,7 @@
 {/if}
 
 <AppChrome />
+<ComfortBanner />
 <Scale />
 <ClippingPanel bind:this={clippingPanel} />
 <TimeSelector />
