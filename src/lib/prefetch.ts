@@ -4,8 +4,8 @@ import { currentBounds, getProtocolInstance, getRanges } from '@openmeteo/weathe
 
 import { omProtocolSettings } from '$lib/stores/om-protocol-settings';
 
-import { MILLISECONDS_PER_DAY } from './constants';
-import { fmtModelRun, fmtSelectedTime, getBaseUri } from './helpers';
+import { DAILY_FILE_DOMAINS, MILLISECONDS_PER_DAY } from './constants';
+import { fmtDateYMD, fmtModelRun, fmtSelectedTime, getBaseUri } from './helpers';
 import { selectedDomain } from './stores/variables';
 
 import type { DomainMetaDataJson } from '@openmeteo/weather-map-layer';
@@ -141,9 +141,13 @@ export const prefetchData = async (
 		const prefetchSingle = async (timeStep: Date): Promise<boolean> => {
 			if (signal?.aborted) return false;
 
-			const url = `${uri}/data_spatial/${domain}/${fmtModelRun(modelRun)}/${fmtSelectedTime(
-				timeStep
-			)}.om`;
+			// Domaine journalier : nom de fichier = date (`YYYY-MM-DD.om`), comme
+			// `getOMUrlFor()`. Sinon le préchargement viserait `…THHMM.om` → 404, et
+			// le scrubbing entre jours resterait froid.
+			const fileName = DAILY_FILE_DOMAINS.has(domain)
+				? fmtDateYMD(timeStep)
+				: fmtSelectedTime(timeStep);
+			const url = `${uri}/data_spatial/${domain}/${fmtModelRun(modelRun)}/${fileName}.om`;
 
 			try {
 				await omFileReader.setToOmFile(url);

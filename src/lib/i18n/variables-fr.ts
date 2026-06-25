@@ -77,6 +77,15 @@ const EXPLICIT: Record<string, string> = {
 	precipitation_type_severe: 'Type de précip. (le plus sévère)',
 	'Pressure Mean Sea Level': 'Pression au niveau de la mer',
 	radar_reflectivity: 'Réflectivité radar',
+	// Domaine agroclimato_france — indices journaliers (clés snake_case, absentes
+	// des variableOptions du package → traduites ici).
+	temperature_2m_min: 'Température minimale',
+	temperature_2m_max: 'Température maximale',
+	frost_hours: 'Heures de gel',
+	heat_hours: 'Heures de chaleur',
+	et0_fao: 'Évapotranspiration de référence (ET0 FAO-56)',
+	vpd: 'Déficit de pression de vapeur (VPD)',
+	thi_livestock: 'Indice température-humidité (bétail)',
 	'Ragweed Pollen': "Pollen d'ambroisie",
 	Rain: 'Pluie',
 	'Rain Probability': 'Probabilité de pluie',

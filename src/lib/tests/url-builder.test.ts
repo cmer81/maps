@@ -67,6 +67,21 @@ describe('getOMUrlFor', () => {
 		expect(arrowsOnly).toContain('arrows=true');
 	});
 
+	it('names the file by DATE (not timestamp) for a daily domain (agroclimato_france)', () => {
+		// Domaine journalier : 1 OMfile/jour `YYYY-MM-DD.om` = minuit UTC, pas
+		// `…THHMM.om`. Le run reste path-style `…/0600Z/`.
+		vi.stubEnv('VITE_MODELS_BUCKET_URL', 'https://bucket.test');
+		d.set('agroclimato_france');
+		mR.set(new Date('2026-06-14T06:00:00Z'));
+		time.set(new Date('2026-06-15T00:00:00Z'));
+		const url = getOMUrlFor('temperature_2m_max');
+		expect(url).toContain(
+			'https://bucket.test/data_spatial/agroclimato_france/2026/06/14/0600Z/2026-06-15.om'
+		);
+		expect(url).toContain('variable=temperature_2m_max');
+		expect(url).not.toContain('T0000.om');
+	});
+
 	it('routes precipitation_sum to the upstream data_spatial path, NOT the worker', () => {
 		// `precipitation_sum` (cumul depuis le début du run) est une variable
 		// first-class du domaine arome_om_reunion : elle doit être lue comme un
