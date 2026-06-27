@@ -44,13 +44,13 @@ Toutes en `BreakpointColorScale`, palettes Météociel-like, bornes
 commentées/tunables (modèle : `precipitation-sum.ts`). Enregistrées par clé
 exacte dans `standardColorScales` (`om-protocol-settings.ts`).
 
-| Variable | Fichier | Unité | Plage / centre | Palette |
-|---|---|---|---|---|
-| `snowfall_sum` | `snowfall-sum.ts` | cm | 1 → 100 | blanc → bleu → violet/magenta |
-| `theta_e_850hPa` | `theta-e.ts` | K | 288 → 342 | rainbow instabilité |
-| `theta_w_850hPa` | `theta-w.ts` | °C | −8 → 28 | rainbow (bornes °C) |
-| `thickness_500_1000hPa` | `thickness.ts` | gpm | 5100 → 5700, centré 5400 | divergente bleu → rouge |
-| `absolute_vorticity_500hPa` | `absolute-vorticity.ts` | ×10⁻⁵ s⁻¹ | 0 → 40 | séquentiel jaune → orange → rouge → violet |
+| Variable                    | Fichier                 | Unité     | Plage / centre           | Palette                                    |
+| --------------------------- | ----------------------- | --------- | ------------------------ | ------------------------------------------ |
+| `snowfall_sum`              | `snowfall-sum.ts`       | cm        | 1 → 100                  | blanc → bleu → violet/magenta              |
+| `theta_e_850hPa`            | `theta-e.ts`            | K         | 288 → 342                | rainbow instabilité                        |
+| `theta_w_850hPa`            | `theta-w.ts`            | °C        | −8 → 28                  | rainbow (bornes °C)                        |
+| `thickness_500_1000hPa`     | `thickness.ts`          | gpm       | 5100 → 5700, centré 5400 | divergente bleu → rouge                    |
+| `absolute_vorticity_500hPa` | `absolute-vorticity.ts` | ×10⁻⁵ s⁻¹ | 0 → 40                   | séquentiel jaune → orange → rouge → violet |
 
 Mise à l'échelle vorticité dans `postReadCallback` (`om-protocol-settings.ts`),
 gatée sur `domain === 'arome_france' && variable === 'absolute_vorticity_500hPa'`
@@ -59,16 +59,16 @@ déjà présent.
 
 ### C. Libellés FR — `src/lib/i18n/variables-fr.ts` (table `EXPLICIT`)
 
-| Clé | Libellé FR |
-|---|---|
-| `theta_e_850hPa` | Theta-E (850 hPa) |
-| `theta_w_850hPa` | Theta-W (850 hPa) |
-| `thickness_500_1000hPa` | Épaisseur 500-1000 hPa |
-| `absolute_vorticity_500hPa` | Tourbillon absolu (500 hPa) |
-| `freezing_level_height` | Altitude de l'isotherme 0 °C |
-| `snowfall_sum` | Cumul de neige |
-| `temperature_2m_max` | Température max. (2 m) |
-| `temperature_2m_min` | Température min. (2 m) |
+| Clé                          | Libellé FR                          |
+| ---------------------------- | ----------------------------------- |
+| `theta_e_850hPa`             | Theta-E (850 hPa)                   |
+| `theta_w_850hPa`             | Theta-W (850 hPa)                   |
+| `thickness_500_1000hPa`      | Épaisseur 500-1000 hPa              |
+| `absolute_vorticity_500hPa`  | Tourbillon absolu (500 hPa)         |
+| `freezing_level_height`      | Altitude de l'isotherme 0 °C        |
+| `snowfall_sum`               | Cumul de neige                      |
+| `temperature_2m_max`         | Température max. (2 m)              |
+| `temperature_2m_min`         | Température min. (2 m)              |
 | `geopotential_height_pv1500` | Géopotentiel (tropopause dynamique) |
 
 ### D. Documentation

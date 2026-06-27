@@ -154,7 +154,9 @@ export const DEPARTMENTS_GEOJSON_URL = '/departements.geojson';
 // Niveaux iso-pression exposés dans le sélecteur (hPa). Les niveaux non listés
 // restent fonctionnels via URL partagée — c'est purement un filtre d'affichage.
 // Les unités non-hPa (2m, 10m, 80m, 120m, 180m…) ne sont pas filtrées.
-export const VISIBLE_PRESSURE_LEVELS_HPA: readonly number[] = [925, 850, 700, 500, 300, 250, 200];
+export const VISIBLE_PRESSURE_LEVELS_HPA: readonly number[] = [
+	1000, 925, 850, 700, 500, 300, 250, 200
+];
 
 // Niveaux de pression (hPa) lus pour reconstruire une colonne de sondage, du sol
 // vers le sommet. Distinct de VISIBLE_PRESSURE_LEVELS_HPA (filtre d'affichage du
@@ -171,12 +173,13 @@ export const SOUNDING_LEVELS_BY_DOMAIN: Readonly<Record<string, readonly number[
 	meteofrance_arome_france0025: SOUNDING_PRESSURE_LEVELS_HPA
 };
 
-// Certains domaines affichés ne diffusent pas eux-mêmes les niveaux de pression
-// nécessaires au sondage : la carte montre un champ surface, mais la colonne
-// verticale est lue depuis un AUTRE domaine sur la MÊME grille. C'est le cas du
-// pseudo-domaine surface `arome_france` (bucket maison Infoclimat, 12 variables
-// surface uniquement) → le sondage lit l'AROME 0,025° d'Open-Meteo, qui partage
-// exactement la grille (1121×717 @ 0,025°) et publie les 24 niveaux iso-pression.
+// Certains domaines affichés ne diffusent pas (assez de) niveaux de pression
+// pour le sondage : la carte montre ses champs, mais la colonne verticale est
+// lue depuis un AUTRE domaine sur la MÊME grille. C'est le cas d'`arome_france`
+// (bucket maison Infoclimat) → le sondage lit l'AROME 0,025° d'Open-Meteo, qui
+// partage exactement la grille (1121×717 @ 0,025°) et publie les 24 niveaux
+// iso-pression. `arome_france` publie bien quelques niveaux (300/500/700/850/
+// 925/1000 hPa), mais ces 6 niveaux ne suffisent pas à reconstruire la colonne.
 // Non listé = le domaine est sa propre source (lecture sur place).
 export const SOUNDING_SOURCE_BY_DOMAIN: Readonly<Record<string, string>> = {
 	arome_france: 'meteofrance_arome_france0025'

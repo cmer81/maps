@@ -147,7 +147,19 @@ const EXPLICIT: Record<string, string> = {
 	relative_humidity_2m: 'Humidité relative (2 m)',
 	wind_chill_2m: 'Refroidissement éolien (2 m)',
 	wind_gusts_10m_max: 'Rafales max. (10 m)',
-	wind_u_component_10m: 'Vent (10 m)'
+	wind_u_component_10m: 'Vent (10 m)',
+
+	// Variables du domaine `arome_france` (Infoclimat) ajoutées au-delà des 12
+	// surfaces historiques : champs dérivés / d'altitude sans entrée package.
+	theta_e_850hPa: 'Theta-E (850 hPa)',
+	theta_w_850hPa: 'Theta-W (850 hPa)',
+	thickness_500_1000hPa: 'Épaisseur 500-1000 hPa',
+	absolute_vorticity_500hPa: 'Tourbillon absolu (500 hPa)',
+	freezing_level_height: "Altitude de l'isotherme 0 °C",
+	snowfall_sum: 'Cumul de neige',
+	temperature_2m_max: 'Température max. (2 m)',
+	temperature_2m_min: 'Température min. (2 m)',
+	geopotential_height_pv1500: 'Géopotentiel (tropopause dynamique)'
 };
 
 /** Forme contractée à utiliser après "Anomalie/Moyenne/Dispersion/Min/Max de". */

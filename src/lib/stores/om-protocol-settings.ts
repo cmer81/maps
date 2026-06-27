@@ -10,6 +10,7 @@ import { persisted } from 'svelte-persisted-store';
 
 import { browser } from '$app/environment';
 
+import { absoluteVorticityScale } from '$lib/color-scales/absolute-vorticity';
 import { brightnessTemperatureScale } from '$lib/color-scales/brightness-temperature';
 import { brightnessTemperatureWvScale } from '$lib/color-scales/brightness-temperature-wv';
 import { capeScale } from '$lib/color-scales/cape';
@@ -19,7 +20,11 @@ import { lightningDensityScale } from '$lib/color-scales/lightning-density';
 import { precipitationSumScale } from '$lib/color-scales/precipitation-sum';
 import { precipitationTypeScale } from '$lib/color-scales/precipitation-type';
 import { radarReflectivityScale } from '$lib/color-scales/radar-reflectivity';
+import { snowfallSumScale } from '$lib/color-scales/snowfall-sum';
 import { temperatureAnomalyScale } from '$lib/color-scales/temperature-anomaly';
+import { thetaEScale } from '$lib/color-scales/theta-e';
+import { thetaWScale } from '$lib/color-scales/theta-w';
+import { thicknessScale } from '$lib/color-scales/thickness';
 import { visibilityScale } from '$lib/color-scales/visibility';
 import {
 	ANOMALY_DOMAIN,
@@ -125,7 +130,21 @@ export const standardColorScales = {
 	snow_graupel_sum: defaultOmProtocolSettings.colorScales.precipitation,
 	snowfall_water_equivalent_sum: defaultOmProtocolSettings.colorScales.precipitation,
 	wind_chill_2m: infoclimatTemperatureScale,
-	humidex: infoclimatTemperatureScale
+	humidex: infoclimatTemperatureScale,
+
+	// Domaine arome_france (Infoclimat) — variables d'altitude/dérivées ajoutées
+	// au-delà des 12 surfaces historiques. Clés exactes : sans elles, la
+	// résolution par famille du package retombe sur `temperature` (°C), absurde
+	// pour ces champs.
+	//   - `snowfall_sum` : cumul de neige (`*_sum` non strippé) → échelle cm.
+	//   - `theta_e_850hPa` (K) / `theta_w_850hPa` (°C) : températures potentielles.
+	//   - `thickness_500_1000hPa` (gpm) : épaisseur de couche.
+	//   - `absolute_vorticity_500hPa` : valeurs ×1e5 dans postReadCallback → ×10⁻⁵ s⁻¹.
+	snowfall_sum: snowfallSumScale,
+	theta_e_850hPa: thetaEScale,
+	theta_w_850hPa: thetaWScale,
+	thickness_500_1000hPa: thicknessScale,
+	absolute_vorticity_500hPa: absoluteVorticityScale
 };
 
 export const omProtocolSettings: Writable<OmProtocolSettings> = writable({
@@ -152,6 +171,17 @@ export const omProtocolSettings: Writable<OmProtocolSettings> = writable({
 		) {
 			if (data.values) {
 				data.values = data.values?.map((value) => value / 100);
+			}
+		}
+		// Tourbillon absolu AROME France : valeurs brutes en s⁻¹ (~1e-4),
+		// mises à l'échelle ×1e5 pour être lisibles (×10⁻⁵ s⁻¹) — la colormap
+		// `absoluteVorticityScale` et la légende raisonnent dans cette unité.
+		if (
+			state.dataOptions.domain.value === 'arome_france' &&
+			state.dataOptions.variable === 'absolute_vorticity_500hPa'
+		) {
+			if (data.values) {
+				data.values = data.values?.map((value) => value * 1e5);
 			}
 		}
 	}
