@@ -34,6 +34,11 @@ export const AROME_FRANCE_DOMAIN = 'arome_france';
  *  propre — le suffixe sans préfixe `meteofrance_` lève la collision. */
 export const AROME_FRANCE_HD_DOMAIN = 'arome_france_hd';
 
+/** Pseudo-domaine radar France métropole (lame d'eau, observation),
+ *  servi depuis le bucket maison par le pipeline `radar-forecast`.
+ *  Grille 1650×1100 à 0,01° (lon −6→10,5, lat 41→52), pas 5 min. */
+export const RADAR_METROPOLE_DOMAIN = 'radar_metropole';
+
 /** Vue de carte recommandée par domaine — appliquée via `flyTo` quand l'utilisateur
  *  bascule manuellement sur le domaine. Utile pour les pseudo-domaines régionaux
  *  dont le centre de grille tombe sur une zone océan/peu lisible.
@@ -55,7 +60,8 @@ export const DOMAIN_DEFAULT_VIEWS: Record<string, { center: [number, number]; zo
 export const DOMAIN_DEFAULT_VARIABLES: Record<string, string> = {
 	[AROME_FRANCE_CONVECTION_DOMAIN]: 'radar_reflectivity',
 	[AROME_FRANCE_DOMAIN]: 'temperature_2m',
-	[AROME_FRANCE_HD_DOMAIN]: 'temperature_2m'
+	[AROME_FRANCE_HD_DOMAIN]: 'temperature_2m',
+	[RADAR_METROPOLE_DOMAIN]: 'rain_rate'
 };
 
 /** Variables masquées du sélecteur (display-only), même si publiées dans le
@@ -256,6 +262,10 @@ export const MODEL_SELECTOR_GROUPS = [
 	{
 		label: 'Anomalie',
 		domains: [{ value: ANOMALY_DOMAIN, label: 'Anomalie T°C (Europe ERA/Arpège)' }]
+	},
+	{
+		label: 'Radar',
+		domains: [{ value: RADAR_METROPOLE_DOMAIN, label: "Radar France (lame d'eau)" }]
 	}
 ] as const satisfies readonly {
 	label: string;
@@ -297,7 +307,8 @@ export const MODEL_DESCRIPTIONS: Record<string, string> = {
 	dwd_icon_d2: 'DWD (Allemagne) · ~2 km, Europe centrale · échéance ~2 j',
 	dwd_icon_eu: 'DWD (Allemagne) · ~7 km, Europe · échéance ~5 j',
 	meteoswiss_icon_ch1: 'MeteoSwiss (Suisse) · ~1 km, Alpes/Suisse · échéance ~33 h',
-	meteoswiss_icon_ch2: 'MeteoSwiss (Suisse) · ~2 km, Alpes/Suisse · échéance ~5 j'
+	meteoswiss_icon_ch2: 'MeteoSwiss (Suisse) · ~2 km, Alpes/Suisse · échéance ~5 j',
+	radar_metropole: "Infoclimat · 0,01° (~1 km), France métropole · radar lame d'eau · obs. 5 min"
 };
 
 // Time constants
