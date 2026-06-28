@@ -27,7 +27,12 @@ import {
 	windOverlayLevel
 } from '$lib/stores/vector';
 
-import { ANOMALY_DOMAIN, ANOMALY_VARIABLE, DEFAULT_PREFERENCES } from '$lib/constants';
+import {
+	ANOMALY_DOMAIN,
+	ANOMALY_VARIABLE,
+	DEFAULT_PREFERENCES,
+	RADAR_METROPOLE_DOMAIN
+} from '$lib/constants';
 
 import {
 	CLIP_COUNTRIES_PARAM,
@@ -304,7 +309,15 @@ export const getOMUrlFor = (
 	}
 
 	const base = `${getBaseUri(domain)}/data_spatial/${domain}`;
-	let result = `${base}/${fmtModelRun(modelRun)}/${fmtSelectedTime(selectedTime)}.om`;
+	// Le radar est une observation (lame d'eau) : pas de dossier de run
+	// (`reference_time`), les fichiers sont rangés par date de l'heure valide
+	// (`{Y}/{M}/{D}/{YYYY-MM-DDTHHMM}.om`). Les autres domaines portent un
+	// dossier de run `{Y}/{M}/{D}/{HHMM}Z`.
+	const runSegment =
+		domain === RADAR_METROPOLE_DOMAIN
+			? fmtDateYMD(selectedTime).replaceAll('-', '/')
+			: fmtModelRun(modelRun);
+	let result = `${base}/${runSegment}/${fmtSelectedTime(selectedTime)}.om`;
 	result += `?variable=${variable}`;
 
 	if (mode.current === 'dark') result += '&dark=true';
