@@ -18,6 +18,7 @@ import { convectiveInhibitionScale } from '$lib/color-scales/convective-inhibiti
 import { geopotentialPv1500Scale } from '$lib/color-scales/geopotential-pv1500';
 import { infoclimatTemperatureScale } from '$lib/color-scales/infoclimat-temperature';
 import { lightningDensityScale } from '$lib/color-scales/lightning-density';
+import { precipitableWaterScale } from '$lib/color-scales/precipitable-water';
 import { precipitationSumScale } from '$lib/color-scales/precipitation-sum';
 import { precipitationTypeScale } from '$lib/color-scales/precipitation-type';
 import { radarReflectivityScale } from '$lib/color-scales/radar-reflectivity';
@@ -113,6 +114,10 @@ export const standardColorScales = {
 	convective_inhibition: convectiveInhibitionScale,
 	visibility: visibilityScale,
 	lightning_density: lightningDensityScale,
+	// `precipitable_water` (colonne de vapeur d'eau, kg/m² ≈ mm) : sans clé exacte,
+	// le package retombe sur le fallback `temperature` (°C, bornes −80→50) — la
+	// légende affichait des températures. Échelle « humidité » dédiée en mm.
+	precipitable_water: precipitableWaterScale,
 	precipitation_type: precipitationTypeScale,
 	precipitation_type_severe: precipitationTypeScale,
 

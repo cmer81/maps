@@ -7,6 +7,7 @@ import { capeScale } from '$lib/color-scales/cape';
 import { convectiveInhibitionScale } from '$lib/color-scales/convective-inhibition';
 import { infoclimatTemperatureScale } from '$lib/color-scales/infoclimat-temperature';
 import { lightningDensityScale } from '$lib/color-scales/lightning-density';
+import { precipitableWaterScale } from '$lib/color-scales/precipitable-water';
 import { precipitationTypeScale } from '$lib/color-scales/precipitation-type';
 import { radarReflectivityScale } from '$lib/color-scales/radar-reflectivity';
 import { visibilityScale } from '$lib/color-scales/visibility';
@@ -20,7 +21,8 @@ const continuous: [string, BreakpointColorScale][] = [
 	['cape', capeScale],
 	['cin', convectiveInhibitionScale],
 	['visibility', visibilityScale],
-	['lightning', lightningDensityScale]
+	['lightning', lightningDensityScale],
+	['precipitable_water', precipitableWaterScale]
 ];
 
 describe('continuous convection color scales', () => {
@@ -53,6 +55,38 @@ describe('continuous convection color scales', () => {
 		expect(lightningDensityScale.unit).toBe('km⁻² day⁻¹');
 		// Cellule orageuse : plusieurs dizaines de km⁻²·jour⁻¹ → la borne haute ≥ 50.
 		expect(lightningDensityScale.breakpoints.at(-1)).toBeGreaterThanOrEqual(50);
+	});
+
+	it('precipitable water uses a moisture (mm) unit, not the °C fallback', () => {
+		expect(precipitableWaterScale.unit).toBe('mm');
+		// Colonne d'eau précipitable : couvre au moins jusqu'à ~50 mm (fortes
+		// masses d'air humides convectives).
+		expect(precipitableWaterScale.breakpoints.at(-1)).toBeGreaterThanOrEqual(50);
+	});
+});
+
+describe('arome_france_convection color scale resolution', () => {
+	// Reproduit le sous-ensemble de `standardColorScales` (om-protocol-settings.ts)
+	// pertinent pour arome_france_convection, sans importer le store (deps browser).
+	// Une clé EXACTE dans la source prime sur la résolution par famille / fallback
+	// (qui mapperait `precipitable_water` sur `temperature` en °C).
+	const source = {
+		...defaultOmProtocolSettings.colorScales,
+		radar_reflectivity: radarReflectivityScale,
+		brightness_temperature: brightnessTemperatureScale,
+		brightness_temperature_wv: brightnessTemperatureWvScale,
+		cape: capeScale,
+		convective_inhibition: convectiveInhibitionScale,
+		visibility: visibilityScale,
+		lightning_density: lightningDensityScale,
+		precipitation_type: precipitationTypeScale,
+		precipitation_type_severe: precipitationTypeScale,
+		precipitable_water: precipitableWaterScale
+	};
+	const unitOf = (variable: string) => getColorScale(variable, false, source).unit;
+
+	it('résout precipitable_water en mm et non sur le fallback température (°C)', () => {
+		expect(unitOf('precipitable_water')).toBe('mm');
 	});
 });
 
