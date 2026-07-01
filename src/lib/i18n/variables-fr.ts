@@ -75,6 +75,10 @@ const EXPLICIT: Record<string, string> = {
 	'Precipitation SOT90': 'Précipitations (SOT90)',
 	'Precipitation Type': 'Type de précipitations',
 	precipitation_type_severe: 'Type de précip. (le plus sévère)',
+	// `precipitable_water` (colonne de vapeur d'eau, domaine arome_france_convection).
+	// Le package n'expose que `total_column_integrated_water_vapour` (autre clé), donc
+	// le sélecteur afficherait la valeur brute → on la mappe par sa clé snake_case.
+	precipitable_water: 'Eau précipitable',
 	'Pressure Mean Sea Level': 'Pression au niveau de la mer',
 	radar_reflectivity: 'Réflectivité radar',
 	'Ragweed Pollen': "Pollen d'ambroisie",

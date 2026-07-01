@@ -14,6 +14,7 @@ describe('translateVariableLabel — convection variables', () => {
 		expect(translateVariableLabel('precipitation_type_severe')).toBe(
 			'Type de précip. (le plus sévère)'
 		);
+		expect(translateVariableLabel('precipitable_water')).toBe('Eau précipitable');
 	});
 
 	it('translates the package English labels', () => {
