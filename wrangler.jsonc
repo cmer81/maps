@@ -1,6 +1,6 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "maps",
+	"name": "numeric",
 	"compatibility_date": "2026-05-30",
 	// Déploiement statique (SvelteKit adapter-static → ./build). Pas de `main` :
 	// Worker "assets-only", aucun script serveur. La présence de ce fichier empêche
