@@ -23,7 +23,8 @@ const EXPECTED_ORDER = [
 	'ecmwf_ifs',
 	'ecmwf_aifs025_single',
 	'ncep_gfs025',
-	'anomaly_europe'
+	'anomaly_europe',
+	'radar_metropole'
 ];
 
 describe('MODEL_SELECTOR_GROUPS', () => {
@@ -35,7 +36,8 @@ describe('MODEL_SELECTOR_GROUPS', () => {
 			'MeteoSwiss',
 			'ECMWF',
 			'NOAA US',
-			'Anomalie'
+			'Anomalie',
+			'Radar'
 		]);
 	});
 
