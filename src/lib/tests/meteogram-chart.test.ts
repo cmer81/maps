@@ -276,6 +276,23 @@ describe('buildChartOptions', () => {
 		expect(tempAxis.minRange).toBe(8);
 	});
 
+	it('date de minuit courte (« mer. 15 », sans mois) — les dates longues faisaient pivoter tous les labels', () => {
+		// Feedback prod : « mer. 15 juil. » débordait de son créneau de tick →
+		// Highcharts passait TOUS les labels de l'axe X en biais, premier label
+		// tronqué (« mer. 15 juil.me… »). La date courte tient horizontale.
+		const o = buildChartOptions(input());
+		const labels = (o.xAxis as { labels?: { formatter?: (this: unknown) => string } }[])[0].labels!;
+		const time = {
+			// Renvoie '00' pour %H (déclenche la branche date) et échoïse le format
+			// sinon — permet d'asserter le gabarit de date sans runtime Highcharts.
+			dateFormat: (f: string) => (f === '%H' ? '00' : f)
+		};
+		const rendered = labels.formatter!.call({ value: 0, axis: { chart: { time } } });
+		expect(rendered).toContain('%a %e');
+		expect(rendered).not.toContain('%b');
+		expect(rendered).toContain('font-weight: bold');
+	});
+
 	it('un seul axe X, avec séparateurs de jour (plotLines)', () => {
 		const o = buildChartOptions(input());
 		expect(o.xAxis).toHaveLength(1);

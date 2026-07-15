@@ -199,7 +199,11 @@ export function buildChartOptions(input: MeteogramChartInput): Options {
 				plotLines: dayBoundaryPlotLines(input.times, input.timezone),
 				labels: {
 					style: { color: TEXT },
-					// Heure (%H) par défaut ; à minuit local, la date en gras (cadre allégé).
+					// Heure (%H) par défaut ; à minuit local, la date en gras — format
+					// COURT (« mer. 15 », sans mois) : « mer. 15 juil. » débordait de
+					// son créneau et faisait pivoter tous les labels de l'axe (premier
+					// tronqué « mer. 15 juil.me… », retour prod). Le mois complet reste
+					// lisible dans l'encart de valeurs et l'en-tête du tiroir.
 					formatter: function () {
 						const ctx = this as unknown as {
 							value: number;
@@ -208,7 +212,7 @@ export function buildChartOptions(input: MeteogramChartInput): Options {
 						const time = ctx.axis.chart.time;
 						const hh = time.dateFormat('%H', ctx.value);
 						return hh === '00'
-							? time.dateFormat('<span style="font-weight: bold">%a %e %b</span>', ctx.value)
+							? time.dateFormat('<span style="font-weight: bold">%a %e</span>', ctx.value)
 							: hh;
 					}
 				}
