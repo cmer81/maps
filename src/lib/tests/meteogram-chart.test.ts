@@ -26,9 +26,45 @@ function input(overrides: Partial<MeteogramChartInput> = {}): MeteogramChartInpu
 }
 
 describe('buildChartOptions', () => {
-	it('déclare 4 axes Y (T°, précip, pression, humidité)', () => {
+	it('déclare 5 axes Y (T°, précip, pression, humidité, windbarb)', () => {
 		const o = buildChartOptions(input());
-		expect(o.yAxis).toHaveLength(4);
+		expect(o.yAxis).toHaveLength(5);
+	});
+
+	it('windbarb sur un axe Y dédié invisible (sinon ses valeurs écrasent l’échelle des T°)', () => {
+		// Bug prod : la série windbarb partageait l'axe 0 (températures) — ses
+		// `value` (m/s, seuil 0) entraient dans le calcul des extrêmes → échelle
+		// étirée de 0 au max du vent dès que la série était visible.
+		const o = buildChartOptions(input());
+		const barbs = (o.series as { type?: string; yAxis?: number }[]).find(
+			(s) => s.type === 'windbarb'
+		)!;
+		expect(barbs.yAxis).toBe(4);
+		expect((o.yAxis as { visible?: boolean }[])[4].visible).toBe(false);
+	});
+
+	it('axe T° ajusté aux données : pas d’arrondi des extrêmes au tick (échelle non écrasée)', () => {
+		// Même sans les windbarbs, les défauts startOnTick/endOnTick (true)
+		// arrondissent les extrêmes au tick entier : avec un tick de 25, une
+		// courbe 25-32 °C donnait un axe 0-50 (courbe tassée sur la moitié).
+		const o = buildChartOptions(input());
+		const tempAxis = (
+			o.yAxis as { startOnTick?: boolean; endOnTick?: boolean; tickPixelInterval?: number }[]
+		)[0];
+		expect(tempAxis.startOnTick).toBe(false);
+		expect(tempAxis.endOnTick).toBe(false);
+		// Grille assez dense pour la faible hauteur du tiroir : le défaut (72px)
+		// pouvait ne laisser qu'une seule graduation sur le rendu initial.
+		expect(tempAxis.tickPixelInterval).toBe(40);
+	});
+
+	it('pression : trait lisible — pleine opacité, 1,5px (feedback prod « terne »)', () => {
+		const o = buildChartOptions(input());
+		const p = (o.series as { name?: string; lineWidth?: number; color?: string }[]).find(
+			(s) => s.name === 'Pression'
+		)!;
+		expect(p.color).toBe('#fbbf24');
+		expect(p.lineWidth).toBe(1.5);
 	});
 
 	it('6 séries : température, rosée, précip, pression, humidité, windbarb — sur le bon axe', () => {

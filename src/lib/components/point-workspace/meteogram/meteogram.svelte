@@ -15,7 +15,7 @@
 	import { BEAUFORT_FR, buildChartOptions } from '$lib/meteogram/meteogram-chart';
 	import { resolveApiModel } from '$lib/meteogram/model-map';
 	import { nearestValidTime } from '$lib/meteogram/snap';
-	import { symbolForWmo } from '$lib/meteogram/weather-symbols';
+	import { symbolForWmo, weatherSymbolPlacements } from '$lib/meteogram/weather-symbols';
 	import { goToValidTime } from '$lib/time-navigation';
 
 	import type { MeteogramData, MeteogramKey } from '$lib/meteogram/types';
@@ -279,34 +279,40 @@
 		return hcPromise;
 	}
 
-	/** Icônes météo au-dessus de la courbe de T°, redessinées à chaque render
-	 *  (zoom, resize, scroll) — le groupe précédent est détruit d'abord.
-	 *  Stride adaptatif : 1 sur 2 sur horizon court, plafonné à ~28 icônes sur
-	 *  horizon long (l'API renvoie jusqu'à 7 jours — sinon elles se chevauchent). */
+	/** Icônes météo en **bande fixe** en haut de la zone de tracé (façon yr.no),
+	 *  redessinées à chaque render (zoom, resize, scroll) — le groupe précédent
+	 *  est détruit d'abord. Elles suivaient la courbe de T° (démo Highcharts)
+	 *  mais retour prod : bizarre quand la courbe est masquée, et par T° basse
+	 *  elles empiétaient sur les histogrammes de précip et leurs valeurs.
+	 *  Sélection des pas (stride adaptatif, codes null écartés) : logique pure
+	 *  `weatherSymbolPlacements` (testée) ; ici seul le rendu. */
 	function drawSymbols(c: Chart, d: MeteogramData) {
 		type ChartWithSymbols = Chart & { __symbolsGroup?: { destroy(): void } };
 		const cc = c as ChartWithSymbols;
 		cc.__symbolsGroup?.destroy();
 		const group = c.renderer.g('weather-symbols').attr({ zIndex: 5 }).add();
-		const codes = d.series.weather_code ?? [];
-		const days = d.series.is_day ?? [];
-		const stride = Math.max(2, Math.ceil(d.times.length / 28));
-		c.series[0].data.forEach((point, i) => {
-			if (i % stride !== 0) return;
-			const code = codes[i];
-			if (code === null || code === undefined) return;
-			if (point.plotX === undefined || point.plotY === undefined) return;
-			const { icon } = symbolForWmo(code, (days[i] ?? 1) === 1);
-			c.renderer
-				.image(
-					`/weather-symbols/${icon}.svg`,
-					point.plotX + c.plotLeft - 8,
-					point.plotY + c.plotTop - 30,
-					30,
-					30
-				)
-				.add(group);
-		});
+		const axis = c.xAxis[0];
+		// Les séries sont en pointPlacement 'between' : on centre l'icône sur la
+		// colonne de données (demi-pas à droite du tick), comme les points tracés.
+		const halfStep =
+			d.times.length > 1
+				? (axis.toPixels(d.times[1].getTime(), false) -
+						axis.toPixels(d.times[0].getTime(), false)) /
+					2
+				: 0;
+		const y = c.plotTop + 4;
+		for (const { index, icon } of weatherSymbolPlacements(
+			d.series.weather_code ?? [],
+			d.series.is_day ?? []
+		)) {
+			const t = d.times[index];
+			if (!t) continue;
+			const xCenter = axis.toPixels(t.getTime(), false) + halfStep;
+			// Zoom/scroll : ne pas dessiner hors de la zone de tracé (le groupe du
+			// renderer n'est pas clippé par le plot area, contrairement aux séries).
+			if (xCenter < c.plotLeft || xCenter > c.plotLeft + c.plotWidth) continue;
+			c.renderer.image(`/weather-symbols/${icon}.svg`, xCenter - 15, y, 30, 30).add(group);
+		}
 		cc.__symbolsGroup = group;
 	}
 
