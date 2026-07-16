@@ -194,5 +194,26 @@ export const omProtocolSettings: Writable<OmProtocolSettings> = writable({
 				data.values = data.values?.map((value) => value * 1e5);
 			}
 		}
+		// Réflectivité radar → taux de pluie équivalent (mm/h), à la Météociel.
+		// La donnée source est en dBZ ; on la convertit via la relation Z-R de
+		// Marshall-Palmer (Z = 200·R^1,6 → R = (10^(dBZ/10)/200)^(1/1,6)) pour que
+		// `radarReflectivityScale` (graduée en mm/h) affiche les mêmes couleurs et
+		// libellés que Météociel (raster, contours, survol, légende).
+		// On plancherise sous 0,5 mm/h (≈ 18 dBZ) à NaN : un pixel NaN ne génère ni
+		// raster ni contour → supprime le clair-air et les artefacts -0.0 dBZ de la
+		// compression OMfile (sinon des isolignes parasites se tracent autour de ces
+		// micro-taches). Couvre `radar_reflectivity` (arome_france_convection) et
+		// `reflectivity_max` (arome_france_hd) — même quantité physique, même conversion.
+		const isReflectivity =
+			(state.dataOptions.domain.value === 'arome_france_convection' &&
+				state.dataOptions.variable === 'radar_reflectivity') ||
+			(state.dataOptions.domain.value === 'arome_france_hd' &&
+				state.dataOptions.variable === 'reflectivity_max');
+		if (isReflectivity && data.values) {
+			data.values = data.values.map((dbz) => {
+				const rainRate = Math.pow(Math.pow(10, dbz / 10) / 200, 1 / 1.6);
+				return rainRate < 0.5 ? NaN : rainRate;
+			});
+		}
 	}
 });
