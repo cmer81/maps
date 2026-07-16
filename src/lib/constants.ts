@@ -55,7 +55,8 @@ export const DOMAIN_DEFAULT_VIEWS: Record<string, { center: [number, number]; zo
 export const DOMAIN_DEFAULT_VARIABLES: Record<string, string> = {
 	[AROME_FRANCE_CONVECTION_DOMAIN]: 'radar_reflectivity',
 	[AROME_FRANCE_DOMAIN]: 'temperature_2m',
-	[AROME_FRANCE_HD_DOMAIN]: 'temperature_2m'
+	[AROME_FRANCE_HD_DOMAIN]: 'temperature_2m',
+	meteofrance_arome_france_hd_15min: 'precipitation'
 };
 
 /** Variables masquées du sélecteur (display-only), même si publiées dans le
@@ -226,6 +227,7 @@ export const MODEL_SELECTOR_GROUPS = [
 		label: 'Météo-France Arome',
 		domains: [
 			{ value: AROME_FRANCE_HD_DOMAIN, label: 'Arome France HD' },
+			{ value: 'meteofrance_arome_france_hd_15min', label: 'Arome France HD 15min' },
 			{ value: AROME_FRANCE_DOMAIN, label: 'Arome France 2.5' },
 			{ value: AROME_FRANCE_CONVECTION_DOMAIN, label: 'Arome France Convection' },
 			{ value: AROME_OM_REUNION_DOMAIN, label: 'Arome OM Réunion-Mayotte' },
@@ -332,6 +334,8 @@ export const MODEL_DESCRIPTIONS: Record<string, string> = {
 		'Infoclimat · 0,025° (~2,5 km), France métropole · surface · ~51 h · émagramme (sondage)',
 	arome_france_hd:
 		'Infoclimat · 0,01° (~1,3 km), France métropole · surface haute résolution · ~2 j',
+	meteofrance_arome_france_hd_15min:
+		'Météo-France · 0,01° (~1,3 km), France · pas 15 min · court terme (~6 h)',
 	meteofrance_arome_france0025:
 		'Météo-France · 0,025° (~2,5 km), France · niveaux de pression (sondage) · ~2 j',
 	meteofrance_arpege_europe: 'Météo-France · ~11 km, Europe · échéance ~4 j',
