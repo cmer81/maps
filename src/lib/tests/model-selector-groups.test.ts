@@ -5,7 +5,9 @@ import { DOMAIN_ALLOWLIST, MODEL_SELECTOR_GROUPS } from '$lib/constants';
 
 const EXPECTED_ORDER = [
 	'arome_france_hd',
+	'meteofrance_arome_france_hd_15min',
 	'arome_france',
+	'meteofrance_arome_france0025_15min',
 	'arome_france_convection',
 	'arome_om_reunion',
 	'arome_om_antilles',
