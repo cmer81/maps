@@ -176,8 +176,8 @@ describe('arome_france_hd color scale resolution', () => {
 		// Sans clé exacte, le package mappait ces variables sur `temperature` (°C) ou
 		// `wind` (m/s) — cf. l'algo getOptionalColorScale (`_sum` non strippé, etc.).
 		// `reflectivity_max` partage `radarReflectivityScale`, graduée en mm/h (taux
-		// de pluie équivalent à la Météociel — la donnée dBZ est convertie en mm/h
-		// dans le postReadCallback).
+		// de pluie équivalent à la Météociel — le producteur sert désormais le champ
+		// mm/h natif de Météo-France, cf. infoclimat-pipelines PR #37).
 		expect(unitOf('reflectivity_max')).toBe('mm/h');
 		expect(unitOf('graupel_sum')).toBe('mm');
 		expect(unitOf('snow_graupel_sum')).toBe('mm');
