@@ -21,6 +21,7 @@ const EXPECTED_ORDER = [
 	'dwd_icon_d2',
 	'meteoswiss_icon_ch1',
 	'meteoswiss_icon_ch2',
+	'knmi_harmonie_arome_europe',
 	'ecmwf_ifs025',
 	'ecmwf_ifs',
 	'ecmwf_aifs025_single',
@@ -35,6 +36,7 @@ describe('MODEL_SELECTOR_GROUPS', () => {
 			'Météo-France Arpège',
 			'DWD Germany',
 			'MeteoSwiss',
+			'KNMI Netherlands',
 			'ECMWF',
 			'NOAA US',
 			'Anomalie'

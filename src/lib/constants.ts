@@ -57,7 +57,8 @@ export const DOMAIN_DEFAULT_VARIABLES: Record<string, string> = {
 	[AROME_FRANCE_DOMAIN]: 'temperature_2m',
 	[AROME_FRANCE_HD_DOMAIN]: 'temperature_2m',
 	meteofrance_arome_france_hd_15min: 'precipitation',
-	meteofrance_arome_france0025_15min: 'wind_gusts_10m'
+	meteofrance_arome_france0025_15min: 'wind_gusts_10m',
+	knmi_harmonie_arome_europe: 'temperature_2m'
 };
 
 /** Variables masquées du sélecteur (display-only), même si publiées dans le
@@ -262,6 +263,10 @@ export const MODEL_SELECTOR_GROUPS = [
 		]
 	},
 	{
+		label: 'KNMI Netherlands',
+		domains: [{ value: 'knmi_harmonie_arome_europe', label: 'Harmonie AROME Europe' }]
+	},
+	{
 		label: 'ECMWF',
 		domains: [
 			{ value: 'ecmwf_ifs025', label: 'ECMWF IFS 0.25' },
@@ -352,7 +357,8 @@ export const MODEL_DESCRIPTIONS: Record<string, string> = {
 	dwd_icon_d2: 'DWD (Allemagne) · ~2 km, Europe centrale · échéance ~2 j',
 	dwd_icon_eu: 'DWD (Allemagne) · ~7 km, Europe · échéance ~5 j',
 	meteoswiss_icon_ch1: 'MeteoSwiss (Suisse) · ~1 km, Alpes/Suisse · échéance ~33 h',
-	meteoswiss_icon_ch2: 'MeteoSwiss (Suisse) · ~2 km, Alpes/Suisse · échéance ~5 j'
+	meteoswiss_icon_ch2: 'MeteoSwiss (Suisse) · ~2 km, Alpes/Suisse · échéance ~5 j',
+	knmi_harmonie_arome_europe: 'KNMI (Pays-Bas) · 5,5 km, Europe · échéance ~2,5 j'
 };
 
 // Time constants
