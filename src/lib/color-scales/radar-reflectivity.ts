@@ -1,15 +1,16 @@
 import type { BreakpointColorScale } from '@openmeteo/weather-map-layer';
 
 // Réflectivité radar affichée en taux de pluie équivalent (mm/h), à la Météociel.
-// La donnée source est en dBZ ; elle est convertie en mm/h via la relation Z-R de
-// Marshall-Palmer dans le postReadCallback (`om-protocol-settings.ts`) — voir
-// `dbzToRainRate()`. Cette échelle définit donc ses seuils EN mm/h et reprend la
-// palette Météociel band-par-band (couleurs échantillonnées de leur légende).
+// La donnée source est DÉJÀ en mm/h : depuis infoclimat-pipelines PR #37, les
+// OMfiles servent le champ mm/h natif de Météo-France (WCS REFLECTIVITY_MAX),
+// plus aucune conversion côté client. Cette échelle définit donc ses seuils EN
+// mm/h et reprend la palette Météociel band-par-band (couleurs échantillonnées de
+// leur légende).
 //
 // Bande de tête transparente (breakpoint 0, alpha 0) : tout px < 0,5 mm/h
 // (≈ < 18 dBZ) est rendu transparent, comme Météociel — le moteur retombe sur
-// colors[0] pour px < breakpoints[1]. La conversion Z-R plancherise déjà ces
-// valeurs à NaN, cette bande transparente est une sécurité.
+// colors[0] pour px < breakpoints[1]. Le postReadCallback (`om-protocol-settings.ts`)
+// plancherise en plus ces valeurs à NaN pour garder les contours propres.
 export const radarReflectivityScale: BreakpointColorScale = {
 	type: 'breakpoint',
 	unit: 'mm/h',
