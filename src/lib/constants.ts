@@ -326,6 +326,35 @@ export const DOMAIN_TO_API_MODEL: Readonly<Record<string, string>> = {
 	ncep_gfs025: 'gfs_global'
 };
 
+// Badges courts affichés dans le trigger et la liste du sélecteur de modèle.
+// Format : resolution / zone / pas de temps. Doit rester concis (< 30 caracteres).
+export const MODEL_BADGES: Record<string, string> = {
+	arome_france_hd: '0,01° · France · 1 h',
+	meteofrance_arome_france_hd_15min: '0,01° · France · 15 min',
+	arome_france: '0,025° · France · 1 h',
+	meteofrance_arome_france0025_15min: '0,025° · France · 15 min',
+	arome_france_convection: '0,025° · France · orage',
+	arome_om_reunion: '0,025° · Réunion · 1 h',
+	arome_om_antilles: '0,025° · Antilles · 1 h',
+	arome_om_guyane: '0,025° · Guyane · 1 h',
+	arome_om_ncaledonie: '0,025° · Nouvelle-Calédonie · 1 h',
+	arome_om_polynesie: '0,025° · Polynésie · 1 h',
+	meteofrance_arome_france0025: '0,025° · France · niveaux',
+	meteofrance_arpege_europe: '11 km · Europe · 4 j',
+	meteofrance_arpege_world025: '0,25° · Monde · 4 j',
+	ncep_gfs025: '0,25° · Monde · 16 j',
+	ecmwf_ifs: 'Global · reference · 15 j',
+	ecmwf_ifs025: '0,25° · Monde · 15 j',
+	ecmwf_aifs025_single: '0,25° · Monde · IA · 15 j',
+	dwd_icon: '13 km · Monde · 7,5 j',
+	dwd_icon_d2: '2 km · Europe centrale · 2 j',
+	dwd_icon_eu: '7 km · Europe · 5 j',
+	meteoswiss_icon_ch1: '1 km · Alpes · 33 h',
+	meteoswiss_icon_ch2: '2 km · Alpes · 5 j',
+	knmi_harmonie_arome_europe: '5,5 km · Europe · 2,5 j',
+	anomaly_europe: 'Anomalie T°C · Europe'
+};
+
 // Descriptions courtes par modèle, affichées sous le nom dans le sélecteur de modèle
 // pour aider à choisir (fournisseur · résolution/zone · échéance). Optionnel par domaine.
 export const MODEL_DESCRIPTIONS: Record<string, string> = {
