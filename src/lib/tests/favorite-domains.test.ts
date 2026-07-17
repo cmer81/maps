@@ -18,9 +18,19 @@ describe('withFavoriteDomain', () => {
 	});
 
 	it('retire le modèle sans toucher aux autres favoris', () => {
-		expect(withFavoriteDomain(['arome_france', 'ecmwf_ifs025', 'ncep_gfs025'], 'ecmwf_ifs025')).toEqual([
-			'arome_france',
-			'ncep_gfs025'
-		]);
+		expect(
+			withFavoriteDomain(['arome_france', 'ecmwf_ifs025', 'ncep_gfs025'], 'ecmwf_ifs025')
+		).toEqual(['arome_france', 'ncep_gfs025']);
+	});
+
+	it('est idempotent sur un double basculement (retour à l’état initial)', () => {
+		const initial = ['arome_france', 'ecmwf_ifs025'];
+		const once = withFavoriteDomain(initial, 'ncep_gfs025');
+		expect(withFavoriteDomain(once, 'ncep_gfs025')).toEqual(initial);
+	});
+
+	it('n’applique aucun plafond au nombre de favoris', () => {
+		const many = Array.from({ length: 50 }, (_, i) => `model_${i}`);
+		expect(withFavoriteDomain(many, 'model_new')).toHaveLength(many.length + 1);
 	});
 });

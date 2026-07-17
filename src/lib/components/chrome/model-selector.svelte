@@ -37,6 +37,26 @@
 		toggleFavoriteDomain(value);
 	}
 
+	// Valeur de l'item actuellement surligné dans la liste (préfixée `fav:`/`recent:`
+	// pour les groupes en tête), suivie via `bind:value` de Command.Root.
+	let highlighted = $state('');
+
+	// Retire le préfixe de groupe pour retrouver le domaine sous-jacent.
+	function stripGroupPrefix(value: string): string {
+		return value.replace(/^(fav|recent):/, '');
+	}
+
+	// Raccourci clavier ⌘/Ctrl+D : (dé)favorise le modèle surligné sans quitter la
+	// navigation aux flèches. bits-ui n'intercepte pas cette combinaison ; on annule
+	// le défaut navigateur (marque-page).
+	function handleFavoriteShortcut(e: KeyboardEvent) {
+		if (!(e.metaKey || e.ctrlKey) || (e.key !== 'd' && e.key !== 'D')) return;
+		const value = stripGroupPrefix(highlighted);
+		if (!value) return;
+		e.preventDefault();
+		toggleFavoriteDomain(value);
+	}
+
 	// Modèles récemment utilisés, résolus en {value, label} et filtrés à ceux
 	// réellement enregistrés dans `domainOptions`.
 	const recentItems = $derived(
@@ -54,7 +74,10 @@
 			.map((o) => ({ value: o.value, label: o.label ?? o.value }))
 	);
 
-	const isFavorite = $derived((value: string) => $favoriteDomains.includes(value));
+	// Réactif dans le template : la lecture de `$favoriteDomains` est suivie par Svelte.
+	function isFavorite(value: string): boolean {
+		return $favoriteDomains.includes(value);
+	}
 	const selectedBadge = $derived(MODEL_BADGES[$selectedDomain?.value ?? '']);
 </script>
 
@@ -66,7 +89,9 @@
 			<div class="flex flex-wrap items-center gap-1.5">
 				<span class="truncate text-sm font-medium">{label}</span>
 				{#if badge}
-					<span class="bg-white/10 rounded px-1.5 py-0 text-[10px] font-medium tracking-wide text-white/75">
+					<span
+						class="bg-white/10 rounded px-1.5 py-0 text-[10px] font-medium tracking-wide text-white/75"
+					>
 						{badge}
 					</span>
 				{/if}
@@ -79,7 +104,7 @@
 		</div>
 		<div class="flex shrink-0 items-start gap-1">
 			<CheckIcon
-				class="mt-0.5 size-4 shrink-0 {$selectedDomain.value !== value ? 'text-transparent' : ''}"
+				class="mt-0.5 size-4 shrink-0 {$selectedDomain?.value !== value ? 'text-transparent' : ''}"
 				aria-hidden="true"
 			/>
 			<button
@@ -121,12 +146,16 @@
 					{$selectedDomain?.label || 'Modèle'}
 				</span>
 				{#if selectedBadge}
-					<span class="bg-white/15 hidden rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide text-white/80 sm:inline">
+					<span
+						class="bg-white/15 hidden rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide text-white/80 sm:inline"
+					>
 						{selectedBadge}
 					</span>
 				{/if}
 				<ChevronDownIcon
-					class="size-4 shrink-0 opacity-60 transition-transform duration-200 {open ? 'rotate-180' : ''}"
+					class="size-4 shrink-0 opacity-60 transition-transform duration-200 {open
+						? 'rotate-180'
+						: ''}"
 					aria-hidden="true"
 				/>
 			</Button>
@@ -148,9 +177,13 @@
 				query.focus();
 			}
 		}}
-		class="bg-glass/90 z-110 w-[22rem] rounded-xl border border-white/10 p-0 shadow-2xl backdrop-blur-xl"
+		class="bg-glass/90 z-110 w-[min(22rem,calc(100vw-1.5rem))] rounded-xl border border-white/10 p-0 shadow-2xl backdrop-blur-xl"
 	>
-		<Command.Root class="bg-transparent">
+		<Command.Root
+			class="bg-transparent"
+			bind:value={highlighted}
+			onkeydown={handleFavoriteShortcut}
+		>
 			<div class="border-b border-white/10 px-3 py-2.5">
 				<Command.Input
 					placeholder="Rechercher un modèle…"
@@ -211,6 +244,13 @@
 					{/if}
 				{/each}
 			</Command.List>
+			<div
+				class="border-t border-white/10 px-3 py-1.5 text-[10px] text-white/40"
+				aria-hidden="true"
+			>
+				<kbd class="font-sans">⌘/Ctrl</kbd>+<kbd class="font-sans">D</kbd> pour (dé)favoriser le modèle
+				surligné
+			</div>
 		</Command.Root>
 	</Popover.Content>
 </Popover.Root>
@@ -222,7 +262,7 @@
 	:global([data-slot='command-group'].model-group:first-of-type) {
 		padding-top: 0.25rem;
 	}
-	:global([data-slot='command-group'].model-group [data-slot='command-group-heading']) {
+	:global([data-slot='command-group'].model-group [data-command-group-heading]) {
 		border-radius: 0.5rem;
 		background-color: rgba(255, 255, 255, 0.08);
 		padding: 0.375rem 0.625rem;
@@ -233,11 +273,11 @@
 		text-transform: uppercase;
 		color: #bae6fd;
 	}
-	:global([data-slot='command-group'].model-group [data-slot='command-group-items']) {
+	:global([data-slot='command-group'].model-group [data-command-group-items]) {
 		padding-top: 0.25rem;
 		padding-bottom: 0.25rem;
 	}
-	:global([data-slot='command-item']) {
+	:global([data-slot='command-group'].model-group [data-slot='command-item']) {
 		border-radius: 0.5rem;
 	}
 </style>

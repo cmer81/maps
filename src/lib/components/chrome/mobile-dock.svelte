@@ -80,7 +80,7 @@
 		</div>
 		<div class="scrollbar-thin min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-8">
 			{#if activeTab === 'layers'}
-				<div class="mb-3"><ModelSelector /></div>
+				<div class="mb-3 flex justify-center"><ModelSelector /></div>
 				<LayerList />
 			{:else}
 				{@render display?.()}
