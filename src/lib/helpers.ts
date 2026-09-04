@@ -1,4 +1,4 @@
-import { browser, dev } from '$app/environment';
+import { browser } from '$app/environment';
 
 import {
 	ANOMALY_DOMAIN,
@@ -46,14 +46,38 @@ export const fmtSelectedTime = (t: Date): string =>
 export const buildSoundingOmUrl = (domain: string, modelRun: Date, validTime: Date): string =>
 	`${getBaseUri(domain)}/data_spatial/${domain}/${fmtModelRun(modelRun)}/${fmtSelectedTime(validTime)}.om`;
 
-export const getBaseUri = (domainValue: string): string => {
-	if (BUCKET_DOMAINS.has(domainValue)) {
-		return getModelsBucketUrl().replace(/\/$/, '');
-	}
-	return dev && domainValue.startsWith('dwd_icon') && !domainValue.endsWith('eps')
-		? 'https://s3.servert.ch'
-		: 'https://map-tiles.open-meteo.com';
-};
+/**
+ * Bucket S3 public Open-Meteo — source des domaines « upstream » (tous ceux qui
+ * ne sont pas dans `BUCKET_DOMAINS`, servis par notre propre bucket).
+ *
+ * On lisait auparavant `map-tiles.open-meteo.com`, dont le DNS ne résout plus
+ * (NXDOMAIN) : tous les domaines upstream étaient donc morts, seuls les modèles
+ * maison répondaient encore. Le bucket expose la même arborescence
+ * (`data_spatial/<domain>/YYYY/MM/DD/HHMMZ/<valid-time>.om`, plus
+ * `latest.json` / `in-progress.json` / `meta.json`), avec CORS `*` et les
+ * requêtes `Range` autorisées — ce dont le reader `.om` a besoin.
+ *
+ * C'est l'endpoint public retenu en amont : `weather-map-layer` a migré
+ * `map-tiles` -> BunnyCDN (#294), puis retiré BunnyCDN au profit de S3 brut
+ * (#306). Les deux autres endpoints connus sont hors-jeu :
+ *   - `openmeteo-data-spatial.b-cdn.net` -> 403 (CDN retiré) ;
+ *   - `data-spatial.open-meteo.com/data_spatial`, utilisé par l'app officielle,
+ *     -> 403 hors referer `localhost` / `*.open-meteo.com` (vérifié depuis un
+ *     referer `infoclimat.fr`).
+ *
+ * Contrepartie assumée : accès direct au bucket (us-west-2), sans CDN devant,
+ * donc latence plus élevée depuis l'Europe. Pas de miroir à repointer — si on
+ * veut du cache, il faudra le mettre en place de notre côté.
+ *
+ * Il n'y a volontairement plus de dérogation par domaine : un ancien fallback
+ * `dev` renvoyait les domaines `dwd_icon*` (hors `_eps`) vers `s3.servert.ch`,
+ * hôte qui répond aujourd'hui 404 sur toutes ses routes (racine incluse) et
+ * sans en-têtes CORS. En dev, ICON Global/EU/D2 partaient donc dans le mur.
+ */
+const OPEN_METEO_BUCKET_URL = 'https://openmeteo.s3.amazonaws.com';
+
+export const getBaseUri = (domainValue: string): string =>
+	BUCKET_DOMAINS.has(domainValue) ? getModelsBucketUrl().replace(/\/$/, '') : OPEN_METEO_BUCKET_URL;
 
 export const hashValue = (val: string): string => {
 	// FNV-1a 32-bit – synchronous, fast, and sufficient for cache-busting keys.

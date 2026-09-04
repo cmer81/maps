@@ -35,6 +35,6 @@ describe('getBaseUri', () => {
 	it('laisse les domaines non-bucket sur open-meteo', async () => {
 		vi.stubEnv('VITE_MODELS_BUCKET_URL', 'https://bucket.test');
 		const { getBaseUri } = await import('$lib/helpers');
-		expect(getBaseUri('ecmwf_ifs')).toBe('https://map-tiles.open-meteo.com');
+		expect(getBaseUri('ecmwf_ifs')).toBe('https://openmeteo.s3.amazonaws.com');
 	});
 });

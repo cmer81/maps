@@ -52,7 +52,7 @@ describe('getOMUrlFor', () => {
 		const url = getOMUrlFor('radar_reflectivity');
 		expect(url).toContain('https://bucket.test/data_spatial/arome_france_convection/');
 		expect(url).toContain('variable=radar_reflectivity');
-		expect(url).not.toContain('map-tiles.open-meteo.com');
+		expect(url).not.toContain('openmeteo.s3.amazonaws.com');
 	});
 
 	it('lets a vectorOverride force-disable contour/grid flags', () => {
