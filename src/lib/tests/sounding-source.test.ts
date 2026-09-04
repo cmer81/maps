@@ -68,7 +68,7 @@ describe('buildSoundingOmUrl', () => {
 		const run = new Date('2026-06-04T12:00:00Z');
 		const validTime = new Date('2026-06-05T03:00:00Z');
 		expect(buildSoundingOmUrl('meteofrance_arome_france0025', run, validTime)).toBe(
-			'https://map-tiles.open-meteo.com/data_spatial/meteofrance_arome_france0025/2026/06/04/1200Z/2026-06-05T0300.om'
+			'https://openmeteo.s3.amazonaws.com/data_spatial/meteofrance_arome_france0025/2026/06/04/1200Z/2026-06-05T0300.om'
 		);
 	});
 });
