@@ -101,7 +101,7 @@ header-only du `postReadCallback` (`getNextOmUrls`, retiré).
 `omProtocol({ url: 'om://' + getOMUrlFor(variable, neighborTime), type: 'json' }, …)` →
 peuple `state.data` dans le `stateByKey` de l'instance partagée (`getProtocolInstance`,
 rétention `MAX_STATES_WITH_DATA = 24`). Un saut ultérieur vers ce voisin réutilise la frame
-décodée au lieu de refaire `setToOmFile` + décode. **L'URL est bâtie via le même
+décodée au lieu de refaire la lecture + le décode. **L'URL est bâtie via le même
 `getOMUrlFor(variable, timeOverride)` que la source MapLibre** (`'om://' + getOMUrl()`) : c'est
 la condition pour que la clé du `stateByKey` matche — toute divergence de suffixe (dark,
 vector, tile_size, hashes) ferait silencieusement échouer la réutilisation. `getOMUrlFor`
@@ -140,7 +140,7 @@ Certains domaines ne viennent pas d'Open-Meteo mais d'un bucket R2 (`VITE_MODELS
 
 `src/lib/sounding/` implémente un sondage atmosphérique client-side en trois couches indépendantes :
 
-1. **Lecture** (`column.ts`) — `fetchColumn()` instancie un `WeatherMapLayerFileReader`, appelle `setToOmFile()` une seule fois puis `readSimpleVariable()` pour chaque variable (température, humidité, vent U/V) sur une petite bbox autour du point cliqué, avec interpolation bilinéaire. On utilise `readSimpleVariable` (et non `readVariable`) pour récupérer les champs **bruts** : `readVariable` applique des règles de dérivation qui transforment les composantes de vent en vitesse+direction, alors que le sondage a besoin des U/V séparés. Le choix de `WeatherMapLayerFileReader` est délibéré : `getValueFromLatLong()` ne retourne la valeur que pour la variable actuellement rendue ; ici on lit les niveaux de pression indépendamment. Le cache bloc-byte du reader évite un re-téléchargement du `.om` (même mécanique que `src/lib/prefetch.ts`).
+1. **Lecture** (`column.ts`) — `fetchColumn()` reprend le reader partagé du protocole (`getProtocolInstance(settings).omFileReader`) et appelle `readRawVariable(omUrl, variable, ranges)` pour chaque variable (température, humidité, vent U/V) sur une petite bbox autour du point cliqué, avec interpolation bilinéaire. Depuis `weather-map-layer` 0.1.0 la lecture est **atomique** (fichier + variable en un seul appel) : plus d'état « fichier courant » partagé, donc plus de course entre appelants. On utilise `readRawVariable` (et non `readVariable`) pour récupérer les champs **bruts** : `readVariable` applique des règles de dérivation qui transforment les composantes de vent en vitesse+direction, alors que le sondage a besoin des U/V séparés (et les reconstituer supposerait d'interpoler une direction, faux à la couture 0°/360°). Le choix du `WeatherMapLayerFileReader` est délibéré : `getValueFromLatLong()` ne retourne la valeur que pour la variable actuellement rendue ; ici on lit les niveaux de pression indépendamment. Le cache bloc-byte du reader, partagé avec le rendu des tuiles, évite un re-téléchargement du `.om` (même mécanique que `src/lib/prefetch.ts`).
 2. **Calcul** (`thermo.ts`, `parcel.ts`, `indices.ts`, `skewt-coords.ts`) — fonctions pures TypeScript sans dépendance au domaine : primitives Bolton/Magnus, adiabates, bulbe humide, parcelle SB & MU (LCL/LFC/EL), CAPE/CIN/LI, LPN/isothermie, cisaillement 0-1/0-3/0-6 km, et la transformation log-P + inclinaison du Skew-T.
 3. **UI** (`src/lib/components/sounding/`) — panel tabulé réactif sur le scrubber de temps (debounce + jeton de génération pour annuler les fetch obsolètes).
 
