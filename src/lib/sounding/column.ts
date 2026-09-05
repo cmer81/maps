@@ -3,10 +3,9 @@ import { get } from 'svelte/store';
 
 import {
 	GridFactory,
-	WeatherMapLayerFileReader,
 	domainOptions,
-	getRanges,
-	normalizeLon
+	getProtocolInstance,
+	getRanges
 } from '@openmeteo/weather-map-layer';
 
 import { omProtocolSettings } from '$lib/stores/om-protocol-settings';
@@ -90,34 +89,17 @@ const BBOX_HALF_DEG = 0.5;
 /** Concurrence des lectures de variables (≈ comme prefetch.ts). */
 const READ_CONCURRENCY = 8;
 
-/**
- * `WeatherMapLayerFileReader` expose `readVariable`, mais celui-ci applique des
- * règles de dérivation : pour `wind_u_component_*` / `wind_v_component_*` il
- * renvoie vitesse + direction (cf. DEFAULT_DERIVATION_RULES dans le dist), pas
- * la composante brute. Pour reconstruire une colonne on a besoin des scalaires
- * bruts (u, v séparés). `readSimpleVariable` lit la variable telle quelle (sans
- * dérivation) ; elle est `private` dans les types du package mais reste un point
- * d'entrée stable du dist. On la cible via cette interface minimale plutôt que
- * de réinverser vitesse/direction (qui interpolerait mal à la discontinuité).
- */
-interface SimpleReader {
-	readSimpleVariable(
-		variable: string,
-		ranges: ReturnType<typeof getRanges>,
-		signal?: AbortSignal
-	): Promise<{ values?: ArrayLike<number> }>;
-}
+/** Longitude ramenée dans [-180, 180[ (le package ne l'expose pas). */
+const normalizeLon = (lon: number): number => ((lon + 540) % 360) - 180;
 
-/** Reader unique réutilisé pour le sondage + chaîne de sérialisation des appels. */
-let soundingReader: WeatherMapLayerFileReader | undefined;
+/** Chaîne de sérialisation des colonnes successives. */
 let soundingChain: Promise<unknown> = Promise.resolve();
 
 /**
  * Reconstruit la colonne verticale au point (lat,lng) pour le run/temps courant.
  *
- * Les appels sont SÉRIALISÉS sur un reader unique réutilisé : le cache de blocs et
- * le WASM reader ne tolèrent pas des lectures concurrentes entre charges (course →
- * NaN intermittents si une charge fait `dispose()`/abort pendant qu'une autre lit).
+ * Les appels sont SÉRIALISÉS : une colonne, c'est ~125 lectures, et deux colonnes
+ * en vol se disputeraient le cache de blocs pour rien (un clic en remplace un autre).
  * Le jeton `generation` côté panneau écarte les résultats périmés. Source-agnostique :
  * ne nomme aucune source (URL via getOMUrlFor, qui route Open-Meteo ou le bucket R2).
  */
@@ -158,8 +140,8 @@ async function doFetchColumn(
 	let grid;
 	if (sourceDomain === displayedDomain) {
 		// Domaine = sa propre source : on dérive de getOMUrlFor (chemin run/temps
-		// courant) en retirant la query `?variable=...` — ce que setToOmFile attend
-		// (baseUrl nu, cf. prefetch.ts).
+		// courant) en retirant la query `?variable=...` — le reader attend l'URL nue
+		// du fichier .om (cf. prefetch.ts).
 		const sampleUrl = getOMUrlFor('temperature_1000hPa');
 		if (!sampleUrl) {
 			throw new Error('fetchColumn: URL .om indisponible (run inconnu ?)');
@@ -172,15 +154,10 @@ async function doFetchColumn(
 		grid = soundingSourceGrid(sourceDomain) ?? get(selectedDomain).grid;
 	}
 
-	// Reader unique réutilisé (partage le cache de blocs ; pas de `dispose` entre
-	// appels pour ne pas casser une lecture concurrente sérialisée juste après).
-	if (!soundingReader) {
-		soundingReader = new WeatherMapLayerFileReader(settings.fileReaderConfig);
-	}
-	const reader = soundingReader;
-	const simpleReader = reader as unknown as SimpleReader;
-
-	await reader.setToOmFile(omUrl);
+	// Reader partagé du protocole : même cache de blocs que le rendu des tuiles, et
+	// depuis 0.1.0 chaque lecture est atomique (fichier + variable en un seul appel),
+	// donc plus aucun état « fichier courant » à synchroniser entre appelants.
+	const reader = getProtocolInstance(settings).omFileReader;
 
 	// Petite bounding box autour du point : on ne lit JAMAIS toute la grille.
 	const bounds: [number, number, number, number] = [
@@ -199,7 +176,10 @@ async function doFetchColumn(
 	const read: VariableReader = async (variable) => {
 		if (signal?.aborted) return NaN;
 		try {
-			const data = await simpleReader.readSimpleVariable(variable, ranges, signal);
+			// `readRawVariable` (et non `readVariable`) : ce dernier applique les règles
+			// de dérivation et renverrait vitesse + direction pour `wind_u/v_component_*`,
+			// alors que la colonne a besoin des composantes brutes (hodographe, cisaillement).
+			const data = await reader.readRawVariable(omUrl, variable, ranges, signal);
 			if (!data?.values) return NaN;
 			const value = gridGetter.getLinearInterpolatedValue(
 				data.values as unknown as Float32Array,

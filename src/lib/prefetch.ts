@@ -146,8 +146,10 @@ export const prefetchData = async (
 			)}.om`;
 
 			try {
-				await omFileReader.setToOmFile(url);
-				await omFileReader.prefetchVariable(variable, ranges, signal);
+				// Lecture atomique (fichier + variable en un seul appel) : les 8 workers
+				// ci-dessous ne partagent plus d'état « fichier courant », donc leurs
+				// préchargements ne peuvent plus s'entrelacer sur le mauvais fichier.
+				await omFileReader.prefetchVariable(url, variable, ranges, signal);
 				return true;
 			} catch {
 				// Silently continue on errors
