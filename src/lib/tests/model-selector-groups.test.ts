@@ -26,6 +26,7 @@ const EXPECTED_ORDER = [
 	'ecmwf_ifs',
 	'ecmwf_aifs025_single',
 	'ncep_gfs025',
+	'weather_ai_global',
 	'anomaly_europe'
 ];
 
@@ -39,6 +40,7 @@ describe('MODEL_SELECTOR_GROUPS', () => {
 			'KNMI Netherlands',
 			'ECMWF',
 			'NOAA US',
+			'Modèles IA (expérimental)',
 			'Anomalie'
 		]);
 	});
@@ -65,7 +67,8 @@ describe('applyModelSelectorLabels', () => {
 		'arome_om_antilles',
 		'arome_om_guyane',
 		'arome_om_polynesie',
-		'arome_om_ncaledonie'
+		'arome_om_ncaledonie',
+		'weather_ai_global'
 	];
 
 	beforeEach(() => {
@@ -85,6 +88,7 @@ describe('applyModelSelectorLabels', () => {
 			await import('$lib/arome-france-convection-domain');
 		const { registerAromeFranceDomain } = await import('$lib/arome-france-domain');
 		const { registerAromeFranceHdDomain } = await import('$lib/arome-france-hd-domain');
+		const { registerWeatherAiGlobalDomain } = await import('$lib/weather-ai-global-domain');
 		const { applyModelSelectorLabels } = await import('$lib/model-selector-labels');
 
 		registerAnomalyDomain();
@@ -92,6 +96,7 @@ describe('applyModelSelectorLabels', () => {
 		registerAromeFranceConvectionDomain();
 		registerAromeFranceDomain();
 		registerAromeFranceHdDomain();
+		registerWeatherAiGlobalDomain();
 		applyModelSelectorLabels();
 
 		const labelOf = (v: string) => domainOptions.find((d) => d.value === v)?.label;
@@ -99,5 +104,6 @@ describe('applyModelSelectorLabels', () => {
 		expect(labelOf('arome_france_hd')).toBe('Arome France HD');
 		expect(labelOf('arome_france')).toBe('Arome France 2.5');
 		expect(labelOf('anomaly_europe')).toBe('Anomalie T°C (Europe ERA/Arpège)');
+		expect(labelOf('weather_ai_global')).toBe('WeatherNext Cyclones Mini');
 	});
 });

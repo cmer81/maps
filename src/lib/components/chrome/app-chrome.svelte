@@ -11,6 +11,7 @@
 	import MobileDock from './mobile-dock.svelte';
 	import Sidebar from './sidebar.svelte';
 	import StyleSection from './style-section.svelte';
+	import WeatherAiNotice from './weather-ai-notice.svelte';
 </script>
 
 <Header>
@@ -29,6 +30,9 @@
 	style="left: {desktop.current ? $sidebarWidth : 0}px"
 >
 	<ContextStrip />
+	<!-- Bandeau « expérimental » + mentions de licence, sous la bande de contexte.
+	     Ne s'affiche que sur les domaines de EXPERIMENTAL_DOMAINS. -->
+	<WeatherAiNotice />
 </div>
 
 {#if desktop.current}

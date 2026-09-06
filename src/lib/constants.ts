@@ -34,6 +34,27 @@ export const AROME_FRANCE_DOMAIN = 'arome_france';
  *  propre — le suffixe sans préfixe `meteofrance_` lève la collision. */
 export const AROME_FRANCE_HD_DOMAIN = 'arome_france_hd';
 
+/** Pseudo-domaine **global** `weather_ai_global` (bucket maison Infoclimat), produit
+ *  par le pipeline `weather-ai-forecast` à partir des sorties du modèle IA
+ *  **WeatherNext Cyclones Mini** (Google DeepMind). Deux variables : `pressure_msl`
+ *  (hPa) et `cyclone_existence` (probabilité). Grille globale 1° (360×181), runs
+ *  6-horaires. Produit **expérimental** : aucune valeur d'alerte (cf.
+ *  `EXPERIMENTAL_DOMAINS`), poids du modèle sous licence CC BY-NC-SA 4.0 — la notice
+ *  et l'attribution exactes sont lues dans la métadonnée de l'OMfile
+ *  (`weather-ai-metadata.ts`), jamais réécrites ici. */
+export const WEATHER_AI_GLOBAL_DOMAIN = 'weather_ai_global';
+
+/** Domaines dont les produits sont **expérimentaux** : ils n'ont aucune autorité
+ *  d'alerte et doivent porter un badge explicite partout où le modèle est nommé
+ *  (sélecteur de modèles, bandeau de contexte). Le contrat amont porte
+ *  `extra.experimental: true` dans la métadonnée de l'OMfile ; cette liste est le
+ *  miroir côté client, consultée avant même que la métadonnée soit chargée (le badge
+ *  ne doit jamais dépendre d'un fetch réussi). */
+export const EXPERIMENTAL_DOMAINS: readonly string[] = [WEATHER_AI_GLOBAL_DOMAIN];
+
+export const isExperimentalDomain = (domain: string): boolean =>
+	EXPERIMENTAL_DOMAINS.includes(domain);
+
 /** Vue de carte recommandée par domaine — appliquée via `flyTo` quand l'utilisateur
  *  bascule manuellement sur le domaine. Utile pour les pseudo-domaines régionaux
  *  dont le centre de grille tombe sur une zone océan/peu lisible.
@@ -46,7 +67,11 @@ export const DOMAIN_DEFAULT_VIEWS: Record<string, { center: [number, number]; zo
 	[AROME_OM_POLYNESIE_DOMAIN]: { center: [-151.0, -18.9], zoom: 5.3 },
 	[AROME_FRANCE_CONVECTION_DOMAIN]: { center: [2.3, 46.6], zoom: 5 },
 	[AROME_FRANCE_DOMAIN]: { center: [2.3, 46.6], zoom: 5 },
-	[AROME_FRANCE_HD_DOMAIN]: { center: [2.3, 46.6], zoom: 5 }
+	[AROME_FRANCE_HD_DOMAIN]: { center: [2.3, 46.6], zoom: 5 },
+	// Seul domaine global du client servi depuis le bucket maison : on cadre le
+	// planisphère centré sur la bande tropicale, où vivent les cyclones que le
+	// modèle cible (zoom 1 = grille entière, comme les globaux upstream).
+	[WEATHER_AI_GLOBAL_DOMAIN]: { center: [0, 10], zoom: 1.2 }
 };
 
 /** Variable affichée par défaut quand l'utilisateur bascule sur un domaine et que
@@ -58,7 +83,12 @@ export const DOMAIN_DEFAULT_VARIABLES: Record<string, string> = {
 	[AROME_FRANCE_HD_DOMAIN]: 'temperature_2m',
 	meteofrance_arome_france_hd_15min: 'precipitation',
 	meteofrance_arome_france0025_15min: 'wind_gusts_10m',
-	knmi_harmonie_arome_europe: 'temperature_2m'
+	knmi_harmonie_arome_europe: 'temperature_2m',
+	// `pressure_msl` plutôt que `cyclone_existence` : la probabilité cyclonique est
+	// nulle sur ~98 % du globe, une bascule de domaine y ouvrirait une carte vide
+	// qu'on prendrait pour une panne. La pression donne un champ global lisible ;
+	// la variable cyclone reste à un clic.
+	[WEATHER_AI_GLOBAL_DOMAIN]: 'pressure_msl'
 };
 
 /** Variables masquées du sélecteur (display-only), même si publiées dans le
@@ -279,6 +309,10 @@ export const MODEL_SELECTOR_GROUPS = [
 		domains: [{ value: 'ncep_gfs025', label: 'GFS Global 0.25' }]
 	},
 	{
+		label: 'Modèles IA (expérimental)',
+		domains: [{ value: WEATHER_AI_GLOBAL_DOMAIN, label: 'WeatherNext Cyclones Mini' }]
+	},
+	{
 		label: 'Anomalie',
 		domains: [{ value: ANOMALY_DOMAIN, label: 'Anomalie T°C (Europe ERA/Arpège)' }]
 	}
@@ -352,7 +386,8 @@ export const MODEL_BADGES: Record<string, string> = {
 	meteoswiss_icon_ch1: '1 km · Alpes · 33 h',
 	meteoswiss_icon_ch2: '2 km · Alpes · 5 j',
 	knmi_harmonie_arome_europe: '5,5 km · Europe · 2,5 j',
-	anomaly_europe: 'Anomalie T°C · Europe'
+	anomaly_europe: 'Anomalie T°C · Europe',
+	weather_ai_global: '1° · Monde · 6 h · IA'
 };
 
 // Descriptions courtes par modèle, affichées sous le nom dans le sélecteur de modèle
@@ -387,7 +422,9 @@ export const MODEL_DESCRIPTIONS: Record<string, string> = {
 	dwd_icon_eu: 'DWD (Allemagne) · ~7 km, Europe · échéance ~5 j',
 	meteoswiss_icon_ch1: 'MeteoSwiss (Suisse) · ~1 km, Alpes/Suisse · échéance ~33 h',
 	meteoswiss_icon_ch2: 'MeteoSwiss (Suisse) · ~2 km, Alpes/Suisse · échéance ~5 j',
-	knmi_harmonie_arome_europe: 'KNMI (Pays-Bas) · 5,5 km, Europe · échéance ~2,5 j'
+	knmi_harmonie_arome_europe: 'KNMI (Pays-Bas) · 5,5 km, Europe · échéance ~2,5 j',
+	weather_ai_global:
+		"Google DeepMind · WeatherNext Cyclones Mini (IA) · global 1° · pas 6 h · expérimental, sans valeur d'alerte"
 };
 
 // Time constants

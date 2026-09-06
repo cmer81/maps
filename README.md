@@ -105,6 +105,7 @@ Voir [`.claude/CLAUDE.md`](./.claude/CLAUDE.md) et les règles ciblées dans [`.
 - pipeline playback / pré-rendu (`playback-renderer.ts`)
 - synchronisation URL ↔ stores Svelte 5
 - sondages verticaux client-side (Skew-T + hodographe + indices convectifs) calculés depuis les OMfiles AROME niveaux de pression au point cliqué (`src/lib/sounding/`)
+- pseudo-domaines servis depuis le bucket maison, dont le domaine **global** `weather_ai_global` (modèle IA WeatherNext Cyclones Mini), signalé « expérimental » dans le sélecteur et par un bandeau de licence sous la bande de contexte
 
 Le chrome s'organise autour d'un header fin pleine largeur (marque Infoclimat, onglet « Carte », bouton « Réglages » ouvrant le panneau Avancé) et, sur desktop, d'une sidebar gauche repliable (sélecteur de modèle, liste verticale des calques, sections Affichage et Style) ; sur mobile, un bottom-sheet à onglets reprend les mêmes sections. La timeline et la légende se décalent de la largeur de la sidebar ; les contrôles MapLibre natifs sont ancrés en bas-droite au-dessus de la timeline.
 
@@ -115,6 +116,13 @@ Le chrome s'organise autour d'un header fin pleine largeur (marque Infoclimat, o
 - Données :
   - OMfiles météo : [Open-Meteo](https://open-meteo.com) (et indirectement Météo-France, ECMWF, DWD, NOAA…).
   - Contours administratifs FR : [`gregoiredavid/france-geojson`](https://github.com/gregoiredavid/france-geojson) (licence ODbL).
+  - Modèle IA `weather_ai_global` (**WeatherNext Cyclones Mini**, Google DeepMind) :
+    produit **expérimental, sans aucune valeur d'alerte**. Les poids du modèle sont sous
+    [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) — usage non
+    lucratif, attribution obligatoire, partage à l'identique ; le code WeatherNext est
+    sous Apache-2.0. Les chaînes d'attribution et de licence sont portées par la
+    métadonnée de chaque OMfile (`extra.attribution` / `extra.license_notice`) et
+    affichées **verbatim** dans le bandeau de la carte — voir `weather-ai-metadata.ts`.
 
 ### Licence Highcharts
 

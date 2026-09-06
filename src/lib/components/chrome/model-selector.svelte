@@ -16,7 +16,12 @@
 	import * as Command from '$lib/components/ui/command';
 	import * as Popover from '$lib/components/ui/popover';
 
-	import { MODEL_BADGES, MODEL_DESCRIPTIONS, MODEL_SELECTOR_GROUPS } from '$lib/constants';
+	import {
+		MODEL_BADGES,
+		MODEL_DESCRIPTIONS,
+		MODEL_SELECTOR_GROUPS,
+		isExperimentalDomain
+	} from '$lib/constants';
 
 	let open = $state(get(dSO));
 	const unsub = dSO.subscribe((v) => (open = v));
@@ -79,6 +84,7 @@
 		return $favoriteDomains.includes(value);
 	}
 	const selectedBadge = $derived(MODEL_BADGES[$selectedDomain?.value ?? '']);
+	const selectedExperimental = $derived(isExperimentalDomain($selectedDomain?.value ?? ''));
 </script>
 
 {#snippet itemContent(value: string, label: string)}
@@ -93,6 +99,16 @@
 						class="bg-white/10 rounded px-1.5 py-0 text-[10px] font-medium tracking-wide text-white/75"
 					>
 						{badge}
+					</span>
+				{/if}
+				{#if isExperimentalDomain(value)}
+					<!-- Produit sans autorité d'alerte : le badge doit être visible partout où
+					     le modèle est nommé, pas seulement une fois sélectionné. -->
+					<span
+						class="rounded bg-amber-400/20 px-1.5 py-0 text-[10px] font-bold uppercase tracking-wide text-amber-200"
+						title="Produit expérimental — aucune valeur d'alerte"
+					>
+						Expérimental
 					</span>
 				{/if}
 			</div>
@@ -150,6 +166,14 @@
 						class="bg-white/15 hidden rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide text-white/80 sm:inline"
 					>
 						{selectedBadge}
+					</span>
+				{/if}
+				{#if selectedExperimental}
+					<span
+						class="rounded-full bg-amber-400/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-200"
+						title="Produit expérimental — aucune valeur d'alerte"
+					>
+						Exp.
 					</span>
 				{/if}
 				<ChevronDownIcon
