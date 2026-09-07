@@ -199,7 +199,11 @@ export function buildChartOptions(input: MeteogramChartInput): Options {
 				plotLines: dayBoundaryPlotLines(input.times, input.timezone),
 				labels: {
 					style: { color: TEXT },
-					// Heure (%H) par défaut ; à minuit local, la date en gras (cadre allégé).
+					// Heure (%H) par défaut ; à minuit local, la date en gras — format
+					// COURT (« mer. 15 », sans mois) : « mer. 15 juil. » débordait de
+					// son créneau et faisait pivoter tous les labels de l'axe (premier
+					// tronqué « mer. 15 juil.me… », retour prod). Le mois complet reste
+					// lisible dans l'encart de valeurs et l'en-tête du tiroir.
 					formatter: function () {
 						const ctx = this as unknown as {
 							value: number;
@@ -208,7 +212,7 @@ export function buildChartOptions(input: MeteogramChartInput): Options {
 						const time = ctx.axis.chart.time;
 						const hh = time.dateFormat('%H', ctx.value);
 						return hh === '00'
-							? time.dateFormat('<span style="font-weight: bold">%a %e %b</span>', ctx.value)
+							? time.dateFormat('<span style="font-weight: bold">%a %e</span>', ctx.value)
 							: hh;
 					}
 				}
@@ -226,6 +230,14 @@ export function buildChartOptions(input: MeteogramChartInput): Options {
 				plotLines: [{ value: 0, color: 'rgba(255,255,255,0.3)', width: 1, zIndex: 2 }],
 				maxPadding: 0.3,
 				minRange: 8,
+				// Extrêmes collés aux données (± padding) : les défauts Highcharts
+				// (startOnTick/endOnTick true) arrondissent au tick entier — avec un
+				// tick de 25, une courbe 25-32 °C donnait un axe 0-50 (« écrasé »).
+				startOnTick: false,
+				endOnTick: false,
+				// Grille assez dense pour la faible hauteur du tiroir : le défaut
+				// (72px) pouvait ne laisser qu'une seule graduation au rendu initial.
+				tickPixelInterval: 40,
 				gridLineColor: GRID
 			},
 			{
@@ -275,6 +287,13 @@ export function buildChartOptions(input: MeteogramChartInput): Options {
 				gridLineWidth: 0,
 				opposite: true,
 				showLastLabel: false
+			},
+			{
+				// Axe dédié aux windbarbs, jamais affiché. Sans lui, la série vent
+				// partage l'axe 0 (températures) et ses `value` (m/s, seuil 0) entrent
+				// dans le calcul des extrêmes → l'échelle des T° s'étire de 0 au max
+				// du vent dès que les barbules sont visibles (bug signalé en prod).
+				visible: false
 			}
 		],
 		legend: {
@@ -351,15 +370,16 @@ export function buildChartOptions(input: MeteogramChartInput): Options {
 				tooltip: { valueSuffix: ` ${input.units.precipitation}` }
 			},
 			{
-				// Discrète (repère de tendance) : fine et translucide pour ne pas
-				// concurrencer la température — l'axe ambre à droite porte la lecture.
+				// Repère de tendance : le pointillé la distingue de la T°, mais en
+				// pleine opacité et 1,5px (retour prod : la version translucide 1px
+				// était illisible — « un peu terne »).
 				name: 'Pression',
 				visible: hasPressure,
 				data: pressureData,
 				type: 'spline',
 				marker: { enabled: false },
-				lineWidth: 1,
-				color: 'rgba(251, 191, 36, 0.55)',
+				lineWidth: 1.5,
+				color: '#fbbf24',
 				dashStyle: 'ShortDot',
 				yAxis: 2,
 				tooltip: { valueSuffix: ` ${input.units.pressure}` }
@@ -385,6 +405,7 @@ export function buildChartOptions(input: MeteogramChartInput): Options {
 				lineWidth: 1.5,
 				vectorLength: 18,
 				yOffset: -15,
+				yAxis: 4,
 				tooltip: {
 					pointFormatter: function () {
 						const p = this as unknown as {

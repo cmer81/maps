@@ -50,3 +50,32 @@ export function symbolForWmo(code: number, isDay: boolean): { icon: string; labe
 	const entry = WMO_SYMBOLS[code] ?? FALLBACK;
 	return { icon: isDay ? entry.day : entry.night, label: entry.label };
 }
+
+export interface SymbolPlacement {
+	/** Indice du pas de temps à illustrer (dans l'axe temps du meteogram). */
+	index: number;
+	/** Nom de fichier de l'icône (sans extension) dans static/weather-symbols/. */
+	icon: string;
+}
+
+/**
+ * Sélection des pas de temps à illustrer par une icône météo — logique pure de
+ * la « bande de symboles » du meteogram (le composant ne fait que le rendu :
+ * x = toPixels(times[index]), y constant en haut de la zone de tracé).
+ * Stride adaptatif : 1 pas sur 2 sur horizon court, plafonné à ~28 icônes sur
+ * horizon long (l'API renvoie jusqu'à 7 jours — sinon elles se chevauchent).
+ * `is_day` absent → variante jour.
+ */
+export function weatherSymbolPlacements(
+	codes: readonly (number | null | undefined)[],
+	days: readonly (number | null | undefined)[]
+): SymbolPlacement[] {
+	const stride = Math.max(2, Math.ceil(codes.length / 28));
+	const placements: SymbolPlacement[] = [];
+	for (let i = 0; i < codes.length; i += stride) {
+		const code = codes[i];
+		if (code === null || code === undefined) continue;
+		placements.push({ index: i, icon: symbolForWmo(code, (days[i] ?? 1) === 1).icon });
+	}
+	return placements;
+}
