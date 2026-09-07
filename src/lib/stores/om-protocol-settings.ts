@@ -69,6 +69,13 @@ function createBlockCache() {
  * for upstream Open-Meteo URLs.
  */
 const ANOMALY_PATH_REGEX = /\/anomaly\/temperature_2m\//;
+/** Même chemin, segment de phase (`observed`/`forecast`/`provisional`) inclus.
+ *  Le baseUrl synthétique doit l'ABSORBER : depuis la 0.2.0, le resolver du
+ *  package extrait le domaine avec `/(?<domain>[^/]+)\/(?:YYYY\/MM\/DD\/HHMMZ\/)?[^/]+\.om$/`,
+ *  c.-à-d. le dernier segment avant le fichier (la 0.1.1 cherchait `data_spatial/<domain>`).
+ *  Laisser la phase dans le chemin lui faisait donc lire `forecast` comme domaine
+ *  → `Invalid domain: forecast`, sources raster/vecteur en erreur, carte vide. */
+const ANOMALY_PATH_WITH_PHASE_REGEX = /\/anomaly\/temperature_2m\/[^/]+\//;
 const customResolveRequest: typeof defaultResolveRequest = (urlComponents, settings) => {
 	if (ANOMALY_PATH_REGEX.test(urlComponents.baseUrl)) {
 		const domain = settings.domainOptions.find((d) => d.value === ANOMALY_DOMAIN);
@@ -81,7 +88,10 @@ const customResolveRequest: typeof defaultResolveRequest = (urlComponents, setti
 		// (voir plus bas), que le resolver par défaut résout pour cette variable.
 		const synthetic = {
 			...urlComponents,
-			baseUrl: urlComponents.baseUrl.replace(ANOMALY_PATH_REGEX, `/data_spatial/${ANOMALY_DOMAIN}/`)
+			baseUrl: urlComponents.baseUrl.replace(
+				ANOMALY_PATH_WITH_PHASE_REGEX,
+				`/data_spatial/${ANOMALY_DOMAIN}/`
+			)
 		};
 		const { renderOptions } = defaultResolveRequest(synthetic, settings);
 		return {
