@@ -1,7 +1,11 @@
 <script lang="ts">
 	import { desktop, sidebarWidth } from '$lib/stores/preferences';
+	import { domain } from '$lib/stores/variables';
 
 	import CaptureFlow from '$lib/components/capture/capture-flow.svelte';
+	import ForecastContext from '$lib/components/weather-ai/forecast-context.svelte';
+
+	import { WEATHER_AI_GLOBAL_DOMAIN } from '$lib/constants';
 
 	import AdvancedPanel from './advanced-panel.svelte';
 	import ContextStrip from './context-strip.svelte';
@@ -11,6 +15,7 @@
 	import MobileDock from './mobile-dock.svelte';
 	import Sidebar from './sidebar.svelte';
 	import StyleSection from './style-section.svelte';
+	import WeatherAiNotice from './weather-ai-notice.svelte';
 </script>
 
 <Header>
@@ -28,7 +33,14 @@
 	class="fixed top-11 right-0 z-40 transition-[left] duration-200 motion-reduce:transition-none"
 	style="left: {desktop.current ? $sidebarWidth : 0}px"
 >
-	<ContextStrip />
+	{#if $domain === WEATHER_AI_GLOBAL_DOMAIN}
+		<ForecastContext />
+	{:else}
+		<ContextStrip />
+		<!-- Bandeau « expérimental » + mentions de licence, sous la bande de contexte.
+	     Ne s'affiche que sur les domaines de EXPERIMENTAL_DOMAINS. -->
+		<WeatherAiNotice />
+	{/if}
 </div>
 
 {#if desktop.current}

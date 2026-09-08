@@ -27,7 +27,12 @@ import {
 	windOverlayLevel
 } from '$lib/stores/vector';
 
-import { ANOMALY_DOMAIN, ANOMALY_VARIABLE, DEFAULT_PREFERENCES } from '$lib/constants';
+import {
+	ANOMALY_DOMAIN,
+	ANOMALY_VARIABLE,
+	DEFAULT_PREFERENCES,
+	WEATHER_AI_GLOBAL_DOMAIN
+} from '$lib/constants';
 
 import {
 	CLIP_COUNTRIES_PARAM,
@@ -66,7 +71,9 @@ export const updateUrl = async (
 	try {
 		const map = get(m);
 		if (map) {
-			fullUrl = String(url) + map._hash.getHashString();
+			const baseUrl = new URL(url);
+			baseUrl.hash = '';
+			fullUrl = String(baseUrl) + map._hash.getHashString();
 		} else {
 			fullUrl = String(url);
 		}
@@ -289,6 +296,7 @@ export const getOMUrlFor = (
 	vectorOverride?: VectorFlagOverride
 ): string | undefined => {
 	const domain = get(d);
+	if (domain === WEATHER_AI_GLOBAL_DOMAIN) return undefined;
 	const modelRun = get(mR);
 	if (!modelRun) return undefined;
 	const selectedTime = timeOverride ?? get(time);

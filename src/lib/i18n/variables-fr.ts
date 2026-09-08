@@ -163,7 +163,13 @@ const EXPLICIT: Record<string, string> = {
 	snowfall_sum: 'Cumul de neige',
 	temperature_2m_max: 'Température max. (2 m)',
 	temperature_2m_min: 'Température min. (2 m)',
-	geopotential_height_pv1500: 'Géopotentiel (tropopause dynamique)'
+	geopotential_height_pv1500: 'Géopotentiel (tropopause dynamique)',
+
+	// Variable du domaine `weather_ai_global` (WeatherNext Cyclones Mini), absente
+	// des variableOptions du package. `pressure_msl` est déjà couvert par le package
+	// (« Pressure Mean Sea Level ») et n'a rien à ajouter ici.
+	cyclone_existence: 'Cyclones',
+	cyclone_tracks: 'Trajectoires candidates'
 };
 
 /** Forme contractée à utiliser après "Anomalie/Moyenne/Dispersion/Min/Max de". */

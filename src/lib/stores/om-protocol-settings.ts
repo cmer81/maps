@@ -15,6 +15,7 @@ import { brightnessTemperatureScale } from '$lib/color-scales/brightness-tempera
 import { brightnessTemperatureWvScale } from '$lib/color-scales/brightness-temperature-wv';
 import { capeScale } from '$lib/color-scales/cape';
 import { convectiveInhibitionScale } from '$lib/color-scales/convective-inhibition';
+import { cycloneExistenceScale } from '$lib/color-scales/cyclone-existence';
 import { geopotentialPv1500Scale } from '$lib/color-scales/geopotential-pv1500';
 import { infoclimatTemperatureScale } from '$lib/color-scales/infoclimat-temperature';
 import { lightningDensityScale } from '$lib/color-scales/lightning-density';
@@ -164,7 +165,14 @@ export const standardColorScales = {
 	theta_w_850hPa: thetaWScale,
 	thickness_500_1000hPa: thicknessScale,
 	absolute_vorticity_500hPa: absoluteVorticityScale,
-	geopotential_height_pv1500: geopotentialPv1500Scale
+	geopotential_height_pv1500: geopotentialPv1500Scale,
+
+	// Domaine weather_ai_global (WeatherNext Cyclones Mini) — clé exacte. Sans elle,
+	// `cyclone_existence` ne matche aucune famille du package et retombe sur le
+	// fallback `temperature` : le signal apparaîtrait sur une rampe
+	// −80→50 °C. `pressure_msl` n'a rien à surcharger (le package le résout déjà en
+	// hPa, mêmes bornes que sur arome_om_* / arome_france).
+	cyclone_existence: cycloneExistenceScale
 };
 
 export const omProtocolSettings: Writable<OmProtocolSettings> = writable({

@@ -16,6 +16,7 @@ import { registerAromeFranceHdDomain } from '$lib/arome-france-hd-domain';
 import { registerAromeOmDomain } from '$lib/arome-om-domain';
 import { DEFAULT_DOMAIN, DEFAULT_VARIABLE, NON_LEVEL_GROUP_VARIABLES } from '$lib/constants';
 import { applyModelSelectorLabels } from '$lib/model-selector-labels';
+import { registerWeatherAiGlobalDomain } from '$lib/weather-ai-global-domain';
 
 // Doit tourner avant la première évaluation de `selectedDomain`.
 registerAnomalyDomain();
@@ -23,6 +24,7 @@ registerAromeOmDomain();
 registerAromeFranceConvectionDomain();
 registerAromeFranceDomain();
 registerAromeFranceHdDomain();
+registerWeatherAiGlobalDomain();
 applyModelSelectorLabels();
 
 export const defaultDomain = DEFAULT_DOMAIN;
@@ -43,6 +45,8 @@ export const selectedDomain = derived(domain, ($domain) => {
 });
 
 export const selectedVariable = derived(variable, ($variable) => {
+	if ($variable === 'cyclone_tracks') return { value: $variable, label: 'Trajectoires candidates' };
+	if ($variable === 'cyclone_existence') return { value: $variable, label: 'Cyclones' };
 	const object = variableOptions.find(({ value }) => value === $variable);
 	if (object) return object;
 	if ($variable === 'temperature_2m_anomaly') {

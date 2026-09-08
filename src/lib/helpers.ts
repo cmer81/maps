@@ -9,7 +9,8 @@ import {
 	AROME_OM_GUYANE_DOMAIN,
 	AROME_OM_NCALEDONIE_DOMAIN,
 	AROME_OM_POLYNESIE_DOMAIN,
-	AROME_OM_REUNION_DOMAIN
+	AROME_OM_REUNION_DOMAIN,
+	WEATHER_AI_GLOBAL_DOMAIN
 } from '$lib/constants';
 import { getModelsBucketUrl } from '$lib/runtime-env';
 
@@ -22,7 +23,8 @@ const BUCKET_DOMAINS: ReadonlySet<string> = new Set([
 	AROME_OM_POLYNESIE_DOMAIN,
 	AROME_FRANCE_CONVECTION_DOMAIN,
 	AROME_FRANCE_DOMAIN,
-	AROME_FRANCE_HD_DOMAIN
+	AROME_FRANCE_HD_DOMAIN,
+	WEATHER_AI_GLOBAL_DOMAIN
 ]);
 
 /**
@@ -37,14 +39,18 @@ export const fmtSelectedTime = (t: Date): string =>
 	`${t.getUTCFullYear()}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())}T${pad(t.getUTCHours())}${pad(t.getUTCMinutes())}`;
 
 /**
- * URL `.om` path-style (sans query) pour une lecture de sondage : domaine + run +
- * temps valide arbitraires, indépendamment des stores globaux. Permet de lire la
- * colonne verticale sur un domaine source distinct du domaine affiché (cf.
- * `soundingSourceDomain`). Le `omProtocol` strip la query-string — on n'en ajoute
- * donc pas ici (le reader attend la base nue, comme prefetch.ts).
+ * URL `.om` path-style (sans query) : domaine + run + temps valide arbitraires,
+ * indépendamment des stores globaux. Le `omProtocol` strip la query-string — on n'en
+ * ajoute donc pas ici (les lecteurs attendent la base nue, comme prefetch.ts).
  */
-export const buildSoundingOmUrl = (domain: string, modelRun: Date, validTime: Date): string =>
+export const buildOmFileUrl = (domain: string, modelRun: Date, validTime: Date): string =>
 	`${getBaseUri(domain)}/data_spatial/${domain}/${fmtModelRun(modelRun)}/${fmtSelectedTime(validTime)}.om`;
+
+/**
+ * Idem, pour une lecture de sondage : permet de lire la colonne verticale sur un
+ * domaine source distinct du domaine affiché (cf. `soundingSourceDomain`).
+ */
+export const buildSoundingOmUrl = buildOmFileUrl;
 
 /**
  * Bucket S3 public Open-Meteo — source des domaines « upstream » (tous ceux qui

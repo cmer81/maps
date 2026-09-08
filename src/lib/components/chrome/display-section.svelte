@@ -9,12 +9,14 @@
 	import { DEFAULT_SHOW_DEPARTMENTS, showDepartments } from '$lib/stores/departments';
 	import { DEFAULT_SHOW_LABELS, showLabels } from '$lib/stores/labels';
 	import { defaultPreferences, preferences } from '$lib/stores/preferences';
+	import { domain } from '$lib/stores/variables';
 	import { gridValues } from '$lib/stores/vector';
 
 	import ArrowsSettings from '$lib/components/settings/arrows-settings.svelte';
 	import ContourSettings from '$lib/components/settings/contour-settings.svelte';
 	import PopupSettings from '$lib/components/settings/popup-settings.svelte';
 
+	import { WEATHER_AI_GLOBAL_DOMAIN } from '$lib/constants';
 	import { setHillshadeEnabled } from '$lib/hillshade';
 	import { changeOMfileURL, reloadVectorStyle } from '$lib/layers';
 	import { updateUrl } from '$lib/url';
@@ -62,17 +64,19 @@
 	}
 </script>
 
-<!-- Calques riches (dépliables) + lecture du champ -->
-<div
-	class="overflow-hidden rounded-xl bg-white/[0.04] [&>*+*]:border-t [&>*+*]:border-white/[0.06]"
->
-	<ContourSettings />
-	<ArrowsSettings />
-	<LayerToggle label="Valeurs" checked={gridValuesOn} onCheckedChange={toggleGridValues}>
-		{#snippet icon()}<HashIcon class="size-[18px]" aria-hidden="true" />{/snippet}
-	</LayerToggle>
-	<PopupSettings />
-</div>
+<!-- Calques riches OM ; les produits JSON ont leur propre lecture au clic. -->
+{#if $domain !== WEATHER_AI_GLOBAL_DOMAIN}
+	<div
+		class="overflow-hidden rounded-xl bg-white/[0.04] [&>*+*]:border-t [&>*+*]:border-white/[0.06]"
+	>
+		<ContourSettings />
+		<ArrowsSettings />
+		<LayerToggle label="Valeurs" checked={gridValuesOn} onCheckedChange={toggleGridValues}>
+			{#snippet icon()}<HashIcon class="size-[18px]" aria-hidden="true" />{/snippet}
+		</LayerToggle>
+		<PopupSettings />
+	</div>
+{/if}
 
 <!-- Habillage de la carte -->
 <div

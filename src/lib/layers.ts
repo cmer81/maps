@@ -26,7 +26,8 @@ import {
 	BEFORE_LAYER_RASTER_SECONDARY,
 	BEFORE_LAYER_VECTOR,
 	BEFORE_LAYER_VECTOR_WATER_CLIP,
-	HILLSHADE_LAYER
+	HILLSHADE_LAYER,
+	WEATHER_AI_GLOBAL_DOMAIN
 } from '$lib/constants';
 import { SLOT_EVENT_COMMIT, SLOT_EVENT_ERROR, slotEvents } from '$lib/slot-events';
 import { type SlotLayer, SlotManager } from '$lib/slot-manager';
@@ -503,6 +504,7 @@ export const createManagers = (): void => {
 export const addOmFileLayers = (): void => {
 	const map = get(m);
 	if (!map) return;
+	if (get(d) === WEATHER_AI_GLOBAL_DOMAIN) return;
 	const omUrl = getOMUrl();
 	createManagers();
 	if (!omUrl) return;
@@ -542,6 +544,16 @@ export const changeOMfileURL = (vectorOnly = false, rasterOnly = false): void =>
 	const map = get(m);
 	if (!map) return;
 
+	if (get(d) === WEATHER_AI_GLOBAL_DOMAIN) {
+		commitGroup = null;
+		for (const manager of [rasterManager, rasterManager2, vectorManager, arrowManager])
+			manager?.destroy();
+		currentOmUrl.set('');
+		currentOmUrl2.set('');
+		loading.set(false);
+		return;
+	}
+	if (!rasterManager) createManagers();
 	const omUrl = getOMUrl();
 	if (!omUrl) return;
 
