@@ -13,22 +13,22 @@ describe('cycloneExistenceScale', () => {
 	const resolved = getColorScale('cyclone_existence', false, standardColorScales);
 	if (resolved.type !== 'breakpoint') throw new Error('expected a breakpoint scale');
 
-	it('est résolue par clé exacte, en pourcentage', () => {
-		// La donnée source est une probabilité 0–1, convertie ×100 dans postReadCallback.
-		expect(resolved.unit).toBe('%');
-		expect(cycloneExistenceScale.unit).toBe('%');
+	it('est résolue par clé exacte, sans unité et sans pourcentage', () => {
+		// Le signal brut 0–1 est conservé ; aucune conversion en pourcentage.
+		expect(resolved.unit).toBe('');
+		expect(cycloneExistenceScale.unit).toBe('');
 		expect(resolved.breakpoints).toEqual(cycloneExistenceScale.breakpoints);
 		expect(resolved.breakpoints[0]).toBe(0);
-		expect(resolved.breakpoints.at(-1)).toBeLessThanOrEqual(100);
+		expect(resolved.breakpoints.at(-1)).toBeLessThanOrEqual(1);
 	});
 
 	it('rend 0 totalement transparent (le champ est nul sur ~98 % du globe)', () => {
 		expect(getColor(resolved, 0)[3]).toBe(0);
 	});
 
-	it('a un seuil bas : le signal décolle dès 1 %', () => {
-		expect(resolved.breakpoints[1]).toBeLessThanOrEqual(1);
-		expect(getColor(resolved, 1)[3]).toBeGreaterThan(0);
+	it('a un seuil bas : le signal décolle dès 0,01', () => {
+		expect(resolved.breakpoints[1]).toBeLessThanOrEqual(0.01);
+		expect(getColor(resolved, 0.01)[3]).toBeGreaterThan(0);
 	});
 
 	it('resserre les paliers dans les premiers pourcents puis les élargit', () => {

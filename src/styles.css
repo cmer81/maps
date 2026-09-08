@@ -328,6 +328,11 @@
    ============================================================================= */
 
 /* Popup */
+.weather-ai-popup .maplibregl-popup-content {
+	background: #fff;
+	color: #0f172a;
+}
+
 .popup {
 	height: 58px;
 	top: -13.5px;

@@ -79,11 +79,11 @@ describe('registerWeatherAiGlobalDomain', () => {
 		expect(domainGroups.filter((g) => g.value === 'weather_ai').length).toBe(1);
 	});
 
-	it('ne pousse rien quand le bucket est vide', async () => {
+	it('reste disponible sans bucket OM : les données viennent de l’API', async () => {
 		vi.stubEnv('VITE_MODELS_BUCKET_URL', '');
 		const { registerWeatherAiGlobalDomain } = await import('$lib/weather-ai-global-domain');
 		registerWeatherAiGlobalDomain();
-		expect(domainOptions.find((x) => x.value === 'weather_ai_global')).toBeUndefined();
+		expect(domainOptions.find((x) => x.value === 'weather_ai_global')).toBeDefined();
 	});
 });
 

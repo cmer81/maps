@@ -21,6 +21,7 @@
 	import { customColorScales, omProtocolSettings } from '$lib/stores/om-protocol-settings';
 	import { metaJson } from '$lib/stores/time';
 	import { getDisplayUnit, unitPreferences } from '$lib/stores/units';
+	import { domain } from '$lib/stores/variables';
 	import {
 		level,
 		levelGroupSelected,
@@ -29,6 +30,9 @@
 		variable
 	} from '$lib/stores/variables';
 
+	import ForecastPanel from '$lib/components/weather-ai/forecast-panel.svelte';
+
+	import { WEATHER_AI_GLOBAL_DOMAIN } from '$lib/constants';
 	import { localizeVariableOption, translateVariableLabel } from '$lib/i18n/variables-fr';
 	import { buildLevelGroups, buildVariableList, groupVariablesByCategory } from '$lib/layer-list';
 	import { pickDefaultLevel } from '$lib/level-groups';
@@ -101,7 +105,9 @@
 	}
 </script>
 
-{#if $metaJson}
+{#if $domain === WEATHER_AI_GLOBAL_DOMAIN}
+	<ForecastPanel />
+{:else if $metaJson}
 	<div class="flex flex-col gap-1">
 		{#each grouped as { cat, items } (cat.key)}
 			{@const Icon = ICONS[cat.key]}

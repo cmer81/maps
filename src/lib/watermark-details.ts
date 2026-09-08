@@ -44,6 +44,8 @@ const getLegendEntries = (colorScale: RenderableColorScale, variable: string) =>
 /** Légende du filigrane PNG, dérivée du barème de couleurs de la variable courante. */
 export const buildWatermarkLegend = (): NonNullable<PngWatermarkDetails['legend']> => {
 	const variable = get(variableStore);
+	if (variable === 'cyclone_tracks')
+		return { unit: 'Trajectoires candidates', opacity: 1, entries: [] };
 	const colorScale = getColorScale(
 		variable,
 		mode.current === 'dark',

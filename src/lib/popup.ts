@@ -16,9 +16,9 @@ import { omProtocolSettings } from '$lib/stores/om-protocol-settings';
 import { pointWorkspace } from '$lib/stores/point-workspace';
 import { sounding, soundingButtonEnabled } from '$lib/stores/sounding';
 import { convertValue, getDisplayUnit, unitPreferences } from '$lib/stores/units';
-import { selectedDomain, variable as v } from '$lib/stores/variables';
+import { domain, selectedDomain, variable as v } from '$lib/stores/variables';
 
-import { isSoundingDomain } from '$lib/constants';
+import { WEATHER_AI_GLOBAL_DOMAIN, isSoundingDomain } from '$lib/constants';
 import { hasMeteogram } from '$lib/meteogram/model-map';
 
 import { textWhite } from './helpers';
@@ -221,6 +221,10 @@ const updatePopupContent = async (coordinates: maplibregl.LngLat): Promise<void>
 
 /** Ensure the marker exists, place it at `coordinates`, and update its content. */
 export const renderPopup = async (coordinates: maplibregl.LngLat): Promise<void> => {
+	if (get(domain) === WEATHER_AI_GLOBAL_DOMAIN) {
+		removePopup();
+		return;
+	}
 	const map = get(m);
 	if (!get(popupMode) || !map) return;
 
@@ -291,7 +295,7 @@ export const addPopup = (): void => {
 	map.on('mousemove', updatePopup);
 
 	map.on('click', async (e: maplibregl.MapLayerMouseEvent) => {
-		if (!map || get(terraDrawActive)) return;
+		if (!map || get(terraDrawActive) || get(domain) === WEATHER_AI_GLOBAL_DOMAIN) return;
 
 		switchPopupMode();
 
@@ -311,7 +315,7 @@ export const addPopup = (): void => {
 	// bouton Météogramme est cliquable tout de suite, au lieu des 3 clics gauche
 	// (follow → pin → bouton). Desktop uniquement (pas d'event contextmenu tactile).
 	map.on('contextmenu', async (e: maplibregl.MapLayerMouseEvent) => {
-		if (!map || get(terraDrawActive)) return;
+		if (!map || get(terraDrawActive) || get(domain) === WEATHER_AI_GLOBAL_DOMAIN) return;
 		e.preventDefault();
 		map.off('mousemove', updatePopup); // épinglé : la bulle ne suit pas le curseur
 		const existing = get(p);

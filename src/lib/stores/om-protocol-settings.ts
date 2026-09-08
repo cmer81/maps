@@ -34,8 +34,7 @@ import {
 	ANOMALY_VARIABLE,
 	DEFAULT_CACHE_BLOCK_SIZE_KB,
 	DEFAULT_CACHE_MAX_BYTES_MB,
-	HTTP_OVERHEAD_BYTES,
-	WEATHER_AI_GLOBAL_DOMAIN
+	HTTP_OVERHEAD_BYTES
 } from '$lib/constants';
 
 import type {
@@ -160,7 +159,7 @@ export const standardColorScales = {
 
 	// Domaine weather_ai_global (WeatherNext Cyclones Mini) — clé exacte. Sans elle,
 	// `cyclone_existence` ne matche aucune famille du package et retombe sur le
-	// fallback `temperature` : la légende affichait une probabilité sur une rampe
+	// fallback `temperature` : le signal apparaîtrait sur une rampe
 	// −80→50 °C. `pressure_msl` n'a rien à surcharger (le package le résout déjà en
 	// hPa, mêmes bornes que sur arome_om_* / arome_france).
 	cyclone_existence: cycloneExistenceScale
@@ -218,18 +217,6 @@ export const omProtocolSettings: Writable<OmProtocolSettings> = writable({
 				state.dataOptions.variable === 'reflectivity_max');
 		if (isReflectivity && data.values) {
 			data.values = data.values.map((mmh) => (mmh < 0.5 ? NaN : mmh));
-		}
-		// `cyclone_existence` est diffusé comme une probabilité dans [0, 1] ; on
-		// l'affiche en pourcentage (× 100), comme le tourbillon absolu est mis à
-		// l'échelle ×1e5 plus haut. `cycloneExistenceScale` et la légende raisonnent
-		// dans cette unité, et le survol lit « 45 % » au lieu de « 0.45 ».
-		if (
-			state.dataOptions.domain.value === WEATHER_AI_GLOBAL_DOMAIN &&
-			state.dataOptions.variable === 'cyclone_existence'
-		) {
-			if (data.values) {
-				data.values = data.values.map((p) => p * 100);
-			}
 		}
 	}
 });

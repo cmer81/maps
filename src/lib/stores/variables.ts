@@ -45,6 +45,8 @@ export const selectedDomain = derived(domain, ($domain) => {
 });
 
 export const selectedVariable = derived(variable, ($variable) => {
+	if ($variable === 'cyclone_tracks') return { value: $variable, label: 'Trajectoires candidates' };
+	if ($variable === 'cyclone_existence') return { value: $variable, label: 'Cyclones' };
 	const object = variableOptions.find(({ value }) => value === $variable);
 	if (object) return object;
 	if ($variable === 'temperature_2m_anomaly') {

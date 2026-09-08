@@ -168,7 +168,8 @@ const EXPLICIT: Record<string, string> = {
 	// Variable du domaine `weather_ai_global` (WeatherNext Cyclones Mini), absente
 	// des variableOptions du package. `pressure_msl` est déjà couvert par le package
 	// (« Pressure Mean Sea Level ») et n'a rien à ajouter ici.
-	cyclone_existence: 'Probabilité de présence de cyclone'
+	cyclone_existence: 'Cyclones',
+	cyclone_tracks: 'Trajectoires candidates'
 };
 
 /** Forme contractée à utiliser après "Anomalie/Moyenne/Dispersion/Min/Max de". */

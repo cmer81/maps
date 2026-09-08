@@ -47,9 +47,10 @@
 	import Scale from '$lib/components/scale/scale.svelte';
 	import SoundingPanel from '$lib/components/sounding/sounding-panel.svelte';
 	import TimeSelector from '$lib/components/time/time-selector.svelte';
+	import ForecastView from '$lib/components/weather-ai/forecast-view.svelte';
 
 	import { computeCaptureRect } from '$lib/capture-geometry';
-	import { DOMAIN_DEFAULT_VIEWS } from '$lib/constants';
+	import { DOMAIN_DEFAULT_VIEWS, WEATHER_AI_GLOBAL_DOMAIN } from '$lib/constants';
 	import { refreshDepartments } from '$lib/departments-layer';
 	import { checkHighDefinition } from '$lib/helpers';
 	import { initHillshadeFromPrefs } from '$lib/hillshade';
@@ -207,9 +208,19 @@
 			}
 		}
 
+		if (newDomain === WEATHER_AI_GLOBAL_DOMAIN) {
+			loading.set(false);
+			$metaJson = undefined;
+			changeOMfileURL();
+			return;
+		}
+
 		getInitialMetaDataPromise = (async () => {
 			await getInitialMetaData();
-			$metaJson = await getMetaData();
+			if (get(domain) !== newDomain) return;
+			const metadata = await getMetaData();
+			if (get(domain) !== newDomain) return;
+			$metaJson = metadata;
 
 			const timeSteps = $metaJson?.valid_times.map((validTime: string) => new Date(validTime));
 			const timeStep = findTimeStep($time, timeSteps);
@@ -371,9 +382,9 @@
 {/if}
 
 <AppChrome />
-<Scale />
+{#if $domain !== WEATHER_AI_GLOBAL_DOMAIN}<Scale />{/if}
 <ClippingPanel bind:this={clippingPanel} />
-<TimeSelector />
+{#if $domain === WEATHER_AI_GLOBAL_DOMAIN}<ForecastView />{:else}<TimeSelector />{/if}
 <HelpDialog />
 <SoundingPanel />
 <PointDrawer />

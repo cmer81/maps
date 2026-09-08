@@ -2,6 +2,8 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig, loadEnv } from 'vite';
 
+import { weatherAiUpstreamUrl } from './src/lib/weather-ai/proxy.js';
+
 import type { IncomingMessage, ServerResponse } from 'http';
 import type { Plugin, PreviewServer, ViteDevServer } from 'vite';
 
@@ -17,15 +19,48 @@ const addHeaders = (res: ServerResponse) => {
 	res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
 };
 
+const weatherAiProxy = async (req: IncomingMessage, res: ServerResponse, next: () => void) => {
+	const url = new URL(req.url ?? '/', 'http://localhost');
+	if (!url.pathname.startsWith('/api/weather-ai/')) return next();
+	const upstream = weatherAiUpstreamUrl(url.href);
+	if (!upstream) {
+		res.writeHead(404);
+		res.end();
+		return;
+	}
+	if (req.method !== 'GET') {
+		res.writeHead(405, { Allow: 'GET' });
+		res.end();
+		return;
+	}
+	try {
+		const response = await fetch(upstream, {
+			headers: { Accept: 'application/json' },
+			redirect: 'error',
+			signal: AbortSignal.timeout(30000)
+		});
+		res.writeHead(response.status, {
+			'Content-Type': response.headers.get('Content-Type') ?? 'application/json',
+			'Cache-Control': 'no-store'
+		});
+		res.end(Buffer.from(await response.arrayBuffer()));
+	} catch {
+		res.writeHead(502, { 'Content-Type': 'application/json' });
+		res.end(JSON.stringify({ error: 'Weather AI upstream unavailable' }));
+	}
+};
+
 const viteServerConfig = (): Plugin => ({
 	name: 'add-headers',
 	configureServer: (server: ViteDevServer) => {
+		server.middlewares.use(weatherAiProxy);
 		server.middlewares.use((_req: IncomingMessage, res: ServerResponse, next: () => void) => {
 			addHeaders(res);
 			next();
 		});
 	},
 	configurePreviewServer: (server: PreviewServer) => {
+		server.middlewares.use(weatherAiProxy);
 		server.middlewares.use((_req: IncomingMessage, res: ServerResponse, next: () => void) => {
 			addHeaders(res);
 			next();

@@ -2,12 +2,12 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "infoclimat-numeric",
 	"compatibility_date": "2026-05-30",
-	// Déploiement statique (SvelteKit adapter-static → ./build). Pas de `main` :
-	// Worker "assets-only", aucun script serveur. La présence de ce fichier empêche
-	// `wrangler deploy` de lancer son auto-config SvelteKit-on-Workers (qui réécrivait
-	// le build en `wrangler types --check && vite build` → échec « worker-configuration.d.ts »).
+	// Static app plus a read-only relay for the Weather AI API.
+	"main": "server/worker.ts",
 	"assets": {
 		"directory": "build",
+		"binding": "ASSETS",
+		"run_worker_first": ["/api/weather-ai/*"],
 		"not_found_handling": "single-page-application"
 	},
 	"observability": {
