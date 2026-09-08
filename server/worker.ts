@@ -14,9 +14,14 @@ export default {
 		try {
 			const result = await fetch(upstream, {
 				headers: { Accept: 'application/json' },
-				redirect: 'error',
+				// workerd supports follow/manual only. Keep the relay on its fixed upstream.
+				redirect: 'manual',
 				signal: AbortSignal.timeout(30000)
 			});
+			if (result.status >= 300 && result.status < 400) {
+				await result.body?.cancel();
+				return Response.json({ error: 'Weather AI upstream redirect refused' }, { status: 502 });
+			}
 			return new Response(result.body, {
 				status: result.status,
 				headers: {
