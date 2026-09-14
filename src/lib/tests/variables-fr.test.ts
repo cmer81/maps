@@ -23,6 +23,16 @@ describe('translateVariableLabel — convection variables', () => {
 		expect(translateVariableLabel('Visibility')).toBe('Visibilité');
 	});
 
+	// `snowfall_height` est une **altitude** (limite pluie-neige, DWD `SNOWLMT`),
+	// `snow_depth` une **épaisseur** au sol. Les deux sont publiées côte à côte par
+	// les domaines ICON : leurs libellés ne doivent jamais se lire comme deux
+	// variantes de la même grandeur (régression « Hauteur de neige tombée »).
+	it('does not confuse the snow line altitude with the snow depth', () => {
+		expect(translateVariableLabel('Snowfall Height')).toBe('Altitude de la limite pluie-neige');
+		expect(translateVariableLabel('Snow Depth')).toBe('Hauteur de neige');
+		expect(translateVariableLabel('Snowfall Height')).not.toContain('Hauteur de neige');
+	});
+
 	it('translates arome_france_hd raw variables absent from the package', () => {
 		expect(translateVariableLabel('graupel_sum')).toBe('Cumul de grésil (graupel)');
 		expect(translateVariableLabel('snow_graupel_sum')).toBe('Cumul de neige + grésil (graupel)');

@@ -16,18 +16,23 @@ import { brightnessTemperatureWvScale } from '$lib/color-scales/brightness-tempe
 import { capeScale } from '$lib/color-scales/cape';
 import { convectiveInhibitionScale } from '$lib/color-scales/convective-inhibition';
 import { geopotentialPv1500Scale } from '$lib/color-scales/geopotential-pv1500';
+import { heatFluxScale } from '$lib/color-scales/heat-flux';
 import { infoclimatTemperatureScale } from '$lib/color-scales/infoclimat-temperature';
 import { lightningDensityScale } from '$lib/color-scales/lightning-density';
+import { lightningPotentialScale } from '$lib/color-scales/lightning-potential';
 import { precipitableWaterScale } from '$lib/color-scales/precipitable-water';
 import { precipitationSumScale } from '$lib/color-scales/precipitation-sum';
 import { precipitationTypeScale } from '$lib/color-scales/precipitation-type';
 import { radarReflectivityScale } from '$lib/color-scales/radar-reflectivity';
 import { snowfallSumScale } from '$lib/color-scales/snowfall-sum';
+import { soilMoistureScale } from '$lib/color-scales/soil-moisture';
 import { temperatureAnomalyScale } from '$lib/color-scales/temperature-anomaly';
 import { thetaEScale } from '$lib/color-scales/theta-e';
 import { thetaWScale } from '$lib/color-scales/theta-w';
 import { thicknessScale } from '$lib/color-scales/thickness';
+import { updraftScale } from '$lib/color-scales/updraft';
 import { visibilityScale } from '$lib/color-scales/visibility';
+import { weatherCodeScale } from '$lib/color-scales/weather-code';
 import {
 	ANOMALY_DOMAIN,
 	ANOMALY_VARIABLE,
@@ -164,7 +169,35 @@ export const standardColorScales = {
 	theta_w_850hPa: thetaWScale,
 	thickness_500_1000hPa: thicknessScale,
 	absolute_vorticity_500hPa: absoluteVorticityScale,
-	geopotential_height_pv1500: geopotentialPv1500Scale
+	geopotential_height_pv1500: geopotentialPv1500Scale,
+
+	// Domaines upstream (ICON Global/EU/D2, MeteoSwiss, GFS) — variables de
+	// l'onglet « Autres » que la résolution du package servait n'importe comment.
+	// Trois d'entre elles n'avaient NI clé exacte NI famille : `getColorScale`
+	// retombait sur `colorScales.temperature`, donc couleurs ET unité en °C
+	// (« code météo à 95,0 °C »). Les autres avaient une clé, mais une échelle
+	// sans rapport avec les valeurs réellement diffusées.
+	//   - `weather_code` : codes WMO 4677 → colormap catégorielle + libellés FR.
+	//   - `lightning_potential` (J/kg) / `updraft` (m/s) : fallback °C.
+	//   - `sensible_heat_flux` / `latent_heat_flux` : le défaut du package annonce
+	//     W/m² sur les breakpoints de `temperature` (−80…50) alors que le champ
+	//     descend à −417 → mesuré sur l'échéance 14:00, 32 % des pixels du flux
+	//     sensible et 70 % du flux latent tombent sous la borne basse, tous rendus
+	//     de la même couleur. Échelle divergente partagée, −600…200 W/m².
+	//   - `soil_moisture` : le défaut annonce « vol. % » sur une donnée en m³/m³
+	//     (0…0,76) → l'unité affichée dans la légende et le popup est fausse d'un
+	//     facteur 100. Mêmes paliers de 0,05 dans la bande utile, sommet étendu.
+	// NB : `freezing_level_height` et `snowfall_height` gardent volontairement le
+	// défaut du package. Ses bornes −5200…5200 m paraissent absurdes, mais ses 42
+	// breakpoints ne sont PAS équirépartis : 33 d'entre eux couvrent 0…5200 m par
+	// paliers de 160-200 m, et 0 % des pixels mesurés saturent. Le resserrer
+	// dégraderait la résolution au lieu de l'améliorer.
+	weather_code: weatherCodeScale,
+	lightning_potential: lightningPotentialScale,
+	updraft: updraftScale,
+	sensible_heat_flux: heatFluxScale,
+	latent_heat_flux: heatFluxScale,
+	soil_moisture: soilMoistureScale
 };
 
 export const omProtocolSettings: Writable<OmProtocolSettings> = writable({
@@ -203,6 +236,18 @@ export const omProtocolSettings: Writable<OmProtocolSettings> = writable({
 			if (data.values) {
 				data.values = data.values?.map((value) => value * 1e5);
 			}
+		}
+		// Inhibition convective : la convention de signe dépend du producteur —
+		// `arome_france_convection` publie le CIN négatif (mesuré : −267…+10),
+		// les domaines upstream le publient positif (dwd_icon_d2 : 0…295). Comme
+		// `convectiveInhibitionScale` est enregistrée par clé exacte (donc globale),
+		// une seule convention peut être servie : on normalise en magnitude
+		// positive, la grandeur affichée étant l'intensité du couvercle. Sans ça,
+		// l'échelle négative héritée d'AROME rendait le CIN invisible (tout au
+		// dernier breakpoint, transparent) sur les cinq domaines upstream.
+		// `Math.abs` laisse les champs déjà positifs inchangés.
+		if (state.dataOptions.variable === 'convective_inhibition' && data.values) {
+			data.values = data.values.map((value) => Math.abs(value));
 		}
 		// Réflectivité radar affichée en mm/h (à la Météociel). Depuis le producteur
 		// (infoclimat-pipelines PR #37), les OMfiles servent le champ mm/h NATIF de

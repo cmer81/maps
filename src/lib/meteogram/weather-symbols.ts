@@ -50,3 +50,14 @@ export function symbolForWmo(code: number, isDay: boolean): { icon: string; labe
 	const entry = WMO_SYMBOLS[code] ?? FALLBACK;
 	return { icon: isDay ? entry.day : entry.night, label: entry.label };
 }
+
+/** Codes WMO 4677 couverts par la table, triés croissants. Source unique pour
+ *  la colormap catégorielle `weather_code` (`color-scales/weather-code.ts`). */
+export const WMO_CODES: readonly number[] = Object.keys(WMO_SYMBOLS)
+	.map(Number)
+	.sort((a, b) => a - b);
+
+/** Libellé FR d'un code WMO 4677 (fallback « Couvert » hors table). */
+export function wmoLabel(code: number): string {
+	return (WMO_SYMBOLS[code] ?? FALLBACK).label;
+}
