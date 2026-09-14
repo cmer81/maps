@@ -27,7 +27,12 @@ import {
 	windOverlayLevel
 } from '$lib/stores/vector';
 
-import { ANOMALY_DOMAIN, ANOMALY_VARIABLE, DEFAULT_PREFERENCES } from '$lib/constants';
+import {
+	ANOMALY_DOMAIN,
+	ANOMALY_VARIABLE,
+	CATEGORICAL_VARIABLES,
+	DEFAULT_PREFERENCES
+} from '$lib/constants';
 
 import {
 	CLIP_COUNTRIES_PARAM,
@@ -306,6 +311,11 @@ export const getOMUrlFor = (
 	const base = `${getBaseUri(domain)}/data_spatial/${domain}`;
 	let result = `${base}/${fmtModelRun(modelRun)}/${fmtSelectedTime(selectedTime)}.om`;
 	result += `?variable=${variable}`;
+
+	// Variables catégorielles (codes entiers) : l'échantillonnage bilinéaire par
+	// défaut fabriquerait des codes intermédiaires inexistants. Le paramètre est
+	// lu par le rasterizer worker et par `getValueFromLatLong()` (popup).
+	if (CATEGORICAL_VARIABLES.includes(variable)) result += '&interpolation=nearest';
 
 	if (mode.current === 'dark') result += '&dark=true';
 	const vectorOptions = get(vO);

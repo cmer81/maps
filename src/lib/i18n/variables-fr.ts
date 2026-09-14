@@ -100,7 +100,14 @@ const EXPLICIT: Record<string, string> = {
 	'Snow Density': 'Densité de la neige',
 	Snowfall: 'Cumul de neige',
 	'Snowfall Probability': 'Probabilité de neige',
-	'Snowfall Height': 'Hauteur de neige tombée',
+	// « Snowfall Height » (DWD `SNOWLMT`) est l'**altitude de la limite pluie-neige**
+	// au-dessus du niveau de la mer, pas une épaisseur de neige : mesuré sur
+	// dwd_icon_d2, le champ va de −170 m (neige jusqu'au sol) à 4030 m. L'ancienne
+	// traduction « Hauteur de neige tombée » la faisait lire comme une précision de
+	// `Snow Depth` (« Hauteur de neige », la vraie épaisseur au sol) — les deux
+	// variables étant publiées côte à côte par les domaines ICON, « 3290 m »
+	// se lisait comme 3290 m de neige. Phrasé calqué sur « Freezing Level Height ».
+	'Snowfall Height': 'Altitude de la limite pluie-neige',
 	'Snowfall Water Equivalent': 'Équivalent en eau de la neige tombée',
 	'Sunshine Duration': "Durée d'ensoleillement",
 	'Sulphur Dioxide': 'Dioxyde de soufre',

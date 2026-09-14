@@ -61,6 +61,23 @@ export const DOMAIN_DEFAULT_VARIABLES: Record<string, string> = {
 	knmi_harmonie_arome_europe: 'temperature_2m'
 };
 
+/** Variables **catégorielles** : leurs valeurs sont des codes entiers, pas un
+ *  champ continu. L'échantillonnage bilinéaire par défaut du package produit
+ *  alors des codes intermédiaires arbitraires (halos de catégorie parasite en
+ *  lisière, valeurs non entières au survol) — `getOMUrlFor()` (`src/lib/url.ts`)
+ *  ajoute donc `&interpolation=nearest` à leur URL `om://`. Le paramètre est lu
+ *  par le rasterizer worker **et** par `getValueFromLatLong()` (popup), les deux
+ *  chemins sont donc couverts.
+ *
+ *  Disponible depuis `@openmeteo/weather-map-layer@0.2.0`, qui expose
+ *  `RenderOptions.interpolation: 'nearest' | 'linear' | 'cubic' | 'monotone'`
+ *  (défaut `linear`). C'est ce qui manquait à l'issue #35. */
+export const CATEGORICAL_VARIABLES: readonly string[] = [
+	'weather_code',
+	'precipitation_type',
+	'precipitation_type_severe'
+];
+
 /** Variables masquées du sélecteur (display-only), même si publiées dans le
  *  meta.json du domaine. Filtré par `buildVariableList()` (`src/lib/layer-list.ts`). Une URL partagée
  *  ciblant l'une d'elles résout toujours (comme `DOMAIN_ALLOWLIST` pour les modèles).
@@ -68,8 +85,10 @@ export const DOMAIN_DEFAULT_VARIABLES: Record<string, string> = {
  *  `precipitation_type` / `precipitation_type_severe` : variables catégorielles
  *  rendues incorrectement par `@openmeteo/weather-map-layer` (échantillonnage
  *  bilinéaire des données → halos de catégorie parasite en lisière, valeurs non
- *  entières au survol ; aucun mode nearest-neighbor exposé). Masquées en attendant
- *  une refacto / un correctif amont du package. Suivi : issue #35. */
+ *  entières au survol). Masquées en attendant une reprise de l'issue #35 —
+ *  l'échantillonnage plus proche voisin est désormais disponible
+ *  (`CATEGORICAL_VARIABLES` ci-dessus les couvre déjà pour les URL partagées),
+ *  mais le démasquage reste à valider visuellement. Suivi : issue #35. */
 export const HIDDEN_VARIABLES: readonly string[] = [
 	'precipitation_type',
 	'precipitation_type_severe'
