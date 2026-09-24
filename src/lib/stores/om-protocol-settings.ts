@@ -40,6 +40,7 @@ import {
 	DEFAULT_CACHE_MAX_BYTES_MB,
 	HTTP_OVERHEAD_BYTES
 } from '$lib/constants';
+import { canUseSharedArrayBuffer } from '$lib/shared-array-buffer';
 
 import type {
 	Data,
@@ -204,7 +205,9 @@ export const omProtocolSettings: Writable<OmProtocolSettings> = writable({
 	...defaultOmProtocolSettings,
 	// static
 	fileReaderConfig: {
-		useSAB: true,
+		// Pas de `true` en dur : la WebView Android n'est jamais cross-origin
+		// isolée et le file-reader y refuse les SAB → calques météo vides.
+		useSAB: canUseSharedArrayBuffer(),
 		cache: createBlockCache()
 	},
 	resolveRequest: customResolveRequest,

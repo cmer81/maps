@@ -79,7 +79,7 @@ npm run preview  # servir la build localement
 
 ### Image Docker (déploiement self-hosted)
 
-Le `Dockerfile` produit une image nginx qui template `VITE_OM_WORKER_URL` au runtime via `docker-entrypoint.d/` (pas besoin de rebuilder pour changer la cible du worker). Headers COOP/COEP/CORP appliqués pour activer `SharedArrayBuffer` (requis par `@openmeteo/file-reader`).
+Le `Dockerfile` produit une image nginx qui template `VITE_OM_WORKER_URL` au runtime via `docker-entrypoint.d/` (pas besoin de rebuilder pour changer la cible du worker). Headers COOP/COEP/CORP appliqués pour activer `SharedArrayBuffer` : `@openmeteo/file-reader` lit alors les OMfiles en mémoire partagée avec les workers (zéro copie). Sans isolation cross-origin (ex. WebView Android, où COOP/COEP sont sans effet), `useSAB` retombe sur des `ArrayBuffer` copiés vers les workers — plus lent mais fonctionnel (`src/lib/shared-array-buffer.ts`).
 
 Une image est publiée automatiquement sur GHCR via `.github/workflows/`.
 
