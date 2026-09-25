@@ -12,7 +12,7 @@ paths:
 
 The app registers a custom protocol with MapLibre in `src/routes/+page.svelte` (`maplibregl.addProtocol('om', ...)`) wired to `omProtocol` from `@openmeteo/weather-map-layer`. All sources use `om://<https-url-with-query-params>` URLs. Source URLs are constructed in `src/lib/url.ts → getOMUrl()`, which encodes the domain, model run, valid time, variable, vector toggles, tile size, dark mode, and stable hashes of clipping/color settings.
 
-The dev/preview server in `vite.config.ts` injects `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` headers — required for `SharedArrayBuffer` used by `@openmeteo/file-reader` (which is excluded from Vite's `optimizeDeps` along with `@openmeteo/file-format-wasm`).
+The dev/preview server in `vite.config.ts` injects `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` headers — they enable `SharedArrayBuffer` for `@openmeteo/file-reader` (zero-copy sharing with tile workers). SAB is an optimisation, not a requirement: `fileReaderConfig.useSAB` comes from `canUseSharedArrayBuffer()` (`src/lib/shared-array-buffer.ts`), which returns false when the page isn't cross-origin isolated (Android WebView exposes the constructor but is never isolated) → plain `ArrayBuffer`s structured-cloned to workers. Never hard-code `useSAB: true` (which is excluded from Vite's `optimizeDeps` along with `@openmeteo/file-format-wasm`).
 
 ## SlotManager (double-buffered tiles)
 
