@@ -40,7 +40,9 @@ import {
 	buildContourLabelExpr,
 	buildContourWidthExpr,
 	buildGridDecimationFilter,
-	buildGridValueLabelExpr
+	buildGridValueLabelExprFor,
+	buildGridValueVisibilityFilter,
+	combineGridValueFilters
 } from '$lib/vector-styles';
 
 import { refreshPopup } from './popup';
@@ -280,6 +282,10 @@ const gridGeometryOf = (grid: Parameters<typeof GridFactory.create>[0]): GridGeo
 	};
 };
 
+/** Unité brute des valeurs de la grille (unité de l'échelle de la variable affichée). */
+const gridValueBaseUnit = (): string =>
+	getColorScale(get(displayedVariable), isDark(), get(omProtocolSettings).colorScales).unit;
+
 const vectorGridValuesLayer = (): SlotLayer => ({
 	id: 'omVectorGridValuesLayer',
 	opacityProp: 'text-opacity',
@@ -302,13 +308,21 @@ const vectorGridValuesLayer = (): SlotLayer => ({
 				// nœuds, donc pas de souci de perf à bas zoom). Plus bas, les valeurs
 				// seraient illisibles.
 				minzoom: 3,
-				filter: buildGridDecimationFilter(gridGeometryOf(get(selectedDomain).grid)),
+				// Précipitations : zones sèches masquées (« 0,0 ») et valeurs
+				// au dixième ; autres variables : filtre et format inchangés.
+				filter: combineGridValueFilters(
+					buildGridDecimationFilter(gridGeometryOf(get(selectedDomain).grid)),
+					buildGridValueVisibilityFilter(
+						get(displayedVariable),
+						gridValueBaseUnit(),
+						get(unitPreferences)
+					)
+				),
 				layout: {
 					'symbol-placement': 'point',
-					'text-field': buildGridValueLabelExpr(
+					'text-field': buildGridValueLabelExprFor(
 						get(displayedVariable),
-						getColorScale(get(displayedVariable), isDark(), get(omProtocolSettings).colorScales)
-							.unit,
+						gridValueBaseUnit(),
 						get(unitPreferences)
 					),
 					'text-font': ['Noto Sans Regular'],

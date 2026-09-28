@@ -36,3 +36,6 @@ vite.config.ts.timestamp-*
 __pycache__/
 *.pyc
 .kanbots/
+
+# Playwright MCP (captures/snapshots de session)
+.playwright-mcp/

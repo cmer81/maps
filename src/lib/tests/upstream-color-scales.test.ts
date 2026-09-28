@@ -7,6 +7,7 @@ import { convectiveInhibitionScale } from '$lib/color-scales/convective-inhibiti
 import { heatFluxScale } from '$lib/color-scales/heat-flux';
 import { categoricalLegendEntries, isCategorical } from '$lib/color-scales/legend';
 import { lightningPotentialScale } from '$lib/color-scales/lightning-potential';
+import { precipitationScale } from '$lib/color-scales/precipitation';
 import { soilMoistureScale } from '$lib/color-scales/soil-moisture';
 import { updraftScale } from '$lib/color-scales/updraft';
 import { weatherCodeScale } from '$lib/color-scales/weather-code';
@@ -171,5 +172,42 @@ describe('the altitude levels keep the package default', () => {
 		if (scale.type !== 'breakpoint') throw new Error('expected a breakpoint scale');
 		expect(scale.breakpoints[0]).toBeLessThanOrEqual(-170);
 		expect(scale.breakpoints[scale.breakpoints.length - 1]).toBeGreaterThanOrEqual(4030);
+	});
+});
+
+/** Non-régression de l'échelle de précipitations 0,5 → 800 mm (spec US5, FR-015) :
+ *  seules precipitation / rain / showers / precipitation_sum changent d'échelle. */
+describe('échelle de précipitations — les autres variables ne bougent pas', () => {
+	it.each(['precipitation', 'rain', 'showers', 'precipitation_sum'])(
+		'%s utilise l’échelle 0,5 → 800 mm',
+		(v) => {
+			expect(getColorScale(v, false, standardColorScales)).toEqual(precipitationScale);
+		}
+	);
+
+	it.each([
+		'wind_speed_10m',
+		'pressure_msl',
+		'cloud_cover',
+		'precipitation_probability',
+		'snowfall_water_equivalent'
+	])('%s garde l’échelle du package', (v) => {
+		for (const dark of [false, true]) {
+			expect(getColorScale(v, dark, standardColorScales)).toEqual(
+				getColorScale(v, dark, defaultOmProtocolSettings.colorScales)
+			);
+		}
+	});
+
+	it.each([
+		'temperature_2m',
+		'snowfall_sum',
+		'graupel_sum',
+		'snow_graupel_sum',
+		'snowfall_water_equivalent_sum',
+		'precipitation_type',
+		'radar_reflectivity'
+	])('%s n’utilise pas l’échelle de précipitations', (v) => {
+		expect(getColorScale(v, false, standardColorScales)).not.toEqual(precipitationScale);
 	});
 });
