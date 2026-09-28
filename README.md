@@ -9,6 +9,7 @@ Client SvelteKit qui rend des OMfiles via MapLibre GL — l'intégralité du ren
 ## Spécificités du fork
 
 - **Bandeau Infoclimat** — logo + liens (site, forum, adhérer) intégrés en en-tête.
+- **Échelle de précipitations 0,2 → 600 mm** — une seule échelle pour la pluie par pas de temps et le cumul du run (`precipitation`, `rain`, `showers`, `precipitation_sum`), avec des paliers distincts jusqu'aux épisodes extrêmes. Les valeurs de grille s'affichent au dixième sous 10 mm, sans « 0 » en zone sèche (voir `src/lib/color-scales/precipitation.ts`).
 - **Palette de températures « infoclimat-inspired »** — échelle de couleurs adaptée aux conventions visuelles d'Infoclimat (voir `src/lib/color-scales/`).
 - **Domaine par défaut** : `meteofrance_arome_france0025` (MF AROME France).
 - **Sélecteur de domaine filtré** — préset Infoclimat dans `DOMAIN_ALLOWLIST` (constants.ts) : AROME France HD/15min, AROME France, ARPEGE Europe, ECMWF IFS HRES/0.25°/AIFS, DWD ICON D2/EU. Les autres modèles restent accessibles via URL partagée.

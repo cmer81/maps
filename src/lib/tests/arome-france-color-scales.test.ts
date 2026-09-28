@@ -1,3 +1,4 @@
+import { defaultOmProtocolSettings } from '@openmeteo/weather-map-layer';
 import { describe, expect, it } from 'vitest';
 
 import { standardColorScales } from '$lib/stores/om-protocol-settings';
@@ -59,5 +60,19 @@ describe('arome_france color scales', () => {
 		for (const [variable, scale] of scales) {
 			expect((standardColorScales as Record<string, unknown>)[variable]).toBe(scale);
 		}
+	});
+});
+
+// Cumuls de grésil / neige en équivalent eau (arome_france_hd) : hors périmètre
+// de l'alignement Infoclimat (Q2 = B) → toujours l'échelle `precipitation` d'origine
+// du package, pas la nouvelle échelle à paliers.
+describe('arome_france_hd — cumuls en équivalent eau inchangés', () => {
+	it.each(['graupel_sum', 'snow_graupel_sum', 'snowfall_water_equivalent_sum'])('%s', (v) => {
+		expect(standardColorScales[v as keyof typeof standardColorScales]).toBe(
+			defaultOmProtocolSettings.colorScales.precipitation
+		);
+		expect(standardColorScales[v as keyof typeof standardColorScales]).not.toEqual(
+			standardColorScales.precipitation
+		);
 	});
 });

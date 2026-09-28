@@ -1,11 +1,13 @@
 import {
 	type Feature,
 	type FilterSpecification,
+	createExpression,
 	featureFilter
 } from '@maplibre/maplibre-gl-style-spec';
 import { describe, expect, it } from 'vitest';
 
 import {
+	GRID_VALUE_TARGET_PX,
 	buildArrowColorExpr,
 	buildArrowWidthExpr,
 	buildContourColorExpr,
@@ -13,6 +15,9 @@ import {
 	buildContourWidthExpr,
 	buildGridDecimationFilter,
 	buildGridValueLabelExpr,
+	buildGridValueLabelExprFor,
+	buildGridValueVisibilityFilter,
+	combineGridValueFilters,
 	computeStride,
 	defaultArrowStyle,
 	defaultContourStyle,
@@ -23,6 +28,8 @@ import {
 	pxPerDegLon,
 	rgbaStringToHex
 } from '$lib/vector-styles';
+
+import type { UnitPreferences } from '$lib/stores/units';
 
 /**
  * Minimal evaluator for the subset of MapLibre expressions our builders emit.
@@ -329,5 +336,120 @@ describe('buildGridDecimationFilter — compatibilité moteur MapLibre (featureF
 	it('densifie au zoom (zoom 12 : stride 1, tous gardés)', () => {
 		expect(compiled.filter({ zoom: 12 }, feat(1))).toBe(true);
 		expect(compiled.filter({ zoom: 12 }, feat(1440))).toBe(true);
+	});
+});
+
+const DEFAULT_UNITS: UnitPreferences = {
+	temperature: '°C',
+	precipitation: 'mm',
+	windSpeed: 'km/h',
+	distance: 'm',
+	geopotential: 'gpm'
+};
+
+/**
+ * Vignettes « Valeurs » des précipitations (spec US4, data-model E9,
+ * contrat C4) — évaluées par le VRAI moteur d'expressions MapLibre
+ * (`createExpression` / `featureFilter`) pour verrouiller la sémantique réelle de
+ * `number-format` (virgule `fr`) et l'acceptation du filtre combiné.
+ */
+describe('vignettes précipitations — format (buildGridValueLabelExprFor)', () => {
+	const mm = { ...DEFAULT_UNITS, precipitation: 'mm' as const };
+	const label = (variable: string, units: UnitPreferences, value: number, baseUnit = 'mm') => {
+		const compiled = createExpression(buildGridValueLabelExprFor(variable, baseUnit, units));
+		if (compiled.result !== 'success') throw new Error(JSON.stringify(compiled.value));
+		return compiled.value.evaluate({ zoom: 6 }, { type: 1, properties: { value } } as Feature);
+	};
+
+	it.each([
+		[0.05, '0,1'],
+		[0.4, '0,4'],
+		[9.94, '9,9'],
+		[9.96, '10'],
+		[152.4, '152'],
+		[1520, '1520']
+	])('precipitation %s mm → « %s »', (value, expected) => {
+		expect(label('precipitation', mm, value)).toBe(expected);
+	});
+
+	it('mêmes règles pour rain, showers et precipitation_sum', () => {
+		for (const v of ['rain', 'showers', 'precipitation_sum']) expect(label(v, mm, 0.4)).toBe('0,4');
+	});
+
+	it('variable hors périmètre : sortie identique au format historique (entier)', () => {
+		const historic = createExpression(buildGridValueLabelExpr('temperature_2m', '°C', mm));
+		const now = createExpression(buildGridValueLabelExprFor('temperature_2m', '°C', mm));
+		if (historic.result !== 'success' || now.result !== 'success') throw new Error('compile');
+		for (const value of [-3.6, 0, 12.4, 22.5]) {
+			const f = { type: 1, properties: { value } } as Feature;
+			expect(now.value.evaluate({ zoom: 6 }, f)).toBe(historic.value.evaluate({ zoom: 6 }, f));
+		}
+	});
+
+	it('pouces : 2 décimales sous 1 in, 1 décimale au-delà', () => {
+		const inch = { ...DEFAULT_UNITS, precipitation: 'inch' as const };
+		expect(label('precipitation', inch, 2.54)).toBe('0,10'); // 2,54 mm = 0,10 in
+		expect(label('precipitation', inch, 25.4 * 1.23)).toBe('1,2');
+	});
+});
+
+describe('vignettes précipitations — masquage (buildGridValueVisibilityFilter)', () => {
+	const mm = { ...DEFAULT_UNITS, precipitation: 'mm' as const };
+	const feat = (value: number, id = 0): Feature => ({ id, type: 1, properties: { value } });
+
+	it('variable hors périmètre → null (filtre inchangé)', () => {
+		expect(buildGridValueVisibilityFilter('temperature_2m', '°C', mm)).toBeNull();
+	});
+
+	it('masque ce qui s’afficherait « 0,0 » (< 0,05 mm), garde le reste', () => {
+		const vis = buildGridValueVisibilityFilter('precipitation', 'mm', mm)!;
+		const compiled = featureFilter(vis);
+		expect(compiled.filter({ zoom: 6 }, feat(0))).toBe(false);
+		expect(compiled.filter({ zoom: 6 }, feat(0.04))).toBe(false);
+		expect(compiled.filter({ zoom: 6 }, feat(0.05))).toBe(true);
+		expect(compiled.filter({ zoom: 6 }, feat(12))).toBe(true);
+	});
+
+	it('pouces : masque ce qui s’afficherait « 0,00 » in', () => {
+		const inch = { ...DEFAULT_UNITS, precipitation: 'inch' as const };
+		const compiled = featureFilter(buildGridValueVisibilityFilter('precipitation', 'mm', inch)!);
+		expect(compiled.filter({ zoom: 6 }, feat(0.1))).toBe(false); // 0,004 in
+		expect(compiled.filter({ zoom: 6 }, feat(0.13))).toBe(true); // 0,005 in → « 0,01 »
+	});
+
+	it('combiné à la décimation 2D : accepté par MapLibre, les deux conditions s’appliquent', () => {
+		const geom = { nx: 1440, ny: 721, dxDeg: 0.25, dyDeg: 0.25, refLat: 46, gaussian: false };
+		const combined = combineGridValueFilters(
+			buildGridDecimationFilter(geom, [2, 12], 48),
+			buildGridValueVisibilityFilter('precipitation', 'mm', mm)
+		);
+		const compiled = featureFilter(combined);
+		expect(compiled.filter({ zoom: 2 }, feat(3, 0))).toBe(true); // nœud gardé, valeur visible
+		expect(compiled.filter({ zoom: 2 }, feat(0, 0))).toBe(false); // nœud gardé, valeur nulle
+		expect(compiled.filter({ zoom: 2 }, feat(3, 1))).toBe(false); // nœud décimé
+		expect(compiled.filter({ zoom: 12 }, feat(3, 1))).toBe(true);
+	});
+
+	it('sans filtre de visibilité : décimation renvoyée telle quelle', () => {
+		const geom = { nx: 10, ny: 10, dxDeg: 1, dyDeg: 1, refLat: 0, gaussian: false };
+		const decimation = buildGridDecimationFilter(geom, [2, 4], 48);
+		expect(combineGridValueFilters(decimation, null)).toBe(decimation);
+	});
+});
+
+describe('vignettes — invariant d’espacement (research R8)', () => {
+	it('l’espacement minimal garanti couvre une étiquette de 4 caractères', () => {
+		// stride = max(1, round(target/screenStep)) → pire cas : ratio juste sous 1,5
+		// arrondi à 1 → espacement ≥ target / 1,5.
+		const minSpacingPx = GRID_VALUE_TARGET_PX / 1.5;
+		// Noto Sans 11 px : chiffre ≈ 0,57 em ≈ 6,3 px ; halo 1,5 px de chaque côté.
+		const maxLabelWidthPx = 4 * 6.3 + 2 * 1.5; // « 1520 », « 9,9 », « 152 »
+		expect(minSpacingPx).toBeGreaterThanOrEqual(maxLabelWidthPx);
+		// Le pire cas d'arrondi du stride est bien ≥ target/1,5.
+		for (let ratio = 1; ratio < 20; ratio += 0.01) {
+			const screenStep = GRID_VALUE_TARGET_PX / ratio;
+			const spacing = computeStride(1, screenStep, GRID_VALUE_TARGET_PX) * screenStep;
+			expect(spacing).toBeGreaterThanOrEqual(minSpacingPx - 1e-9);
+		}
 	});
 });

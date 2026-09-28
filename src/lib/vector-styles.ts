@@ -7,6 +7,8 @@
  */
 import { type UnitPreferences, convertValue } from '$lib/stores/units';
 
+import { isPrecipitationVariable } from '$lib/color-scales/precipitation';
+
 import type * as maplibregl from 'maplibre-gl';
 
 // ── Types ────────────────────────────────────────────────────────────────
@@ -213,6 +215,97 @@ export function buildGridValueLabelExpr(
 	const scaled: maplibregl.ExpressionSpecification =
 		offset === 0 ? ['*', VALUE, factor] : ['+', ['*', VALUE, factor], offset];
 	return ['to-string', ['round', scaled]];
+}
+
+/** Transformation affine brute → unité d'affichage (`convertValue` est affine). */
+const displayAffine = (
+	variable: string,
+	baseUnit: string,
+	units: UnitPreferences
+): { offset: number; factor: number } => {
+	const round = (n: number): number => Math.round(n * 1e6) / 1e6;
+	const offset = round(convertValue(0, baseUnit, units, variable));
+	const factor = round(convertValue(1, baseUnit, units, variable) - offset);
+	return { offset, factor };
+};
+
+const fixedFr = (
+	value: maplibregl.ExpressionSpecification,
+	digits: number
+): maplibregl.ExpressionSpecification => [
+	'number-format',
+	value,
+	{ locale: 'fr', 'min-fraction-digits': digits, 'max-fraction-digits': digits }
+];
+
+/**
+ * Champ texte des étiquettes de valeur, par variable. Précipitations
+ * (`precipitation`, `rain`, `showers`, `precipitation_sum`) : au dixième sous
+ * 10 mm (« 0,4 »), entier au-delà (« 152 ») — l'arrondi à l'unité affichait
+ * « 0 » pour toute petite pluie. En pouces : 2 décimales sous 1 in, 1 au-delà.
+ * Autres variables : `buildGridValueLabelExpr` (entier), inchangé.
+ * (`max-fraction-digits: 0` n'est jamais utilisé — cf. piège ci-dessus.)
+ */
+export function buildGridValueLabelExprFor(
+	variable: string,
+	baseUnit: string,
+	units: UnitPreferences
+): maplibregl.ExpressionSpecification {
+	if (!isPrecipitationVariable(variable)) {
+		return buildGridValueLabelExpr(variable, baseUnit, units);
+	}
+	const { offset, factor } = displayAffine(variable, baseUnit, units);
+	const scaled: maplibregl.ExpressionSpecification =
+		offset === 0 ? ['*', VALUE, factor] : ['+', ['*', VALUE, factor], offset];
+	const integer: maplibregl.ExpressionSpecification = ['to-string', ['round', scaled]];
+	if (units.precipitation === 'inch') {
+		return [
+			'case',
+			['<', scaled, 0.995],
+			fixedFr(scaled, 2),
+			['<', scaled, 9.95],
+			fixedFr(scaled, 1),
+			integer
+		];
+	}
+	return ['case', ['<', scaled, 9.95], fixedFr(scaled, 1), integer];
+}
+
+/**
+ * Filtre de visibilité des étiquettes de précipitations : masque ce qui
+ * s'afficherait « 0,0 » (mm) ou « 0,00 » (in), c.-à-d. les zones sèches.
+ * `null` pour les autres variables (filtre inchangé).
+ */
+export function buildGridValueVisibilityFilter(
+	variable: string,
+	baseUnit: string,
+	units: UnitPreferences
+): maplibregl.FilterSpecification | null {
+	if (!isPrecipitationVariable(variable)) return null;
+	const { offset, factor } = displayAffine(variable, baseUnit, units);
+	const displayThreshold = units.precipitation === 'inch' ? 0.005 : 0.05;
+	const rawThreshold = (displayThreshold - offset) / factor;
+	return ['>=', VALUE, rawThreshold] as maplibregl.FilterSpecification;
+}
+
+/**
+ * Combine le filtre de décimation et un filtre de visibilité optionnel. MapLibre
+ * n'accepte `['zoom']` qu'en entrée d'un `step` de PREMIER niveau : on ne peut
+ * donc pas envelopper la décimation (`['step', ['zoom'], …]`) dans un `all` — on
+ * applique la visibilité à chacune de ses branches.
+ */
+export function combineGridValueFilters(
+	decimation: maplibregl.FilterSpecification,
+	visibility: maplibregl.FilterSpecification | null
+): maplibregl.FilterSpecification {
+	if (!visibility) return decimation;
+	const expr = decimation as unknown as unknown[];
+	if (Array.isArray(expr) && expr[0] === 'step') {
+		const [, input, ...rest] = expr;
+		const wrapped = rest.map((item, i) => (i % 2 === 0 ? ['all', item, visibility] : item));
+		return ['step', input, ...wrapped] as unknown as maplibregl.FilterSpecification;
+	}
+	return ['all', decimation, visibility] as unknown as maplibregl.FilterSpecification;
 }
 
 /** Espacement écran cible (px) entre étiquettes de valeur. Le stride 2D vise cet
