@@ -292,6 +292,11 @@ description: "Liste de tâches : couleurs de précipitations alignées sur l'éc
 - [x] T041 [P] Docs : `.claude/rules/architecture.md` (section « Échelle de précipitations 0,2 → 600 mm »), retrait du store et de la légende à paliers de `.claude/rules/stores.md` et `.claude/rules/components.md`, `README.md`.
 - [x] T042 Contrôle visuel sur `npm run dev` (ICON 3 h, vignettes activées) et CI complète (`check`, `vitest`, `build`, `eslint`).
 
+## Phase 10 : Révision 4, prolongation à 800 mm (2026-09-28)
+
+- [x] T043 `src/lib/color-scales/precipitation.ts` : 22 paliers de 0,5 à 800 mm, code couleur de référence fourni par l'équipe (couleurs relevées au pixel sur la légende transmise), opaques, classe < 0,5 mm transparente.
+- [x] T044 [P] Tests `src/lib/tests/precipitation-scale.test.ts` et `src/lib/tests/upstream-color-scales.test.ts` ; docs `.claude/rules/architecture.md` et `README.md` ; description de la PR #129.
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies

@@ -175,11 +175,11 @@ describe('the altitude levels keep the package default', () => {
 	});
 });
 
-/** Non-régression de l'échelle de précipitations 0,2 → 600 mm (spec US5, FR-015) :
+/** Non-régression de l'échelle de précipitations 0,5 → 800 mm (spec US5, FR-015) :
  *  seules precipitation / rain / showers / precipitation_sum changent d'échelle. */
 describe('échelle de précipitations — les autres variables ne bougent pas', () => {
 	it.each(['precipitation', 'rain', 'showers', 'precipitation_sum'])(
-		'%s utilise l’échelle 0,2 → 600 mm',
+		'%s utilise l’échelle 0,5 → 800 mm',
 		(v) => {
 			expect(getColorScale(v, false, standardColorScales)).toEqual(precipitationScale);
 		}
