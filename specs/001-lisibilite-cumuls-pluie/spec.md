@@ -12,8 +12,6 @@ Précision de la demande (2026-09-28) : l'auteur du retour souhaite que **les co
 **Diagnostic détaillé** : [diagnostic.md](./diagnostic.md)
 **Captures de référence** (cartes d'observations Infoclimat) : [references/](./references/)
 
-> **Révision 4 (2026-09-28)** : l'échelle est prolongée jusqu'à **800 mm** avec le **code couleur de référence fourni par l'équipe** (légende de 22 paliers, couleurs relevées au pixel) : 0,5 · 1 · 2 · 5 · 10 · 20 · 30 · 40 · 50 · 60 · 70 · 80 · 90 · 100 · 150 · 200 · 300 · 400 · 500 · 600 · 700 · 800 mm. Couleurs opaques, classe < 0,5 mm transparente. Elle remplace la rampe 0,2 → 600 mm de la révision 3 ; le reste de la révision 3 est inchangé.
-
 > **Révision 3 (2026-09-28), changement de cap décidé après essai en local.** L'utilisateur trouve la palette dérivée d'Infoclimat moins jolie que l'ancienne rampe `maps`. Le besoin réel est de **différencier les paliers jusqu'à 600 mm**. Décisions :
 >
 > - une **seule échelle fixe**, de 0,2 à 600 mm (18 paliers), pour `precipitation`, `rain`, `showers` et `precipitation_sum` ;
