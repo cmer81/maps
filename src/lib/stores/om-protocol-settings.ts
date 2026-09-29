@@ -21,7 +21,7 @@ import { infoclimatTemperatureScale } from '$lib/color-scales/infoclimat-tempera
 import { lightningDensityScale } from '$lib/color-scales/lightning-density';
 import { lightningPotentialScale } from '$lib/color-scales/lightning-potential';
 import { precipitableWaterScale } from '$lib/color-scales/precipitable-water';
-import { precipitationScale } from '$lib/color-scales/precipitation';
+import { precipitationSumScale } from '$lib/color-scales/precipitation';
 import { precipitationTypeScale } from '$lib/color-scales/precipitation-type';
 import { radarReflectivityScale } from '$lib/color-scales/radar-reflectivity';
 import { snowfallSumScale } from '$lib/color-scales/snowfall-sum';
@@ -115,15 +115,12 @@ export const standardColorScales = {
 	...defaultOmProtocolSettings.colorScales,
 	temperature: infoclimatTemperatureScale,
 	temperature_2m_anomaly: temperatureAnomalyScale,
-	// Précipitations : une seule échelle 0,2 → 600 mm (clés exactes) pour la pluie
-	// par pas de temps et le cumul du run. L'échelle `precipitation` du package
-	// plafonnait de fait à 20 mm, l'ancienne `precipitation_sum` à 300 mm.
-	// `snowfall_water_equivalent` et les cumuls de grésil gardent volontairement
-	// l'échelle du package. Voir color-scales/precipitation.ts.
-	precipitation: precipitationScale,
-	rain: precipitationScale,
-	showers: precipitationScale,
-	precipitation_sum: precipitationScale,
+	// Cumul du run : échelle 0,2 → 600 mm (clé exacte, prioritaire sur la
+	// résolution par famille ; couvre aussi `precipitation_sum_Nh`). La pluie par
+	// pas de temps (`precipitation`, `rain`, `showers`), `snowfall_water_equivalent`
+	// et les cumuls de grésil gardent volontairement l'échelle du package.
+	// Voir color-scales/precipitation.ts.
+	precipitation_sum: precipitationSumScale,
 
 	// Domaine arome_france_convection — clés exactes (priment sur les défauts package
 	// et la résolution par préfixe). `precipitation_type` et `precipitation_type_severe`
