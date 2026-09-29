@@ -1,19 +1,18 @@
 import type { RGBA, RenderableColorScale } from '@openmeteo/weather-map-layer';
 
 // Échelle du cumul depuis le début du run (`precipitation_sum`, et par famille
-// les cumuls `precipitation_sum_Nh`) : paliers de 0,2 à 600 mm pour différencier
-// les cumuls jusqu'aux épisodes méditerranéens extrêmes (spec
-// specs/001-lisibilite-cumuls-pluie, révision 3). L'ancienne échelle
-// `precipitation_sum` maison s'arrêtait à 300 mm.
+// les cumuls `precipitation_sum_Nh`) : calquée sur la légende ECMWF « Accumulated
+// total precipitation », 26 paliers de 0,1 à 500 mm (spec
+// specs/001-lisibilite-cumuls-pluie, révision 4). Couleurs relevées à l'œil sur
+// la légende ECMWF (pas de valeurs officielles).
 //
 // La pluie par pas de temps (`precipitation`, `rain`, `showers`) garde
 // volontairement l'échelle `precipitation` du package.
 //
-// Rampe : celle de l'ancienne échelle maps (bleus clairs → bleus → cyan → vert →
-// jaune → orange → rouge), prolongée par magenta → violets, puis lilas et blanc
-// rosé pour les deux paliers extrêmes (500, 600 mm) — des violets toujours plus
-// sombres y devenaient indiscernables (ΔE00 6-8) et quasi noirs sur fond sombre.
-// Transparence progressive sur les faibles classes, comme l'ancienne rampe.
+// Rampe : lavande → bleus → bleu nuit → verts → jaunes → oranges → roses-rouges
+// → rouges → violets → lilas → quasi blanc, puis gris au-delà de 500 mm.
+// Écart assumé à l'ECMWF (palette opaque) : transparence progressive sur les
+// quatre premières classes pour laisser voir le fond de carte.
 //
 // ⚠ Sous le premier breakpoint, le moteur applique `colors[0]` (PAS de
 // transparence implicite) : l'échelle commence donc par une classe 0
@@ -22,25 +21,33 @@ import type { RGBA, RenderableColorScale } from '@openmeteo/weather-map-layer';
 type Step = [bound: number, color: RGBA];
 
 const STEPS: readonly Step[] = [
-	[0, [225, 243, 254, 0]], // < 0,2 mm : transparent
-	[0.2, [225, 243, 254, 0.35]],
-	[0.5, [190, 222, 252, 0.5]],
-	[1, [134, 205, 250, 0.65]],
-	[2, [64, 161, 251, 0.75]],
-	[5, [0, 96, 233, 0.82]],
-	[10, [0, 177, 236, 0.86]],
-	[20, [0, 241, 141, 0.9]],
-	[30, [66, 248, 0, 0.92]],
-	[50, [255, 221, 0, 0.94]],
-	[75, [255, 150, 0, 0.96]],
-	[100, [255, 0, 0, 0.98]],
-	[150, [205, 0, 70, 1]],
-	[200, [235, 0, 180, 1]],
-	[250, [180, 0, 190, 1]],
-	[300, [130, 0, 170, 1]],
-	[400, [95, 0, 125, 1]],
-	[500, [190, 140, 235, 1]],
-	[600, [240, 215, 255, 1]] // saturé au-delà
+	[0, [220, 220, 240, 0]], // < 0,1 mm : transparent
+	[0.1, [220, 222, 242, 0.6]],
+	[1, [175, 215, 250, 0.75]],
+	[2, [120, 185, 250, 0.85]],
+	[3, [85, 160, 245, 0.9]],
+	[5, [60, 140, 240, 1]],
+	[7, [30, 100, 210, 1]],
+	[10, [10, 55, 140, 1]],
+	[15, [30, 140, 40, 1]],
+	[20, [40, 180, 40, 1]],
+	[25, [110, 225, 60, 1]],
+	[30, [255, 250, 60, 1]],
+	[40, [230, 215, 0, 1]],
+	[50, [240, 100, 0, 1]],
+	[60, [255, 140, 40, 1]],
+	[70, [255, 170, 100, 1]],
+	[80, [255, 80, 100, 1]],
+	[90, [240, 40, 80, 1]],
+	[100, [200, 0, 0, 1]],
+	[125, [140, 0, 0, 1]],
+	[150, [110, 10, 140, 1]],
+	[175, [180, 0, 230, 1]],
+	[200, [210, 80, 240, 1]],
+	[250, [230, 150, 240, 1]],
+	[300, [240, 200, 245, 1]],
+	[400, [250, 240, 250, 1]],
+	[500, [200, 200, 200, 1]] // saturé au-delà
 ];
 
 /** Variables dont les vignettes « Valeurs » s'affichent au dixième

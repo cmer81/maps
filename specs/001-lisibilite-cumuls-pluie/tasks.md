@@ -292,6 +292,11 @@ description: "Liste de tâches : couleurs de précipitations alignées sur l'éc
 - [x] T041 [P] Docs : `.claude/rules/architecture.md` (section « Échelle de précipitations 0,2 → 600 mm »), retrait du store et de la légende à paliers de `.claude/rules/stores.md` et `.claude/rules/components.md`, `README.md`.
 - [x] T042 Contrôle visuel sur `npm run dev` (ICON 3 h, vignettes activées) et CI complète (`check`, `vitest`, `build`, `eslint`).
 
+## Phase 10 : Révision 4, palette ECMWF 0,1 → 500 mm (2026-09-29)
+
+- [x] T043 Remplacer les paliers de `precipitationSumScale` (`src/lib/color-scales/precipitation.ts`) par ceux de la légende ECMWF (0,1 · 1 · 2 · 3 · 5 · 7 · 10 · 15 · 20 · 25 · 30 · 40 · 50 · 60 · 70 · 80 · 90 · 100 · 125 · 150 · 175 · 200 · 250 · 300 · 400 · 500 mm), mettre à jour `src/lib/tests/precipitation-scale.test.ts`, `.claude/rules/architecture.md` et `README.md`.
+- [ ] T044 Contrôle visuel sur `npm run dev` (fond clair et fond sombre, légende sur mobile).
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies

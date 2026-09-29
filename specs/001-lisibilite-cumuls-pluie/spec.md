@@ -12,6 +12,8 @@ Précision de la demande (2026-09-28) : l'auteur du retour souhaite que **les co
 **Diagnostic détaillé** : [diagnostic.md](./diagnostic.md)
 **Captures de référence** (cartes d'observations Infoclimat) : [references/](./references/)
 
+> **Révision 4 (2026-09-29).** L'échelle ne s'applique qu'à `precipitation_sum` (et aux `precipitation_sum_Nh`) ; `precipitation`, `rain` et `showers` reprennent l'échelle du package. Elle est désormais **calquée sur la légende ECMWF** « Accumulated total precipitation » : 26 paliers de 0,1 à 500 mm, gris au-delà. Le plafond de 600 mm de la révision 3 est abandonné. On garde la classe 0 transparente et une transparence progressive sur les quatre premières classes.
+
 > **Révision 3 (2026-09-28), changement de cap décidé après essai en local.** L'utilisateur trouve la palette dérivée d'Infoclimat moins jolie que l'ancienne rampe `maps`. Le besoin réel est de **différencier les paliers jusqu'à 600 mm**. Décisions :
 >
 > - une **seule échelle fixe**, de 0,2 à 600 mm (18 paliers), pour `precipitation`, `rain`, `showers` et `precipitation_sum` ;
