@@ -4,8 +4,10 @@ import type { RGBA, RenderableColorScale } from '@openmeteo/weather-map-layer';
 // les cumuls `precipitation_sum_Nh`) : calquée sur la légende ECMWF « Accumulated
 // total precipitation », 26 paliers de 0,1 à 500 mm (spec
 // specs/001-lisibilite-cumuls-pluie, révision 4). Couleurs relevées à l'œil sur
-// la légende ECMWF (pas de valeurs officielles), sauf 90 → 175 mm, fournies
-// par Infoclimat.
+// la légende ECMWF (pas de valeurs officielles), sauf 90 → 150 mm, fournies
+// par Infoclimat. 175-200 mm (`#aa00c8`) choisi pour marquer le passage à
+// 200 mm (ΔE00 15,5), en douceur depuis 150 mm (11,4) : un écart net à chaque
+// centaine, léger entre les deux (retour Infoclimat).
 //
 // La pluie par pas de temps (`precipitation`, `rain`, `showers`) garde
 // volontairement l'échelle `precipitation` du package.
@@ -43,7 +45,7 @@ const STEPS: readonly Step[] = [
 	[100, [200, 0, 0, 1]],
 	[125, [223, 4, 4, 1]],
 	[150, [207, 13, 160, 1]],
-	[175, [200, 1, 255, 1]],
+	[175, [170, 0, 200, 1]],
 	[200, [210, 80, 240, 1]],
 	[250, [230, 150, 240, 1]],
 	[300, [240, 200, 245, 1]],
