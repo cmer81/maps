@@ -9,11 +9,11 @@ import {
 
 const { breakpoints, colors } = precipitationSumScale;
 
-describe('precipitationSumScale (0,2 → 600 mm)', () => {
-	it('bornes strictement croissantes, alignées sur les couleurs, de 0 à 600 mm', () => {
+describe('precipitationSumScale (ECMWF, 0,1 → 500 mm)', () => {
+	it('bornes strictement croissantes, alignées sur les couleurs, de 0 à 500 mm', () => {
 		expect(breakpoints).toHaveLength(colors.length);
 		expect(breakpoints[0]).toBe(0);
-		expect(breakpoints.at(-1)).toBe(600);
+		expect(breakpoints.at(-1)).toBe(500);
 		for (let i = 1; i < breakpoints.length; i++)
 			expect(breakpoints[i]).toBeGreaterThan(breakpoints[i - 1]);
 		expect(precipitationSumScale.unit).toBe('mm');
@@ -21,14 +21,15 @@ describe('precipitationSumScale (0,2 → 600 mm)', () => {
 
 	it('paliers attendus', () => {
 		expect(breakpoints).toEqual([
-			0, 0.2, 0.5, 1, 2, 5, 10, 20, 30, 50, 75, 100, 150, 200, 250, 300, 400, 500, 600
+			0, 0.1, 1, 2, 3, 5, 7, 10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 125, 150, 175, 200,
+			250, 300, 400, 500
 		]);
 	});
 
-	it('classe 0 transparente : un cumul nul (H0) ou < 0,2 mm n’est pas teinté', () => {
+	it('classe 0 transparente : un cumul nul (H0) ou < 0,1 mm n’est pas teinté', () => {
 		expect(getColor(precipitationSumScale, 0)[3]).toBe(0);
-		expect(getColor(precipitationSumScale, 0.19)[3]).toBe(0);
-		expect(getColor(precipitationSumScale, 0.2)[3]).toBeGreaterThan(0);
+		expect(getColor(precipitationSumScale, 0.09)[3]).toBe(0);
+		expect(getColor(precipitationSumScale, 0.1)[3]).toBeGreaterThan(0);
 	});
 
 	it('chaque palier a sa propre couleur, y compris au-delà de 100 mm', () => {
@@ -37,7 +38,7 @@ describe('precipitationSumScale (0,2 → 600 mm)', () => {
 		breakpoints.forEach((b, k) => expect(getColor(precipitationSumScale, b)).toEqual(colors[k]));
 	});
 
-	it('au-delà de 600 mm : couleur du dernier palier', () => {
+	it('au-delà de 500 mm : couleur du dernier palier', () => {
 		expect(getColor(precipitationSumScale, 1500)).toEqual(colors.at(-1));
 	});
 
