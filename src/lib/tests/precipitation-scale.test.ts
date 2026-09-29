@@ -4,19 +4,19 @@ import { describe, expect, it } from 'vitest';
 import {
 	PRECIPITATION_VARIABLES,
 	isPrecipitationVariable,
-	precipitationScale
+	precipitationSumScale
 } from '$lib/color-scales/precipitation';
 
-const { breakpoints, colors } = precipitationScale;
+const { breakpoints, colors } = precipitationSumScale;
 
-describe('precipitationScale (0,2 → 600 mm)', () => {
+describe('precipitationSumScale (0,2 → 600 mm)', () => {
 	it('bornes strictement croissantes, alignées sur les couleurs, de 0 à 600 mm', () => {
 		expect(breakpoints).toHaveLength(colors.length);
 		expect(breakpoints[0]).toBe(0);
 		expect(breakpoints.at(-1)).toBe(600);
 		for (let i = 1; i < breakpoints.length; i++)
 			expect(breakpoints[i]).toBeGreaterThan(breakpoints[i - 1]);
-		expect(precipitationScale.unit).toBe('mm');
+		expect(precipitationSumScale.unit).toBe('mm');
 	});
 
 	it('paliers attendus', () => {
@@ -26,22 +26,22 @@ describe('precipitationScale (0,2 → 600 mm)', () => {
 	});
 
 	it('classe 0 transparente : un cumul nul (H0) ou < 0,2 mm n’est pas teinté', () => {
-		expect(getColor(precipitationScale, 0)[3]).toBe(0);
-		expect(getColor(precipitationScale, 0.19)[3]).toBe(0);
-		expect(getColor(precipitationScale, 0.2)[3]).toBeGreaterThan(0);
+		expect(getColor(precipitationSumScale, 0)[3]).toBe(0);
+		expect(getColor(precipitationSumScale, 0.19)[3]).toBe(0);
+		expect(getColor(precipitationSumScale, 0.2)[3]).toBeGreaterThan(0);
 	});
 
 	it('chaque palier a sa propre couleur, y compris au-delà de 100 mm', () => {
 		const rgb = colors.slice(1).map((c) => c.slice(0, 3).join(','));
 		expect(new Set(rgb).size).toBe(rgb.length);
-		breakpoints.forEach((b, k) => expect(getColor(precipitationScale, b)).toEqual(colors[k]));
+		breakpoints.forEach((b, k) => expect(getColor(precipitationSumScale, b)).toEqual(colors[k]));
 	});
 
 	it('au-delà de 600 mm : couleur du dernier palier', () => {
-		expect(getColor(precipitationScale, 1500)).toEqual(colors.at(-1));
+		expect(getColor(precipitationSumScale, 1500)).toEqual(colors.at(-1));
 	});
 
-	it('variables concernées', () => {
+	it('variables aux vignettes au dixième', () => {
 		expect(PRECIPITATION_VARIABLES).toEqual([
 			'precipitation',
 			'rain',

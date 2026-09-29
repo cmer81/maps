@@ -1,13 +1,13 @@
 import type { RGBA, RenderableColorScale } from '@openmeteo/weather-map-layer';
 
-// Échelle de précipitations commune à la pluie par pas de temps (`precipitation`,
-// `rain`, `showers`) et au cumul depuis le début du run (`precipitation_sum`) :
-// paliers de 0,2 à 600 mm pour différencier les cumuls jusqu'aux épisodes
-// méditerranéens extrêmes (spec specs/001-lisibilite-cumuls-pluie, révision 3).
-//
-// Avant : l'échelle `precipitation` du package plafonnait de fait à 20 mm (ses
-// trois dernières classes 20/25/30 mm sont le même rouge) et l'échelle
+// Échelle du cumul depuis le début du run (`precipitation_sum`, et par famille
+// les cumuls `precipitation_sum_Nh`) : paliers de 0,2 à 600 mm pour différencier
+// les cumuls jusqu'aux épisodes méditerranéens extrêmes (spec
+// specs/001-lisibilite-cumuls-pluie, révision 3). L'ancienne échelle
 // `precipitation_sum` maison s'arrêtait à 300 mm.
+//
+// La pluie par pas de temps (`precipitation`, `rain`, `showers`) garde
+// volontairement l'échelle `precipitation` du package.
 //
 // Rampe : celle de l'ancienne échelle maps (bleus clairs → bleus → cyan → vert →
 // jaune → orange → rouge), prolongée par magenta → violets, puis lilas et blanc
@@ -43,7 +43,8 @@ const STEPS: readonly Step[] = [
 	[600, [240, 215, 255, 1]] // saturé au-delà
 ];
 
-/** Variables qui utilisent cette échelle. */
+/** Variables dont les vignettes « Valeurs » s'affichent au dixième
+ *  (`vector-styles.ts`) — indépendant de l'échelle de couleurs. */
 export const PRECIPITATION_VARIABLES: readonly string[] = [
 	'precipitation',
 	'rain',
@@ -54,7 +55,7 @@ export const PRECIPITATION_VARIABLES: readonly string[] = [
 export const isPrecipitationVariable = (variable: string): boolean =>
 	PRECIPITATION_VARIABLES.includes(variable);
 
-export const precipitationScale: Extract<RenderableColorScale, { type: 'breakpoint' }> = {
+export const precipitationSumScale: Extract<RenderableColorScale, { type: 'breakpoint' }> = {
 	type: 'breakpoint',
 	unit: 'mm',
 	breakpoints: STEPS.map(([bound]) => bound),

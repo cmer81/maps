@@ -72,7 +72,7 @@ describe('arome_france_hd — cumuls en équivalent eau inchangés', () => {
 			defaultOmProtocolSettings.colorScales.precipitation
 		);
 		expect(standardColorScales[v as keyof typeof standardColorScales]).not.toEqual(
-			standardColorScales.precipitation
+			standardColorScales.precipitation_sum
 		);
 	});
 });
