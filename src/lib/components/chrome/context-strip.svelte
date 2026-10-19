@@ -4,8 +4,9 @@
 
 	import { customColorScales, omProtocolSettings } from '$lib/stores/om-protocol-settings';
 	import { getDisplayUnit, unitPreferences } from '$lib/stores/units';
-	import { selectedVariable, variable } from '$lib/stores/variables';
+	import { domain, selectedVariable, variable } from '$lib/stores/variables';
 
+	import { WEATHER_AI_DOMAIN } from '$lib/constants';
 	import { translateVariableLabel } from '$lib/i18n/variables-fr';
 
 	const label = $derived($selectedVariable ? translateVariableLabel($selectedVariable.label) : '');
@@ -32,7 +33,16 @@
 	<div
 		class="bg-glass/95 flex h-[26px] shrink-0 items-center gap-2 border-b border-white/10 px-3 text-xs text-white/60 glass-blur"
 	>
-		<span class="font-medium text-white">{label}</span>
-		{#if displayUnit}<span class="tabular-nums text-white/50">({displayUnit})</span>{/if}
+		<span class="min-w-0 truncate font-medium text-white">{label}</span>
+		{#if displayUnit}<span class="shrink-0 tabular-nums text-white/50">({displayUnit})</span>{/if}
+		{#if $domain === WEATHER_AI_DOMAIN}
+			<!-- Visible panneau replié : le modèle IA reste signalé comme expérimental.
+			     Mentions complètes dans l'onglet Données (weather-ai-model-notice). -->
+			<span
+				class="shrink-0 rounded bg-amber-300 px-1.5 py-px text-[10px] font-bold tracking-wide whitespace-nowrap text-slate-950 uppercase"
+				title="Weather AI (WeatherNext, Google DeepMind) : prévision expérimentale, ne remplace aucune alerte, vigilance ou bulletin officiel."
+				>Expérimental<span class="hidden sm:inline"> · modèle IA</span></span
+			>
+		{/if}
 	</div>
 {/if}

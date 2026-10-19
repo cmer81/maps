@@ -10,9 +10,10 @@ import {
 	AROME_OM_NCALEDONIE_DOMAIN,
 	AROME_OM_POLYNESIE_DOMAIN,
 	AROME_OM_REUNION_DOMAIN,
-	ECMWF_IFS_0P1_DOMAIN
+	ECMWF_IFS_0P1_DOMAIN,
+	WEATHER_AI_DOMAIN
 } from '$lib/constants';
-import { getModelsBucketUrl } from '$lib/runtime-env';
+import { getModelsBucketUrl, getWeatherAiOmBucketUrl } from '$lib/runtime-env';
 
 const BUCKET_DOMAINS: ReadonlySet<string> = new Set([
 	ANOMALY_DOMAIN,
@@ -78,8 +79,14 @@ export const buildSoundingOmUrl = (domain: string, modelRun: Date, validTime: Da
  */
 const OPEN_METEO_BUCKET_URL = 'https://openmeteo.s3.amazonaws.com';
 
-export const getBaseUri = (domainValue: string): string =>
-	BUCKET_DOMAINS.has(domainValue) ? getModelsBucketUrl().replace(/\/$/, '') : OPEN_METEO_BUCKET_URL;
+export const getBaseUri = (domainValue: string): string => {
+	// Weather AI a son propre bucket (export du producteur weather-ai), même layout
+	// `data_spatial/{domain}/…` que les autres pseudo-domaines.
+	if (domainValue === WEATHER_AI_DOMAIN) return getWeatherAiOmBucketUrl().replace(/\/$/, '');
+	return BUCKET_DOMAINS.has(domainValue)
+		? getModelsBucketUrl().replace(/\/$/, '')
+		: OPEN_METEO_BUCKET_URL;
+};
 
 export const hashValue = (val: string): string => {
 	// FNV-1a 32-bit – synchronous, fast, and sufficient for cache-busting keys.

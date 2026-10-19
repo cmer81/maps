@@ -108,6 +108,7 @@ Voir [`.claude/CLAUDE.md`](./.claude/CLAUDE.md) et les règles ciblées dans [`.
 - sondages verticaux client-side (Skew-T + hodographe + indices convectifs) calculés depuis les OMfiles AROME niveaux de pression au point cliqué (`src/lib/sounding/`)
 - couches expérimentales Weather AI (cyclones) : produits découverts depuis le catalogue de l'API du portail, run chargé hors écran puis bascule atomique, rendu MapLibre dédié hors `om://` (`src/lib/weather-ai/`, onglet « Cyclones IA »). L'API est appelée en direct (le portail renvoie l'en-tête CORS) ; `VITE_WEATHER_AI_API_URL=/api/weather-ai` passe optionnellement par le proxy Vite en local ; `VITE_WEATHER_AI_CONES=off|on|fixture` pilote les cônes (`?weather_ai_cones=fixture` : démonstration hors API sur le run de référence archivé)
 - compositions de cartes (fond + superpositions d'isolignes/flèches, compositions toutes faites et enregistrées ; portage des « Combined charts » d'open-meteo/maps #361) : `composition.ts`, `overlay-stack.ts`, `stores/composition.ts`, paramètre d'URL `overlays`
+- modèle IA expérimental **Weather AI (WeatherNext)** (`weather_ai_wnc_mini`, `weather-ai-domain.ts`) : champs continus globaux 1° (pression, probabilité d'existence cyclonique) exportés en `.om` par le producteur weather-ai sur un bucket dédié (`VITE_WEATHER_AI_OM_BUCKET_URL` / `WEATHER_AI_OM_BUCKET_URL`) ; absent du sélecteur sans cette variable
 
 Le chrome s'organise autour d'un header fin pleine largeur (marque Infoclimat, onglet « Carte », bouton « Réglages » ouvrant le panneau Avancé) et, sur desktop, d'une sidebar gauche à rail d'onglets — **Données** (modèle, recherche et liste des variables, niveaux en puces), **Compositions** (superpositions), **Carte** (calque météo, fond de carte, interaction), **Cyclones IA** (couches expérimentales Weather AI) — dont le panneau se replie sur le rail ; sur mobile, un bottom-sheet reprend les mêmes quatre onglets. La timeline et la légende se décalent de la largeur de la sidebar ; les contrôles MapLibre natifs sont ancrés en bas-droite au-dessus de la timeline.
 
@@ -117,6 +118,7 @@ Le chrome s'organise autour d'un header fin pleine largeur (marque Infoclimat, o
 - Layer : [open-meteo/weather-map-layer](https://github.com/open-meteo/weather-map-layer).
 - Données :
   - OMfiles météo : [Open-Meteo](https://open-meteo.com) (et indirectement Météo-France, ECMWF, DWD, NOAA…).
+  - Weather AI : WeatherNext Cyclones Mini (Google DeepMind), ECMWF open data (CC BY 4.0, modifiées), OSTIA (Met Office), E.U. Copernicus Marine Service ; mentions complètes dans l'app (`weather-ai-model-notice.svelte`).
   - Contours administratifs FR : [`gregoiredavid/france-geojson`](https://github.com/gregoiredavid/france-geojson) (licence ODbL).
 
 ### Licence Highcharts

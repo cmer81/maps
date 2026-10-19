@@ -15,6 +15,7 @@ import { brightnessTemperatureScale } from '$lib/color-scales/brightness-tempera
 import { brightnessTemperatureWvScale } from '$lib/color-scales/brightness-temperature-wv';
 import { capeScale } from '$lib/color-scales/cape';
 import { convectiveInhibitionScale } from '$lib/color-scales/convective-inhibition';
+import { cycloneExistenceProbabilityScale } from '$lib/color-scales/cyclone-existence-probability';
 import { geopotentialPv1500Scale } from '$lib/color-scales/geopotential-pv1500';
 import { heatFluxScale } from '$lib/color-scales/heat-flux';
 import { infoclimatTemperatureScale } from '$lib/color-scales/infoclimat-temperature';
@@ -40,7 +41,8 @@ import {
 	ANOMALY_VARIABLE,
 	DEFAULT_CACHE_BLOCK_SIZE_KB,
 	DEFAULT_CACHE_MAX_BYTES_MB,
-	HTTP_OVERHEAD_BYTES
+	HTTP_OVERHEAD_BYTES,
+	WEATHER_AI_DOMAIN
 } from '$lib/constants';
 import { canUseSharedArrayBuffer } from '$lib/shared-array-buffer';
 
@@ -217,7 +219,13 @@ export const standardColorScales = {
 	updraft: updraftScale,
 	sensible_heat_flux: heatFluxScale,
 	latent_heat_flux: heatFluxScale,
-	soil_moisture: soilMoistureScale
+	soil_moisture: soilMoistureScale,
+
+	// Domaine weather_ai_wnc_mini (Weather AI, modèle IA expérimental). Clé exacte :
+	// sans elle, la variable n'a ni famille ni clé dans le package et retombe sur le
+	// fallback `temperature` (°C). Valeurs ramenées de 0..1 à 0..100 % dans
+	// `postReadCallback`. `pressure_msl` (hPa) garde l'échelle `pressure` du package.
+	cyclone_existence_probability: cycloneExistenceProbabilityScale
 };
 
 export const omProtocolSettings: Writable<OmProtocolSettings> = writable({
@@ -267,6 +275,15 @@ export const omProtocolSettings: Writable<OmProtocolSettings> = writable({
 		// `relativeVorticityScale`. Seul ce domaine publie la variable.
 		if (state.dataOptions.variable === 'relative_vorticity_500hPa' && data.values) {
 			data.values = data.values.map((value) => value * 1e5);
+		}
+		// Probabilité d'existence cyclonique Weather AI : diffusée en fraction 0..1,
+		// affichée en % (légende, infobulle, valeurs aux points de grille).
+		if (
+			state.dataOptions.domain.value === WEATHER_AI_DOMAIN &&
+			state.dataOptions.variable === 'cyclone_existence_probability' &&
+			data.values
+		) {
+			data.values = data.values.map((fraction) => fraction * 100);
 		}
 		// Inhibition convective : la convention de signe dépend du producteur —
 		// `arome_france_convection` publie le CIN négatif (mesuré : −267…+10),

@@ -25,6 +25,7 @@ const EXPECTED_ORDER = [
 	'ecmwf_ifs025',
 	'ecmwf_ifs_0p1',
 	'ecmwf_aifs025_single',
+	'weather_ai_wnc_mini',
 	'ncep_gfs025',
 	'anomaly_europe'
 ];
@@ -38,6 +39,7 @@ describe('MODEL_SELECTOR_GROUPS', () => {
 			'MeteoSwiss',
 			'KNMI Netherlands',
 			'ECMWF',
+			'Google DeepMind (IA)',
 			'NOAA US',
 			'Anomalie'
 		]);

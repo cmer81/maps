@@ -39,6 +39,13 @@ export const AROME_FRANCE_HD_DOMAIN = 'arome_france_hd';
  *  `ecmwf_ifs` d'Open-Meteo (grille O1280, sans niveaux de pression). */
 export const ECMWF_IFS_0P1_DOMAIN = 'ecmwf_ifs_0p1';
 
+/** Pseudo-domaine Weather AI : champs continus du modèle IA WeatherNext Cyclones
+ *  Mini (Google DeepMind), exportés en `.om` par le producteur weather-ai sur son
+ *  propre bucket (`getWeatherAiOmBucketUrl()`, distinct du bucket maison). Grille
+ *  globale 1°, échéances 6-horaires +6 h → +72 h. Expérimental : mentions
+ *  obligatoires dans `components/weather-ai/weather-ai-model-notice.svelte`. */
+export const WEATHER_AI_DOMAIN = 'weather_ai_wnc_mini';
+
 /** Vue de carte recommandée par domaine — appliquée via `flyTo` quand l'utilisateur
  *  bascule manuellement sur le domaine. Utile pour les pseudo-domaines régionaux
  *  dont le centre de grille tombe sur une zone océan/peu lisible.
@@ -62,6 +69,7 @@ export const DOMAIN_DEFAULT_VARIABLES: Record<string, string> = {
 	[AROME_FRANCE_DOMAIN]: 'temperature_2m',
 	[AROME_FRANCE_HD_DOMAIN]: 'temperature_2m',
 	[ECMWF_IFS_0P1_DOMAIN]: 'temperature_2m',
+	[WEATHER_AI_DOMAIN]: 'pressure_msl',
 	meteofrance_arome_france_hd_15min: 'precipitation',
 	meteofrance_arome_france0025_15min: 'wind_gusts_10m',
 	knmi_harmonie_arome_europe: 'temperature_2m'
@@ -300,6 +308,10 @@ export const MODEL_SELECTOR_GROUPS = [
 		]
 	},
 	{
+		label: 'Google DeepMind (IA)',
+		domains: [{ value: WEATHER_AI_DOMAIN, label: 'Weather AI (WeatherNext)' }]
+	},
+	{
 		label: 'NOAA US',
 		domains: [{ value: 'ncep_gfs025', label: 'GFS Global 0.25' }]
 	},
@@ -374,6 +386,7 @@ export const MODEL_BADGES: Record<string, string> = {
 	ecmwf_ifs_0p1: '0,1° · Monde · 15 j',
 	ecmwf_ifs025: '0,25° · Monde · 15 j',
 	ecmwf_aifs025_single: '0,25° · Monde · IA · 15 j',
+	weather_ai_wnc_mini: '1° · Monde · IA · 3 j',
 	dwd_icon: '13 km · Monde · 7,5 j',
 	dwd_icon_d2: '2 km · Europe centrale · 2 j',
 	dwd_icon_eu: '7 km · Europe · 5 j',
@@ -412,6 +425,8 @@ export const MODEL_DESCRIPTIONS: Record<string, string> = {
 		'Infoclimat · ECMWF open data 0,1° (~9 km), global · niveaux de pression · ~15 j · © ECMWF',
 	ecmwf_ifs025: 'ECMWF (Europe) · global 0,25° · référence fiable · ~15 j',
 	ecmwf_aifs025_single: 'ECMWF · modèle IA (AIFS) · global 0,25° · ~15 j',
+	weather_ai_wnc_mini:
+		'Google DeepMind WeatherNext via Weather AI · modèle IA · global 1° · ~72 h · expérimental',
 	dwd_icon: 'DWD (Allemagne) · global ~13 km · échéance ~7,5 j',
 	dwd_icon_d2: 'DWD (Allemagne) · ~2 km, Europe centrale · échéance ~2 j',
 	dwd_icon_eu: 'DWD (Allemagne) · ~7 km, Europe · échéance ~5 j',

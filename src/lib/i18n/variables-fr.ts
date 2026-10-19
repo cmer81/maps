@@ -171,7 +171,10 @@ const EXPLICIT: Record<string, string> = {
 	snowfall_sum: 'Cumul de neige',
 	temperature_2m_max: 'Température max. (2 m)',
 	temperature_2m_min: 'Température min. (2 m)',
-	geopotential_height_pv1500: 'Géopotentiel (tropopause dynamique)'
+	geopotential_height_pv1500: 'Géopotentiel (tropopause dynamique)',
+
+	// Domaine `weather_ai_wnc_mini` (Weather AI, modèle IA expérimental).
+	cyclone_existence_probability: "Probabilité d'existence cyclonique"
 };
 
 /** Forme contractée à utiliser après "Anomalie/Moyenne/Dispersion/Min/Max de". */
