@@ -53,7 +53,7 @@
 	import TimeSelector from '$lib/components/time/time-selector.svelte';
 
 	import { computeCaptureRect } from '$lib/capture-geometry';
-	import { DOMAIN_DEFAULT_VIEWS } from '$lib/constants';
+	import { DEFAULT_DOMAIN, DOMAIN_DEFAULT_VIEWS } from '$lib/constants';
 	import { refreshDepartments } from '$lib/departments-layer';
 	import { checkHighDefinition } from '$lib/helpers';
 	import { initHillshadeFromPrefs } from '$lib/hillshade';
@@ -66,6 +66,7 @@
 		setMapControlSettings
 	} from '$lib/map-controls';
 	import {
+		DomainUnavailableError,
 		StaleMetadataError,
 		getInitialMetaData,
 		getMetaData,
@@ -194,12 +195,19 @@
 	});
 
 	let getInitialMetaDataPromise: Promise<void> | undefined;
+	// Dernier domaine dont les métadonnées ont été chargées (repli si un modèle
+	// sélectionné n'a encore rien publié).
+	let lastAvailableDomain: string | undefined;
+	let fallingBack = false;
 	const domainSubscription = domain.subscribe(async (newDomain) => {
+		// Repli automatique : le toast d'indisponibilité dit déjà où l'on revient.
+		const silent = fallingBack;
+		fallingBack = false;
 		if ($domain !== newDomain) {
 			await tick(); // await the selectedDomain to be set
 			updateUrl('domain', newDomain);
 			$modelRun = undefined;
-			toast('Modèle : ' + $selectedDomain.label);
+			if (!silent) toast('Modèle : ' + $selectedDomain.label);
 
 			const view = DOMAIN_DEFAULT_VIEWS[newDomain];
 			if (view && $map) {
@@ -218,9 +226,28 @@
 		}
 
 		getInitialMetaDataPromise = (async () => {
-			// Sélection dépassée (autre domaine choisi pendant la requête) : on
-			// n'écrit rien, le chargement du domaine courant s'en charge.
-			if (!(await getInitialMetaData())) return;
+			try {
+				// Sélection dépassée (autre domaine choisi pendant la requête) : on
+				// n'écrit rien, le chargement du domaine courant s'en charge.
+				if (!(await getInitialMetaData())) return;
+			} catch (e) {
+				if (!(e instanceof DomainUnavailableError)) throw e;
+				// Modèle sans aucune échéance publiée (premier run Weather AI pas encore
+				// déposé) : on le dit, et on revient au modèle précédent plutôt que de
+				// laisser la frise et les tuiles d'un autre domaine.
+				const fallback =
+					lastAvailableDomain && lastAvailableDomain !== newDomain
+						? lastAvailableDomain
+						: DEFAULT_DOMAIN;
+				const fallbackLabel = domainOptions.find((o) => o.value === fallback)?.label ?? fallback;
+				toast.warning(`${e.message} Retour à ${fallbackLabel}.`, { duration: 10_000 });
+				if (fallback !== newDomain) {
+					fallingBack = true;
+					$domain = fallback;
+				}
+				return;
+			}
+			lastAvailableDomain = newDomain;
 			try {
 				$metaJson = await getMetaData();
 			} catch (e) {
@@ -243,6 +270,8 @@
 			matchVariableOrFirst();
 		})();
 		await getInitialMetaDataPromise;
+		// Repli sur un autre modèle (rien de publié) ou sélection dépassée : le
+		// chargement du domaine courant s'en charge.
 		if (get(domain) !== newDomain) return;
 		changeOMfileURL();
 	});
