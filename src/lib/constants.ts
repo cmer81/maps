@@ -34,6 +34,11 @@ export const AROME_FRANCE_DOMAIN = 'arome_france';
  *  propre — le suffixe sans préfixe `meteofrance_` lève la collision. */
 export const AROME_FRANCE_HD_DOMAIN = 'arome_france_hd';
 
+/** Pseudo-domaine ECMWF IFS 9 km (open data 0,1°, mondial), servi depuis le bucket
+ *  maison par le pipeline `ecmwf-ifs-forecast`. Remplace dans le sélecteur
+ *  `ecmwf_ifs` d'Open-Meteo (grille O1280, sans niveaux de pression). */
+export const ECMWF_IFS_0P1_DOMAIN = 'ecmwf_ifs_0p1';
+
 /** Vue de carte recommandée par domaine — appliquée via `flyTo` quand l'utilisateur
  *  bascule manuellement sur le domaine. Utile pour les pseudo-domaines régionaux
  *  dont le centre de grille tombe sur une zone océan/peu lisible.
@@ -56,6 +61,7 @@ export const DOMAIN_DEFAULT_VARIABLES: Record<string, string> = {
 	[AROME_FRANCE_CONVECTION_DOMAIN]: 'radar_reflectivity',
 	[AROME_FRANCE_DOMAIN]: 'temperature_2m',
 	[AROME_FRANCE_HD_DOMAIN]: 'temperature_2m',
+	[ECMWF_IFS_0P1_DOMAIN]: 'temperature_2m',
 	meteofrance_arome_france_hd_15min: 'precipitation',
 	meteofrance_arome_france0025_15min: 'wind_gusts_10m',
 	knmi_harmonie_arome_europe: 'temperature_2m'
@@ -289,7 +295,7 @@ export const MODEL_SELECTOR_GROUPS = [
 		label: 'ECMWF',
 		domains: [
 			{ value: 'ecmwf_ifs025', label: 'ECMWF IFS 0.25' },
-			{ value: 'ecmwf_ifs', label: 'ECMWF IFS HRES' },
+			{ value: ECMWF_IFS_0P1_DOMAIN, label: 'ECMWF IFS 9 km' },
 			{ value: 'ecmwf_aifs025_single', label: 'ECMWF AIFS 0.25' }
 		]
 	},
@@ -341,6 +347,8 @@ export const DOMAIN_TO_API_MODEL: Readonly<Record<string, string>> = {
 	meteoswiss_icon_ch2: 'meteoswiss_icon_ch2',
 	ecmwf_ifs025: 'ecmwf_ifs025',
 	ecmwf_ifs: 'ecmwf_ifs',
+	// Bucket maison (open data 0,1°) : même modèle que l'IFS HRES de l'API.
+	ecmwf_ifs_0p1: 'ecmwf_ifs',
 	ecmwf_aifs025_single: 'ecmwf_aifs025_single',
 	ncep_gfs025: 'gfs_global'
 };
@@ -363,6 +371,7 @@ export const MODEL_BADGES: Record<string, string> = {
 	meteofrance_arpege_world025: '0,25° · Monde · 4 j',
 	ncep_gfs025: '0,25° · Monde · 16 j',
 	ecmwf_ifs: 'Global · reference · 15 j',
+	ecmwf_ifs_0p1: '0,1° · Monde · 15 j',
 	ecmwf_ifs025: '0,25° · Monde · 15 j',
 	ecmwf_aifs025_single: '0,25° · Monde · IA · 15 j',
 	dwd_icon: '13 km · Monde · 7,5 j',
@@ -399,6 +408,8 @@ export const MODEL_DESCRIPTIONS: Record<string, string> = {
 	meteofrance_arpege_world025: 'Météo-France · global 0,25° · échéance ~4 j',
 	ncep_gfs025: 'NOAA (USA) · global 0,25° · échéance ~16 j',
 	ecmwf_ifs: 'ECMWF (Europe) · global · référence moyenne échéance · ~15 j',
+	ecmwf_ifs_0p1:
+		'Infoclimat · ECMWF open data 0,1° (~9 km), global · niveaux de pression · ~15 j · © ECMWF',
 	ecmwf_ifs025: 'ECMWF (Europe) · global 0,25° · référence fiable · ~15 j',
 	ecmwf_aifs025_single: 'ECMWF · modèle IA (AIFS) · global 0,25° · ~15 j',
 	dwd_icon: 'DWD (Allemagne) · global ~13 km · échéance ~7,5 j',

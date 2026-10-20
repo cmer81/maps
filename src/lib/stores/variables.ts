@@ -15,6 +15,7 @@ import { registerAromeFranceDomain } from '$lib/arome-france-domain';
 import { registerAromeFranceHdDomain } from '$lib/arome-france-hd-domain';
 import { registerAromeOmDomain } from '$lib/arome-om-domain';
 import { DEFAULT_DOMAIN, DEFAULT_VARIABLE, NON_LEVEL_GROUP_VARIABLES } from '$lib/constants';
+import { registerEcmwfIfs0p1Domain } from '$lib/ecmwf-ifs-0p1-domain';
 import { applyModelSelectorLabels } from '$lib/model-selector-labels';
 
 // Doit tourner avant la première évaluation de `selectedDomain`.
@@ -23,6 +24,7 @@ registerAromeOmDomain();
 registerAromeFranceConvectionDomain();
 registerAromeFranceDomain();
 registerAromeFranceHdDomain();
+registerEcmwfIfs0p1Domain();
 applyModelSelectorLabels();
 
 export const defaultDomain = DEFAULT_DOMAIN;
