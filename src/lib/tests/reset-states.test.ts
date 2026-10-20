@@ -6,7 +6,8 @@ import { overlays, savedCompositions } from '$lib/stores/composition';
 import { resetStates } from '$lib/stores/preferences';
 
 vi.mock('$lib/metadata', () => ({
-	getInitialMetaData: vi.fn(async () => {}),
+	StaleMetadataError: class extends Error {},
+	getInitialMetaData: vi.fn(async () => true),
 	getMetaData: vi.fn(async () => undefined)
 }));
 vi.mock('mode-watcher', () => ({ setMode: vi.fn(), mode: { current: 'dark' } }));

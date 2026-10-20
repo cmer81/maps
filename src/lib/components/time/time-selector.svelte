@@ -26,7 +26,7 @@
 	} from '$lib/constants';
 	import { throttle } from '$lib/helpers';
 	import { changeOMfileURL } from '$lib/layers';
-	import { getMetaData } from '$lib/metadata';
+	import { StaleMetadataError, getMetaData } from '$lib/metadata';
 	import {
 		formatISOWithoutTimezone,
 		formatLocalDate,
@@ -255,6 +255,8 @@
 			try {
 				$metaJson = await getMetaData();
 			} catch (e) {
+				// Domaine ou run changé pendant la lecture : rien à rattraper ici.
+				if (e instanceof StaleMetadataError) return;
 				const error = e as Error;
 				toast.warning(error.message);
 				// set to latest
@@ -310,7 +312,13 @@
 		$loading = true;
 		$modelRunLocked = true;
 		$modelRun = step;
-		$metaJson = await getMetaData();
+		try {
+			$metaJson = await getMetaData();
+		} catch (e) {
+			// Autre run ou autre domaine choisi entre-temps : son chargement prend le relais.
+			if (e instanceof StaleMetadataError) return;
+			throw e;
+		}
 
 		let closestTime = new SvelteDate($modelRun);
 		for (const vT of $metaJson.valid_times) {

@@ -15,7 +15,7 @@ import {
 	DEFAULT_TILE_SIZE,
 	DEFAULT_VARIABLE
 } from '$lib/constants';
-import { getInitialMetaData, getMetaData } from '$lib/metadata';
+import { StaleMetadataError, getInitialMetaData, getMetaData } from '$lib/metadata';
 
 import { DEFAULT_BASEMAP_THEME, basemapTheme } from './basemap-theme';
 import { overlays } from './composition';
@@ -104,8 +104,16 @@ export const resetStates = async () => {
 	latest.set(undefined);
 	inProgress.set(undefined);
 	modelRun.set(undefined);
-	await getInitialMetaData();
-	metaJson.set(await getMetaData());
+	// Domaine changé pendant la lecture : métadonnées périmées, non écrites. Le
+	// reste de la réinitialisation suit ; `domain.set(DEFAULT_DOMAIN)` plus bas
+	// relance de toute façon le chargement des métadonnées.
+	if (await getInitialMetaData()) {
+		try {
+			metaJson.set(await getMetaData());
+		} catch (e) {
+			if (!(e instanceof StaleMetadataError)) throw e;
+		}
+	}
 
 	preferences.set(defaultPreferences);
 	vectorOptions.set(defaultVectorOptions);

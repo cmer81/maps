@@ -65,7 +65,12 @@
 		reloadStyles,
 		setMapControlSettings
 	} from '$lib/map-controls';
-	import { getInitialMetaData, getMetaData, matchVariableOrFirst } from '$lib/metadata';
+	import {
+		StaleMetadataError,
+		getInitialMetaData,
+		getMetaData,
+		matchVariableOrFirst
+	} from '$lib/metadata';
 	import { initNeighborPrefetch } from '$lib/neighbor-prefetch';
 	import { addPopup } from '$lib/popup';
 	import { requestPersistentStorage } from '$lib/storage-persistence';
@@ -213,8 +218,15 @@
 		}
 
 		getInitialMetaDataPromise = (async () => {
-			await getInitialMetaData();
-			$metaJson = await getMetaData();
+			// Sélection dépassée (autre domaine choisi pendant la requête) : on
+			// n'écrit rien, le chargement du domaine courant s'en charge.
+			if (!(await getInitialMetaData())) return;
+			try {
+				$metaJson = await getMetaData();
+			} catch (e) {
+				if (e instanceof StaleMetadataError) return;
+				throw e;
+			}
 
 			const timeSteps = $metaJson?.valid_times.map((validTime: string) => new Date(validTime));
 			const timeStep = findTimeStep($time, timeSteps);
@@ -231,6 +243,7 @@
 			matchVariableOrFirst();
 		})();
 		await getInitialMetaDataPromise;
+		if (get(domain) !== newDomain) return;
 		changeOMfileURL();
 	});
 
