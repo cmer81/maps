@@ -23,7 +23,7 @@ const EXPECTED_ORDER = [
 	'meteoswiss_icon_ch2',
 	'knmi_harmonie_arome_europe',
 	'ecmwf_ifs025',
-	'ecmwf_ifs',
+	'ecmwf_ifs_0p1',
 	'ecmwf_aifs025_single',
 	'ncep_gfs025',
 	'anomaly_europe'
