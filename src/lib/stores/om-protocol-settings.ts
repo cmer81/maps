@@ -24,8 +24,10 @@ import { precipitableWaterScale } from '$lib/color-scales/precipitable-water';
 import { precipitationSumScale } from '$lib/color-scales/precipitation';
 import { precipitationTypeScale } from '$lib/color-scales/precipitation-type';
 import { radarReflectivityScale } from '$lib/color-scales/radar-reflectivity';
+import { relativeVorticityScale } from '$lib/color-scales/relative-vorticity';
 import { snowfallSumScale } from '$lib/color-scales/snowfall-sum';
 import { soilMoistureScale } from '$lib/color-scales/soil-moisture';
+import { surfacePressureScale } from '$lib/color-scales/surface-pressure';
 import { temperatureAnomalyScale } from '$lib/color-scales/temperature-anomaly';
 import { thetaEScale } from '$lib/color-scales/theta-e';
 import { thetaWScale } from '$lib/color-scales/theta-w';
@@ -181,6 +183,14 @@ export const standardColorScales = {
 	absolute_vorticity_500hPa: absoluteVorticityScale,
 	geopotential_height_pv1500: geopotentialPv1500Scale,
 
+	// Domaine ecmwf_ifs_0p1 (ECMWF open data, Infoclimat) — clés exactes, sans quoi la
+	// résolution par préfixe du package les mappait sur une échelle absurde :
+	//   - `relative_vorticity_500hPa` → `relative_humidity` (%) : carte vide. Valeurs
+	//     ×1e5 dans postReadCallback → ×10⁻⁵ s⁻¹.
+	//   - `surface_pressure` → fallback `temperature` (°C).
+	relative_vorticity_500hPa: relativeVorticityScale,
+	surface_pressure: surfacePressureScale,
+
 	// Domaines upstream (ICON Global/EU/D2, MeteoSwiss, GFS) — variables de
 	// l'onglet « Autres » que la résolution du package servait n'importe comment.
 	// Trois d'entre elles n'avaient NI clé exacte NI famille : `getColorScale`
@@ -252,6 +262,11 @@ export const omProtocolSettings: Writable<OmProtocolSettings> = writable({
 			if (data.values) {
 				data.values = data.values?.map((value) => value * 1e5);
 			}
+		}
+		// Tourbillon relatif ECMWF IFS 0,1° : s⁻¹ (~1e-5) → ×10⁻⁵ s⁻¹, unité de
+		// `relativeVorticityScale`. Seul ce domaine publie la variable.
+		if (state.dataOptions.variable === 'relative_vorticity_500hPa' && data.values) {
+			data.values = data.values.map((value) => value * 1e5);
 		}
 		// Inhibition convective : la convention de signe dépend du producteur —
 		// `arome_france_convection` publie le CIN négatif (mesuré : −267…+10),

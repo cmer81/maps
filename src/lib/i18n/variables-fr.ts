@@ -166,6 +166,7 @@ const EXPLICIT: Record<string, string> = {
 	theta_w_850hPa: 'Theta-W (850 hPa)',
 	thickness_500_1000hPa: 'Épaisseur 500-1000 hPa',
 	absolute_vorticity_500hPa: 'Tourbillon absolu (500 hPa)',
+	relative_vorticity_500hPa: 'Tourbillon relatif (500 hPa)',
 	freezing_level_height: "Altitude de l'isotherme 0 °C",
 	snowfall_sum: 'Cumul de neige',
 	temperature_2m_max: 'Température max. (2 m)',
