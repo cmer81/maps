@@ -308,7 +308,7 @@ export const MODEL_SELECTOR_GROUPS = [
 		]
 	},
 	{
-		label: 'Google DeepMind (IA)',
+		label: 'Infoclimat (IA)',
 		domains: [{ value: WEATHER_AI_DOMAIN, label: 'Weather AI (WeatherNext)' }]
 	},
 	{
@@ -426,7 +426,7 @@ export const MODEL_DESCRIPTIONS: Record<string, string> = {
 	ecmwf_ifs025: 'ECMWF (Europe) · global 0,25° · référence fiable · ~15 j',
 	ecmwf_aifs025_single: 'ECMWF · modèle IA (AIFS) · global 0,25° · ~15 j',
 	weather_ai_wnc_mini:
-		'Google DeepMind WeatherNext via Weather AI · modèle IA · global 1° · ~72 h · expérimental',
+		'Infoclimat · modèle IA (Google DeepMind WeatherNext) · global 1° · ~72 h · expérimental',
 	dwd_icon: 'DWD (Allemagne) · global ~13 km · échéance ~7,5 j',
 	dwd_icon_d2: 'DWD (Allemagne) · ~2 km, Europe centrale · échéance ~2 j',
 	dwd_icon_eu: 'DWD (Allemagne) · ~7 km, Europe · échéance ~5 j',

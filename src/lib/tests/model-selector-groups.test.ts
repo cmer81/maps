@@ -39,7 +39,7 @@ describe('MODEL_SELECTOR_GROUPS', () => {
 			'MeteoSwiss',
 			'KNMI Netherlands',
 			'ECMWF',
-			'Google DeepMind (IA)',
+			'Infoclimat (IA)',
 			'NOAA US',
 			'Anomalie'
 		]);

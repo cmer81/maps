@@ -158,7 +158,7 @@ describe('sélecteur de modèles', () => {
 		expect(entry?.label).toBe('Weather AI (WeatherNext)');
 		expect(MODEL_BADGES[WEATHER_AI_DOMAIN]).toBe('1° · Monde · IA · 3 j');
 		expect(MODEL_DESCRIPTIONS[WEATHER_AI_DOMAIN]).toBe(
-			'Google DeepMind WeatherNext via Weather AI · modèle IA · global 1° · ~72 h · expérimental'
+			'Infoclimat · modèle IA (Google DeepMind WeatherNext) · global 1° · ~72 h · expérimental'
 		);
 		registerWeatherAiDomain();
 		applyModelSelectorLabels();
