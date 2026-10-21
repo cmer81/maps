@@ -39,7 +39,7 @@ describe('MODEL_SELECTOR_GROUPS', () => {
 			'MeteoSwiss',
 			'KNMI Netherlands',
 			'ECMWF',
-			'Infoclimat (IA)',
+			'Infoclimat',
 			'NOAA US',
 			'Anomalie'
 		]);

@@ -308,7 +308,7 @@ export const MODEL_SELECTOR_GROUPS = [
 		]
 	},
 	{
-		label: 'Infoclimat (IA)',
+		label: 'Infoclimat',
 		domains: [{ value: WEATHER_AI_DOMAIN, label: 'Weather AI (WeatherNext)' }]
 	},
 	{
