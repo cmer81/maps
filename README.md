@@ -103,6 +103,7 @@ Voir [`.claude/CLAUDE.md`](./.claude/CLAUDE.md) et les règles ciblées dans [`.
 - protocole MapLibre `om://` et résolution d'URL (`src/lib/url.ts`)
 - routing des cumuls vers le worker (`getOMUrl()` + `om-protocol-settings.ts`)
 - système de slots double-buffered pour les transitions de tuiles (`slot-manager.ts`)
+- cache persistant des blocs OMfile par générations du Cache API, éviction à coût constant (`generational-block-cache.ts`, remplace `BrowserBlockCache`)
 - pipeline playback / pré-rendu (`playback-renderer.ts`)
 - synchronisation URL ↔ stores Svelte 5
 - sondages verticaux client-side (Skew-T + hodographe + indices convectifs) calculés depuis les OMfiles AROME niveaux de pression au point cliqué (`src/lib/sounding/`)

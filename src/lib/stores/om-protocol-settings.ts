@@ -1,6 +1,5 @@
 import { type Writable, get, writable } from 'svelte/store';
 
-import { BrowserBlockCache } from '@openmeteo/file-reader';
 import {
 	type WeatherMapLayerFileReader,
 	defaultOmProtocolSettings,
@@ -42,6 +41,7 @@ import {
 	DEFAULT_CACHE_MAX_BYTES_MB,
 	HTTP_OVERHEAD_BYTES
 } from '$lib/constants';
+import { GenerationalBlockCache } from '$lib/generational-block-cache';
 import { canUseSharedArrayBuffer } from '$lib/shared-array-buffer';
 
 import type {
@@ -63,9 +63,10 @@ const initialCustomColorScales = get(customColorScales);
 
 function createBlockCache() {
 	if (!browser) return undefined;
-	return new BrowserBlockCache({
+	// Pas `BrowserBlockCache` : son éviction scanne tout le cache à chaque écriture
+	// et bloque le Cache API vers 1 Go (voir generational-block-cache.ts).
+	return new GenerationalBlockCache({
 		blockSize: get(cacheBlockSizeKb) * 1024 - HTTP_OVERHEAD_BYTES,
-		cacheName: 'open-meteo-maps-cache-v1',
 		memCacheTtlMs: 1000,
 		maxBytes: get(cacheMaxBytesMb) * 1024 * 1024
 	});
