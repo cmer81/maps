@@ -35,7 +35,12 @@ import {
 } from '$lib/metadata';
 import { applyModelSelectorLabels } from '$lib/model-selector-labels';
 import { getOMUrlFor } from '$lib/url';
-import { registerWeatherAiDomain, weatherAiDomain } from '$lib/weather-ai-domain';
+import {
+	WEATHER_AI_FIELDS,
+	frenchList,
+	registerWeatherAiDomain,
+	weatherAiDomain
+} from '$lib/weather-ai-domain';
 
 import type { Data, OmUrlState } from '@openmeteo/weather-map-layer';
 
@@ -171,6 +176,20 @@ describe('sélecteur de modèles', () => {
 
 	it('affiche la pression par défaut', () => {
 		expect(DOMAIN_DEFAULT_VARIABLES[WEATHER_AI_DOMAIN]).toBe('pressure_msl');
+	});
+});
+
+describe('champs annoncés par l’onglet Cyclones IA', () => {
+	it('énumère les trois champs publiés, initiale en capitale', () => {
+		expect(frenchList(WEATHER_AI_FIELDS)).toBe(
+			"Pression au niveau de la mer, probabilité d'existence cyclonique et température à 2 m"
+		);
+	});
+
+	it('reste correcte quand la liste s’allonge ou se réduit', () => {
+		expect(frenchList(['vent', 'pluie'])).toBe('Vent et pluie');
+		expect(frenchList(['pression'])).toBe('Pression');
+		expect(frenchList([])).toBe('');
 	});
 });
 

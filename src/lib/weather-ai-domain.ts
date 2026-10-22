@@ -12,9 +12,11 @@ import { getWeatherAiOmBucketUrl } from '$lib/runtime-env';
  *  `time_interval: '6_hourly'` (échéances +6 h à +72 h toutes les 6 h, pas
  *  d'échéance 0), `model_interval: '6_hourly'` (runs 00/06/12/18 UTC).
  *  Variables : `pressure_msl` en hPa (Pa ÷ 100 côté producteur, échelle `pressure`
- *  du package, isobares comme les autres modèles) et
+ *  du package, isobares comme les autres modèles),
  *  `cyclone_existence_probability` (fraction 0..1, affichée en % — voir
- *  `postReadCallback` dans `stores/om-protocol-settings.ts`). */
+ *  `postReadCallback` dans `stores/om-protocol-settings.ts`) et `temperature_2m`
+ *  en °C (échelle `temperature` du package). Liste lue dans `latest.json` : une
+ *  variable ajoutée par le producteur apparaît sans modification ici. */
 export const weatherAiDomain: Domain = {
 	value: WEATHER_AI_DOMAIN,
 	label: 'Weather AI (WeatherNext)',
@@ -42,6 +44,22 @@ export function registerWeatherAiDomain(): void {
 	if (!getWeatherAiOmBucketUrl()) return;
 	if (domainOptions.some((d) => d.value === WEATHER_AI_DOMAIN)) return;
 	domainOptions.push(weatherAiDomain);
+}
+
+/** Champs continus publiés pour ce modèle, tels que l'onglet Cyclones IA les
+ *  annonce. Le vent et les précipitations (weather-ai#285) s'ajouteront ici ; le
+ *  sélecteur de variables, lui, suit `latest.json` sans liste codée en dur. */
+export const WEATHER_AI_FIELDS: readonly string[] = [
+	'pression au niveau de la mer',
+	"probabilité d'existence cyclonique",
+	'température à 2 m'
+];
+
+/** Énumération française, initiale en capitale : « A, b et c ». */
+export function frenchList(items: readonly string[]): string {
+	const text =
+		items.length < 2 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} et ${items.at(-1)}`;
+	return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 // Attribution et licence des produits Weather AI, telles que le portail les sert
