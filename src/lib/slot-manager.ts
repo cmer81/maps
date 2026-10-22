@@ -62,7 +62,36 @@ export interface SlotManagerOptions {
 	deferCommit?: boolean;
 	/** Appelé quand les tuiles sont chargées et prêtes à committer (mode `deferCommit`). */
 	onReady?: () => void;
+	/**
+	 * Recharge le slot en attente (même URL) quand sa source échoue ou n'a pas fini
+	 * de charger au bout de `stallMs`. Sans ça, une seule lecture `.om` en échec
+	 * (5xx répétés, réseau coupé) ou bloquée (corps de réponse qui ne vient jamais :
+	 * le timeout du reader ne couvre que les en-têtes) laisse le slot invisible
+	 * jusqu'au prochain `update()` — carte vide tant qu'on ne change pas d'échéance.
+	 * Un fichier absent (404) n'est pas réessayé : c'est une variable que le
+	 * domaine ne publie pas. Après `attempts` rechargements, une erreur appelle
+	 * `onError` ; un chargement lent n'est plus interrompu.
+	 */
+	retry?: { attempts: number; delayMs: number; stallMs?: number };
 }
+
+/**
+ * Réglage de `retry` des couches OMfile. 20 s sans fin de chargement est bien
+ * au-delà d'une frame normale (~1-2 s) ; recharger ne perd que les blocs encore
+ * en vol, les autres restent dans le cache du reader.
+ */
+export const OM_SLOT_RETRY: NonNullable<SlotManagerOptions['retry']> = {
+	attempts: 2,
+	delayMs: 1000,
+	stallMs: 20000
+};
+
+/** Erreur de source définitive (fichier absent) : inutile de réessayer. */
+const isMissingFileError = (error: unknown): boolean => {
+	if ((error as { status?: number } | undefined)?.status === 404) return true;
+	const message = error instanceof Error ? error.message : String(error ?? '');
+	return /File not found|\b404\b/.test(message);
+};
 
 export class SlotManager {
 	private map: maplibregl.Map;
@@ -74,6 +103,9 @@ export class SlotManager {
 	private slotLayers: Record<Slot, SlotLayer[]> = { A: [], B: [] };
 	/** En mode deferCommit, mémorise l'état prêt-à-committer. */
 	private deferredCommit: { nextSlot: Slot; previousSlot: Slot | null } | null = null;
+	/** Rechargements déjà tentés pour l'URL en cours (remis à zéro par `update()`). */
+	private retryCount = 0;
+	private retryTimer: ReturnType<typeof setTimeout> | undefined;
 
 	constructor(map: maplibregl.Map, opts: SlotManagerOptions) {
 		this.map = map;
@@ -105,6 +137,12 @@ export class SlotManager {
 	}
 
 	update(sourceUrl: string): void {
+		this.clearRetry();
+		this.retryCount = 0;
+		this.load(sourceUrl);
+	}
+
+	private load(sourceUrl: string): void {
 		this.cleanupListener?.();
 		this.cleanupListener = null;
 		this.deferredCommit = null;
@@ -136,10 +174,11 @@ export class SlotManager {
 			return;
 		}
 
-		this.waitForLoad(nextSlot, sourceId, this.activeSlot);
+		this.waitForLoad(nextSlot, sourceId, this.activeSlot, sourceUrl);
 	}
 
 	destroy(): void {
+		this.clearRetry();
 		this.cleanupListener?.();
 		this.cleanupListener = null;
 		this.forceRemoveSlot('A');
@@ -147,6 +186,27 @@ export class SlotManager {
 		this.activeSlot = null;
 		this.pendingSlot = null;
 		this.deferredCommit = null;
+	}
+
+	private clearRetry(): void {
+		if (this.retryTimer !== undefined) clearTimeout(this.retryTimer);
+		this.retryTimer = undefined;
+	}
+
+	/**
+	 * Programme un rechargement du slot en attente sur la même URL. Retirer puis
+	 * recréer la source annule les requêtes en vol (le cache de blocs du reader
+	 * garde ce qui est déjà téléchargé). `false` si les tentatives sont épuisées.
+	 */
+	private scheduleRetry(nextSlot: Slot, sourceUrl: string): boolean {
+		const retry = this.opts.retry;
+		if (!retry || this.retryCount >= retry.attempts) return false;
+		this.retryCount += 1;
+		this.retryTimer = setTimeout(() => {
+			this.retryTimer = undefined;
+			if (this.pendingSlot === nextSlot) this.load(sourceUrl);
+		}, retry.delayMs * this.retryCount);
+		return true;
 	}
 
 	private sourceId(slot: Slot): string {
@@ -256,19 +316,49 @@ export class SlotManager {
 		}
 	}
 
-	private waitForLoad(nextSlot: Slot, sourceId: string, previousSlot: Slot | null): void {
+	private waitForLoad(
+		nextSlot: Slot,
+		sourceId: string,
+		previousSlot: Slot | null,
+		sourceUrl: string
+	): void {
 		if (this.map.style.getSource(sourceId)?.loaded()) {
 			this.commit(nextSlot, previousSlot);
 			return;
 		}
 
+		// Un seul avertissement par update(), pas un par rechargement.
 		let warningTimeout: ReturnType<typeof setTimeout> | undefined;
-		if (this.opts.slowLoadWarningMs && this.opts.onSlowLoad) {
+		if (this.retryCount === 0 && this.opts.slowLoadWarningMs && this.opts.onSlowLoad) {
 			warningTimeout = setTimeout(this.opts.onSlowLoad, this.opts.slowLoadWarningMs);
+		}
+
+		const fail = (): void => {
+			if (this.opts.clearOnError) {
+				// Drop the failed pending slot AND the stale previous slot so outdated
+				// data (e.g. arrows from the previous model) isn't left frozen on screen.
+				this.forceRemoveSlot(nextSlot);
+				if (previousSlot) this.forceRemoveSlot(previousSlot);
+				this.activeSlot = null;
+				this.pendingSlot = null;
+			}
+			this.opts.onError?.();
+		};
+
+		// Pas de minuterie au dernier essai : sur une connexion très lente mais qui
+		// progresse, on laisse ce chargement aller au bout au lieu d'abandonner.
+		let stallTimeout: ReturnType<typeof setTimeout> | undefined;
+		const retry = this.opts.retry;
+		if (retry?.stallMs && this.retryCount < retry.attempts) {
+			stallTimeout = setTimeout(() => {
+				cleanup();
+				this.scheduleRetry(nextSlot, sourceUrl);
+			}, retry.stallMs);
 		}
 
 		const cleanup = (): void => {
 			if (warningTimeout !== undefined) clearTimeout(warningTimeout);
+			if (stallTimeout !== undefined) clearTimeout(stallTimeout);
 			this.map.off('sourcedata', onSourceData);
 			this.map.off('error', onError);
 			this.cleanupListener = null;
@@ -290,15 +380,8 @@ export class SlotManager {
 		const onError = (e: maplibregl.ErrorEvent & { sourceId?: string }): void => {
 			if (e.sourceId !== sourceId) return;
 			cleanup();
-			if (this.opts.clearOnError) {
-				// Drop the failed pending slot AND the stale previous slot so outdated
-				// data (e.g. arrows from the previous model) isn't left frozen on screen.
-				this.forceRemoveSlot(nextSlot);
-				if (previousSlot) this.forceRemoveSlot(previousSlot);
-				this.activeSlot = null;
-				this.pendingSlot = null;
-			}
-			this.opts.onError?.();
+			if (!isMissingFileError(e.error) && this.scheduleRetry(nextSlot, sourceUrl)) return;
+			fail();
 		};
 
 		this.map.on('sourcedata', onSourceData);

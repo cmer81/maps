@@ -14,7 +14,7 @@
 import * as maplibregl from 'maplibre-gl';
 
 import { type OverlayContext, effectiveOverlayFlags, isSourceAvailable } from '$lib/composition';
-import { type SlotLayer, SlotManager } from '$lib/slot-manager';
+import { OM_SLOT_RETRY, type SlotLayer, SlotManager } from '$lib/slot-manager';
 
 import type { ChartSource } from '$lib/chart-types';
 import type { getOverlayOmUrl } from '$lib/url';
@@ -279,6 +279,7 @@ export class OverlayStack {
 			// pas de temps) : la superposition disparaît simplement.
 			clearOnError: true,
 			deferCommit: true,
+			retry: OM_SLOT_RETRY,
 			onReady: this.hooks.onReady,
 			onError: () => this.hooks.onError(manager)
 		});
