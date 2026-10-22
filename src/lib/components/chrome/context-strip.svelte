@@ -37,7 +37,7 @@
 		{#if displayUnit}<span class="shrink-0 tabular-nums text-white/50">({displayUnit})</span>{/if}
 		{#if $domain === WEATHER_AI_DOMAIN}
 			<!-- Visible panneau replié : le modèle IA reste signalé comme expérimental.
-			     Mentions complètes dans l'onglet Données (weather-ai-model-notice). -->
+			     Mentions complètes : lien « Sources et licence » de la notice « i » de la carte (weather-ai-sources-dialog). -->
 			<span
 				class="shrink-0 rounded bg-amber-300 px-1.5 py-px text-[10px] font-bold tracking-wide whitespace-nowrap text-slate-950 uppercase"
 				title="Weather AI (WeatherNext, Google DeepMind) : prévision expérimentale, ne remplace aucune alerte, vigilance ou bulletin officiel."

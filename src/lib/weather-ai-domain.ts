@@ -53,3 +53,29 @@ export const WEATHER_AI_ATTRIBUTION =
 
 export const WEATHER_AI_LICENSE_NOTICE =
 	'Experimental internal POC; WeatherNext Cyclones Mini model weights are CC BY 4.0 and WeatherNext code is Apache-2.0.';
+
+/** Attribut du lien « Sources et licence » de la notice d'attribution de la
+ *  carte : un clic dessus ouvre les mentions complètes
+ *  (`weather-ai-sources-dialog.svelte`). Lien intercepté plutôt qu'une ancre,
+ *  le hash de l'URL portant la vue de la carte. */
+export const WEATHER_AI_SOURCES_LINK_ATTR = 'data-weather-ai-sources';
+
+const escapeHtml = (text: string) =>
+	text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/** Attribution des couches Weather AI dans la notice compacte MapLibre (« i »),
+ *  injectée en HTML par MapLibre : texte du producteur à l'identique, puis le
+ *  lien vers les mentions complètes (licence, non-responsabilité ECMWF…). */
+export const WEATHER_AI_MAP_ATTRIBUTION = `${escapeHtml(WEATHER_AI_ATTRIBUTION)} · <a href="#" ${WEATHER_AI_SOURCES_LINK_ATTR}>Sources et licence</a>`;
+
+/**
+ * Attribution à déclarer sur une source `om://` : celle de Weather AI quand la
+ * source lit le bucket du domaine, rien sinon. Portée par la source, elle suit
+ * la couche — MapLibre la retire de la notice quand la source disparaît (autre
+ * modèle sélectionné).
+ */
+export function omSourceAttribution(sourceUrl: string): { attribution?: string } {
+	return sourceUrl.includes(`/data_spatial/${WEATHER_AI_DOMAIN}/`)
+		? { attribution: WEATHER_AI_MAP_ATTRIBUTION }
+		: {};
+}

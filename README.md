@@ -118,7 +118,7 @@ Le chrome s'organise autour d'un header fin pleine largeur (marque Infoclimat, o
 - Layer : [open-meteo/weather-map-layer](https://github.com/open-meteo/weather-map-layer).
 - Données :
   - OMfiles météo : [Open-Meteo](https://open-meteo.com) (et indirectement Météo-France, ECMWF, DWD, NOAA…).
-  - Weather AI : WeatherNext Cyclones Mini (Google DeepMind), ECMWF open data (CC BY 4.0, modifiées), OSTIA (Met Office), E.U. Copernicus Marine Service ; mentions complètes dans l'app (`weather-ai-model-notice.svelte`).
+  - Weather AI : WeatherNext Cyclones Mini (Google DeepMind), ECMWF open data (CC BY 4.0, modifiées), OSTIA (Met Office), E.U. Copernicus Marine Service ; attribution dans la notice « i » de la carte quand la couche est affichée, mentions complètes derrière son lien « Sources et licence » (`weather-ai-sources-dialog.svelte`).
   - Contours administratifs FR : [`gregoiredavid/france-geojson`](https://github.com/gregoiredavid/france-geojson) (licence ODbL).
 
 ### Licence Highcharts

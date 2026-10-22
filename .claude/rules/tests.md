@@ -7,7 +7,7 @@ paths:
 
 # Tests
 
-Vitest config (`vitest.config.ts`) only collects tests from `src/lib/tests/**`. Environment is `node`, so tests should target pure logic (time parsing, utility helpers); DOM/Svelte component tests are not currently set up.
+Vitest config (`vitest.config.ts`) only collects tests from `src/lib/tests/**`. Environment is `node`, so tests should target pure logic (time parsing, utility helpers); DOM/Svelte component tests are not currently set up. A component's server-rendered HTML can still be asserted with `render` from `svelte/server` (no DOM, no effects) — e.g. `tests/weather-ai-attribution.test.ts` renders `chrome/panel-content.svelte` per tab.
 
 Run a single test file: `npx vitest run src/lib/tests/time-format.test.ts`
 Run a single test by name: `npx vitest run -t "parses ISO"`

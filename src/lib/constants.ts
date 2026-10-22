@@ -43,7 +43,7 @@ export const ECMWF_IFS_0P1_DOMAIN = 'ecmwf_ifs_0p1';
  *  Mini (Google DeepMind), exportés en `.om` par le producteur weather-ai sur son
  *  propre bucket (`getWeatherAiOmBucketUrl()`, distinct du bucket maison). Grille
  *  globale 1°, échéances 6-horaires +6 h → +72 h. Expérimental : mentions
- *  obligatoires dans `components/weather-ai/weather-ai-model-notice.svelte`. */
+ *  obligatoires dans `components/weather-ai/weather-ai-sources-dialog.svelte`. */
 export const WEATHER_AI_DOMAIN = 'weather_ai_wnc_mini';
 
 /** Vue de carte recommandée par domaine — appliquée via `flyTo` quand l'utilisateur

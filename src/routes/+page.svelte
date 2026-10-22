@@ -51,6 +51,7 @@
 	import Scale from '$lib/components/scale/scale.svelte';
 	import SoundingPanel from '$lib/components/sounding/sounding-panel.svelte';
 	import TimeSelector from '$lib/components/time/time-selector.svelte';
+	import WeatherAiSourcesDialog from '$lib/components/weather-ai/weather-ai-sources-dialog.svelte';
 
 	import { computeCaptureRect } from '$lib/capture-geometry';
 	import { DEFAULT_DOMAIN, DOMAIN_DEFAULT_VIEWS } from '$lib/constants';
@@ -420,6 +421,7 @@
 <ClippingPanel bind:this={clippingPanel} />
 <TimeSelector />
 <HelpDialog />
+<WeatherAiSourcesDialog />
 <SoundingPanel />
 <PointDrawer />
 <KeyboardHandler />
