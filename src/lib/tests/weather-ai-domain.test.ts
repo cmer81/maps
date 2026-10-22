@@ -1,3 +1,4 @@
+import { render } from 'svelte/server';
 import { get } from 'svelte/store';
 
 import {
@@ -17,6 +18,9 @@ import { omProtocolSettings, standardColorScales } from '$lib/stores/om-protocol
 import { loading } from '$lib/stores/preferences';
 import { inProgress, latest, metaJson, modelRun, time } from '$lib/stores/time';
 import { domain, variable } from '$lib/stores/variables';
+import { weatherAiRun } from '$lib/stores/weather-ai';
+
+import WeatherAiPanel from '$lib/components/weather-ai/weather-ai-panel.svelte';
 
 import {
 	DOMAIN_DEFAULT_VARIABLES,
@@ -41,7 +45,9 @@ import {
 	registerWeatherAiDomain,
 	weatherAiDomain
 } from '$lib/weather-ai-domain';
+import { PRODUCT_SPECS } from '$lib/weather-ai/products';
 
+import type { LoadedRun } from '$lib/weather-ai/loader';
 import type { Data, OmUrlState } from '@openmeteo/weather-map-layer';
 
 // Fixture générée par `fixtures/weather-ai-om/generate_fixture.py` avec les
@@ -190,6 +196,56 @@ describe('champs annoncés par l’onglet Cyclones IA', () => {
 		expect(frenchList(['vent', 'pluie'])).toBe('Vent et pluie');
 		expect(frenchList(['pression'])).toBe('Pression');
 		expect(frenchList([])).toBe('');
+		expect(frenchList(['pression', 'probabilité', 'température', 'vent', 'précipitations'])).toBe(
+			'Pression, probabilité, température, vent et précipitations'
+		);
+	});
+});
+
+describe('onglet Cyclones IA : renvoi vers le modèle de l’onglet Données', () => {
+	const MODEL_NOTE = "modèle « Weather AI (WeatherNext) » de l'onglet Données";
+	const UPCOMING_NOTE = 'à venir comme variables d';
+	/** Run du portail dont le catalogue annonce la pression (champ continu). */
+	const runWithMslp: LoadedRun = {
+		runId: 'wn2-test',
+		snapshotId: 'snap',
+		publishedAt: '2026-10-22T08:00:00Z',
+		initTime: '2026-10-22T06:00:00Z',
+		available: [
+			{
+				productId: 'global-mslp-1deg',
+				spec: PRODUCT_SPECS['global-mslp-1deg'],
+				attribution: '',
+				licenseNotice: ''
+			}
+		],
+		ignored: [],
+		loaded: {}
+	};
+	const panel = () => render(WeatherAiPanel).body.replace(/&#39;/g, "'");
+
+	afterEach(() => weatherAiRun.set(undefined));
+
+	it('modèle enregistré, catalogue du portail absent (échec ou chargement) : renvoi affiché', () => {
+		registerWeatherAiDomain();
+		weatherAiRun.set(undefined);
+		const body = panel();
+		expect(body).toContain(frenchList(WEATHER_AI_FIELDS) + ' : ' + MODEL_NOTE);
+		expect(body).not.toContain(UPCOMING_NOTE);
+	});
+
+	it('modèle absent, catalogue annonçant des champs continus : note « à venir »', () => {
+		weatherAiRun.set(runWithMslp);
+		const body = panel();
+		expect(body).toContain(UPCOMING_NOTE);
+		expect(body).not.toContain(MODEL_NOTE);
+	});
+
+	it('modèle absent, catalogue sans champ continu : ni renvoi ni note', () => {
+		weatherAiRun.set({ ...runWithMslp, available: [] });
+		const body = panel();
+		expect(body).not.toContain(UPCOMING_NOTE);
+		expect(body).not.toContain(MODEL_NOTE);
 	});
 });
 

@@ -154,17 +154,22 @@
 			Affichables sur n'importe quel modèle de fond. L'échéance suit la frise en bas de l'écran (pas
 			de 6 h depuis l'initialisation du run Weather AI).
 		</p>
-		{#if modelAvailable}
-			<p class="px-1 text-[11px] leading-snug text-white/45">
-				{frenchList(WEATHER_AI_FIELDS)} : modèle « Weather AI (WeatherNext) » de l'onglet Données, avec
-				légende et échelle standards.
-			</p>
-		{:else if continuousFields.length}
-			<p class="px-1 text-[11px] leading-snug text-white/45">
-				{frenchList(WEATHER_AI_FIELDS)} : à venir comme variables d'un modèle « Weather AI » du sélecteur
-				de modèles, avec légende et échelle standards.
-			</p>
-		{/if}
+	{/if}
+
+	<!-- Renvoi vers le modèle de l'onglet Données : dépend de son enregistrement
+	     (bucket .om), pas du catalogue du portail, qui peut être en échec. -->
+	{#if modelAvailable}
+		<p class="px-1 text-[11px] leading-snug text-white/45">
+			{frenchList(WEATHER_AI_FIELDS)} : modèle « Weather AI (WeatherNext) » de l'onglet Données, avec
+			légende et échelle standards.
+		</p>
+	{:else if continuousFields.length}
+		<p class="px-1 text-[11px] leading-snug text-white/45">
+			{frenchList(WEATHER_AI_FIELDS)} : à venir comme variables d'un modèle « Weather AI » du sélecteur
+			de modèles, avec légende et échelle standards.
+		</p>
+	{/if}
+	{#if $weatherAiRun}
 		<!-- Source des superpositions : run Weather AI et échéance réellement affichée,
 		     à ne pas confondre avec le run du modèle de fond. -->
 		<section class="flex flex-col gap-0.5 rounded-xl bg-white/[0.04] px-3 py-2 text-[11px]">
