@@ -14,6 +14,7 @@ declare global {
 		__OM_CONFIG?: {
 			OM_WORKER_URL?: string;
 			MODELS_BUCKET_URL?: string;
+			WEATHER_AI_OM_BUCKET_URL?: string;
 			FORECAST_API_URL?: string;
 			WEATHER_AI_API_URL?: string;
 			WEATHER_AI_CONES?: string;
@@ -35,6 +36,19 @@ export function getModelsBucketUrl(): string {
 		if (fromWindow && fromWindow.length > 0) return fromWindow;
 	}
 	return (import.meta.env.VITE_MODELS_BUCKET_URL as string | undefined) ?? '';
+}
+
+/**
+ * Bucket des fichiers `.om` Weather AI (pseudo-domaine `weather_ai_wnc_mini`),
+ * distinct de `MODELS_BUCKET_URL` : bucket OVH dédié, alimenté par l'export du
+ * producteur weather-ai. Sans valeur, le domaine reste absent du sélecteur.
+ */
+export function getWeatherAiOmBucketUrl(): string {
+	if (typeof window !== 'undefined') {
+		const fromWindow = window.__OM_CONFIG?.WEATHER_AI_OM_BUCKET_URL;
+		if (fromWindow && fromWindow.length > 0) return fromWindow;
+	}
+	return (import.meta.env.VITE_WEATHER_AI_OM_BUCKET_URL as string | undefined) ?? '';
 }
 
 /**

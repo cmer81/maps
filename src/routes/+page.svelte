@@ -51,10 +51,12 @@
 	import Scale from '$lib/components/scale/scale.svelte';
 	import SoundingPanel from '$lib/components/sounding/sounding-panel.svelte';
 	import TimeSelector from '$lib/components/time/time-selector.svelte';
+	import WeatherAiSourcesDialog from '$lib/components/weather-ai/weather-ai-sources-dialog.svelte';
 
 	import { computeCaptureRect } from '$lib/capture-geometry';
-	import { DOMAIN_DEFAULT_VIEWS } from '$lib/constants';
+	import { DEFAULT_DOMAIN, DOMAIN_DEFAULT_VIEWS } from '$lib/constants';
 	import { refreshDepartments } from '$lib/departments-layer';
+	import { createDomainLoader } from '$lib/domain-load';
 	import { checkHighDefinition } from '$lib/helpers';
 	import { initHillshadeFromPrefs } from '$lib/hillshade';
 	import { applyLabelsVisibility } from '$lib/labels-layer';
@@ -194,12 +196,29 @@
 	});
 
 	let getInitialMetaDataPromise: Promise<void> | undefined;
+	let fallingBack = false;
+	// Repli quand un modèle sélectionné n'a encore rien publié (premier run Weather
+	// AI) ; les réponses d'un chargement dépassé sont ignorées (domain-load.ts).
+	const loadDomain = createDomainLoader({
+		load: getInitialMetaData,
+		currentDomain: () => get(domain),
+		labelOf: (value) => domainOptions.find((o) => o.value === value)?.label ?? value,
+		warn: (message) => toast.warning(message, { duration: 10_000 }),
+		switchTo: (value) => {
+			fallingBack = true;
+			$domain = value;
+		},
+		defaultDomain: DEFAULT_DOMAIN
+	});
 	const domainSubscription = domain.subscribe(async (newDomain) => {
+		// Repli automatique : le toast d'indisponibilité dit déjà où l'on revient.
+		const silent = fallingBack;
+		fallingBack = false;
 		if ($domain !== newDomain) {
 			await tick(); // await the selectedDomain to be set
 			updateUrl('domain', newDomain);
 			$modelRun = undefined;
-			toast('Modèle : ' + $selectedDomain.label);
+			if (!silent) toast('Modèle : ' + $selectedDomain.label);
 
 			const view = DOMAIN_DEFAULT_VIEWS[newDomain];
 			if (view && $map) {
@@ -218,9 +237,8 @@
 		}
 
 		getInitialMetaDataPromise = (async () => {
-			// Sélection dépassée (autre domaine choisi pendant la requête) : on
-			// n'écrit rien, le chargement du domaine courant s'en charge.
-			if (!(await getInitialMetaData())) return;
+			// Rien de publié (repli effectué) ou réponse d'une sélection dépassée.
+			if ((await loadDomain(newDomain)) !== 'loaded') return;
 			try {
 				$metaJson = await getMetaData();
 			} catch (e) {
@@ -243,6 +261,8 @@
 			matchVariableOrFirst();
 		})();
 		await getInitialMetaDataPromise;
+		// Repli sur un autre modèle (rien de publié) ou sélection dépassée : le
+		// chargement du domaine courant s'en charge.
 		if (get(domain) !== newDomain) return;
 		changeOMfileURL();
 	});
@@ -401,6 +421,7 @@
 <ClippingPanel bind:this={clippingPanel} />
 <TimeSelector />
 <HelpDialog />
+<WeatherAiSourcesDialog />
 <SoundingPanel />
 <PointDrawer />
 <KeyboardHandler />

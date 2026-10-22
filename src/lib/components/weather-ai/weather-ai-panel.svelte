@@ -1,6 +1,7 @@
 <script lang="ts">
 	import ConeIcon from '@lucide/svelte/icons/cone';
 	import RouteIcon from '@lucide/svelte/icons/route';
+	import { domainOptions } from '@openmeteo/weather-map-layer';
 
 	import {
 		type WeatherAiOverlay,
@@ -15,6 +16,7 @@
 
 	import LayerToggle from '$lib/components/chrome/layer-toggle.svelte';
 
+	import { WEATHER_AI_DOMAIN } from '$lib/constants';
 	import { CONES_MENTION } from '$lib/weather-ai/cones';
 	import { conesOffered, useWeatherAi } from '$lib/weather-ai/controller';
 	import { cardSummary } from '$lib/weather-ai/displayed';
@@ -24,6 +26,10 @@
 	import WeatherAiMentions from './weather-ai-mentions.svelte';
 
 	import type { Component } from 'svelte';
+
+	// Champs continus servis comme modèle « Weather AI (WeatherNext) » de l'onglet
+	// Données dès que son bucket .om est configuré (weather-ai-domain.ts).
+	const modelAvailable = domainOptions.some((d) => d.value === WEATHER_AI_DOMAIN);
 
 	// L'onglet monté suffit à lire le catalogue (le menu en dépend).
 	$effect(() => useWeatherAi());
@@ -149,8 +155,13 @@
 		</p>
 		{#if continuousFields.length}
 			<p class="px-1 text-[11px] leading-snug text-white/45">
-				Pression et probabilité d'existence cyclonique : à venir comme variables d'un modèle «
-				Weather AI » du sélecteur de modèles, avec légende et échelle standards.
+				{#if modelAvailable}
+					Pression et probabilité d'existence cyclonique : modèle « Weather AI (WeatherNext) » de
+					l'onglet Données, avec légende et échelle standards.
+				{:else}
+					Pression et probabilité d'existence cyclonique : à venir comme variables d'un modèle «
+					Weather AI » du sélecteur de modèles, avec légende et échelle standards.
+				{/if}
 			</p>
 		{/if}
 		<!-- Source des superpositions : run Weather AI et échéance réellement affichée,

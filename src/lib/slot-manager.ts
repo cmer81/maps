@@ -1,5 +1,7 @@
 import * as maplibregl from 'maplibre-gl';
 
+import { omSourceAttribution } from '$lib/weather-ai-domain';
+
 /**
  * SlotManager: double-buffered A/B slot system for MapLibre layers.
  *
@@ -269,7 +271,11 @@ export class SlotManager {
 		const sourceId = this.sourceId(slot);
 		// Defensive: a concurrent rotation may have left the source in the style.
 		this.purgeOrphanSource(sourceId);
-		this.map.addSource(sourceId, this.opts.sourceSpec(sourceUrl));
+		// Attribution propre à la source (Weather AI) : affichée tant que la couche l'est.
+		this.map.addSource(sourceId, {
+			...this.opts.sourceSpec(sourceUrl),
+			...omSourceAttribution(sourceUrl)
+		});
 
 		const layers = this.opts.layerFactory();
 		const addedLayers: SlotLayer[] = [];
