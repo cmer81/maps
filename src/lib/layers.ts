@@ -38,7 +38,7 @@ import {
 	ensureAnchorLayer
 } from '$lib/overlay-stack';
 import { SLOT_EVENT_COMMIT, SLOT_EVENT_ERROR, slotEvents } from '$lib/slot-events';
-import { type SlotLayer, SlotManager } from '$lib/slot-manager';
+import { OM_SLOT_RETRY, type SlotLayer, SlotManager } from '$lib/slot-manager';
 import {
 	type ArrowStyle,
 	type ContourStyle,
@@ -430,6 +430,7 @@ const buildRasterManager2 = (map: maplibregl.Map): SlotManager =>
 		// laisser celle du modèle précédent figée. Cf. vectorManager.
 		clearOnError: true,
 		deferCommit: true,
+		retry: OM_SLOT_RETRY,
 		onReady: tryFlushGroup,
 		onCommit: () => {},
 		onError: () => dropFromGroup(rasterManager2!),
@@ -542,6 +543,7 @@ export const createManagers = (): void => {
 		removeDelayMs: 300,
 		// Both raster and vector fire commit on slotEvents (bus conservé, sans consommateur actuel).
 		deferCommit: true,
+		retry: OM_SLOT_RETRY,
 		onReady: tryFlushGroup,
 		onCommit: () => slotEvents.dispatchEvent(new Event(SLOT_EVENT_COMMIT)),
 		onError: () => {
@@ -574,6 +576,7 @@ export const createManagers = (): void => {
 		// laisser celles du modèle précédent figées à l'écran.
 		clearOnError: true,
 		deferCommit: true,
+		retry: OM_SLOT_RETRY,
 		onReady: tryFlushGroup,
 		onCommit: () => slotEvents.dispatchEvent(new Event(SLOT_EVENT_COMMIT)),
 		onError: () => {
@@ -592,6 +595,7 @@ export const createManagers = (): void => {
 		// flèches au lieu de laisser celles du modèle précédent figées (cf. vectorManager).
 		clearOnError: true,
 		deferCommit: true,
+		retry: OM_SLOT_RETRY,
 		onReady: tryFlushGroup,
 		onCommit: () => slotEvents.dispatchEvent(new Event(SLOT_EVENT_COMMIT)),
 		onError: () => {

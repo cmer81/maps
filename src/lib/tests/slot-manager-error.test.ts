@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SlotManager } from '$lib/slot-manager';
 
@@ -27,7 +27,10 @@ class FakeMap {
 		return this.sources.get(id);
 	}
 
+	addSourceCount = 0;
+
 	addSource(id: string) {
+		this.addSourceCount++;
 		const loaded = this.nextLoaded;
 		this.sources.set(id, {
 			_loaded: loaded,
@@ -129,5 +132,107 @@ describe('SlotManager clearOnError', () => {
 
 		// Previous slot stays visible (last-good image) — unchanged legacy behavior.
 		expect(map.hasLayer('arrow_A')).toBe(true);
+	});
+});
+
+describe('SlotManager retry', () => {
+	beforeEach(() => vi.useFakeTimers());
+	afterEach(() => vi.useRealTimers());
+
+	const makeRetryManager = (map: FakeMap, onError: () => void, clearOnError = false) =>
+		new SlotManager(map as never, {
+			sourceIdPrefix: 'ras',
+			beforeLayer: 'before',
+			removeDelayMs: 0,
+			clearOnError,
+			retry: { attempts: 2, delayMs: 1000, stallMs: 15000 },
+			onError,
+			sourceSpec: (url: string) => ({ type: 'raster', url }) as never,
+			layerFactory: () => [
+				{
+					id: 'raster',
+					opacityProp: 'raster-opacity',
+					commitOpacity: 1,
+					add: (m, sourceId, layerId) =>
+						(m as unknown as FakeMap).addLayer({ id: layerId, source: sourceId })
+				}
+			]
+		});
+
+	it('reloads the source after a transient error instead of staying invisible', () => {
+		const map = new FakeMap();
+		const onError = vi.fn();
+		const mgr = makeRetryManager(map, onError);
+
+		map.nextLoaded = false;
+		mgr.update('om://urlA');
+		expect(map.addSourceCount).toBe(1);
+
+		// Lecture en échec (5xx répétés, réseau coupé…) : avant, le slot restait à
+		// l'opacité 0 jusqu'au prochain changement d'échéance.
+		map.fire('error', { sourceId: 'ras_A', error: new Error('Server error: 503') });
+		expect(onError).not.toHaveBeenCalled();
+
+		map.nextLoaded = true;
+		vi.advanceTimersByTime(1000);
+		expect(map.addSourceCount).toBe(2);
+		expect(map.hasLayer('raster_A')).toBe(true);
+		expect(onError).not.toHaveBeenCalled();
+	});
+
+	it('does not retry a missing file (404): the variable is absent from the domain', () => {
+		const map = new FakeMap();
+		const onError = vi.fn();
+		const mgr = makeRetryManager(map, onError, true);
+
+		map.nextLoaded = false;
+		mgr.update('om://urlA');
+		map.fire('error', { sourceId: 'ras_A', error: new Error('File not found') });
+
+		expect(onError).toHaveBeenCalledTimes(1);
+		vi.advanceTimersByTime(60000);
+		expect(map.addSourceCount).toBe(1);
+	});
+
+	it('reloads a stalled source, then lets the last attempt finish however long it takes', () => {
+		const map = new FakeMap();
+		const onError = vi.fn();
+		const mgr = makeRetryManager(map, onError);
+
+		map.nextLoaded = false;
+		mgr.update('om://urlA');
+
+		// Requête bloquée : aucun sourcedata, aucune erreur.
+		vi.advanceTimersByTime(15000 + 1000);
+		expect(map.addSourceCount).toBe(2);
+		vi.advanceTimersByTime(15000 + 2000);
+		expect(map.addSourceCount).toBe(3);
+		expect(onError).not.toHaveBeenCalled();
+
+		// Dernier essai : plus de minuterie, on attend la fin du chargement.
+		vi.advanceTimersByTime(120000);
+		expect(map.addSourceCount).toBe(3);
+		expect(onError).not.toHaveBeenCalled();
+
+		map.sources.get('ras_A')!._loaded = true;
+		map.fire('sourcedata', { sourceId: 'ras_A', isSourceLoaded: true, dataType: 'source' });
+		expect(map.hasLayer('raster_A')).toBe(true);
+		expect(mgr.isReady()).toBe(false); // committé (pas de deferCommit ici)
+	});
+
+	it('a new update cancels a scheduled retry of the previous url', () => {
+		const map = new FakeMap();
+		const onError = vi.fn();
+		const mgr = makeRetryManager(map, onError);
+
+		map.nextLoaded = false;
+		mgr.update('om://urlA');
+		map.fire('error', { sourceId: 'ras_A', error: new Error('Server error: 503') });
+
+		map.nextLoaded = true;
+		mgr.update('om://urlB');
+		expect(map.addSourceCount).toBe(2);
+		vi.advanceTimersByTime(60000);
+		expect(map.addSourceCount).toBe(2);
 	});
 });
