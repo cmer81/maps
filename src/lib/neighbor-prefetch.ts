@@ -1,4 +1,4 @@
-import { get } from 'svelte/store';
+import { type Readable, get } from 'svelte/store';
 
 import { omProtocol } from '@openmeteo/weather-map-layer';
 
@@ -10,6 +10,7 @@ import {
 } from './constants';
 import { prefetchData } from './prefetch';
 import { omProtocolSettings } from './stores/om-protocol-settings';
+import { loading } from './stores/preferences';
 import { metaJson, modelRun, time } from './stores/time';
 import { layer2Enabled, selectedDomain, variable, variable2 } from './stores/variables';
 import { getOMUrlFor } from './url';
@@ -114,6 +115,39 @@ export const neighborTimesToDecode = (
 };
 
 /**
+ * Requête `om://` qui **décode** une échéance sans rien rendre : une tuile
+ * vectorielle (`/0/0/0`, type `arrayBuffer`) passe par la lecture des données,
+ * puis le package renvoie une tuile vide sans solliciter le worker de rendu,
+ * puisque l'URL ne demande ni flèches, ni isolignes, ni grille. Une requête
+ * TileJSON (`type: 'json'`) ne suffit plus : depuis `weather-map-layer` 0.3.0,
+ * elle répond sans toucher aux données. La clé d'état du protocole ne garde que
+ * `variable` dans les paramètres : l'état peuplé est donc celui que lira la
+ * source MapLibre de cette échéance.
+ */
+export const neighborDecodeRequestUrl = (omUrl: string): string => `om://${omUrl}/0/0/0`;
+
+/**
+ * Résout quand `busy` passe à `false` (ou tout de suite s'il l'est déjà, ou si
+ * `signal` est annulé). Sert à ne lancer le préchargement des voisins qu'une
+ * fois la frame courante affichée, pour ne pas lui disputer la bande passante.
+ */
+export const whenIdle = (busy: Readable<boolean>, signal: AbortSignal): Promise<void> =>
+	new Promise((resolve) => {
+		if (signal.aborted || !get(busy)) return resolve();
+		const done = (): void => {
+			signal.removeEventListener('abort', done);
+			unsubscribe();
+			resolve();
+		};
+		signal.addEventListener('abort', done, { once: true });
+		// `busy` vaut `true` ici : le premier appel synchrone de l'abonnement ne
+		// déclenche pas `done` avant que `unsubscribe` soit assigné.
+		const unsubscribe = busy.subscribe((value) => {
+			if (!value) done();
+		});
+	});
+
+/**
  * Abonne le préchargement automatique au store `time`. À chaque changement d'échéance,
  * (re)arme un debounce ; à l'échéance du timer, précharge les données de la variable
  * affichée (+ variable2 si la couche 2 est active) sur la fenêtre voisine. Au plus un
@@ -148,6 +182,11 @@ export const initNeighborPrefetch = (): (() => void) => {
 		const abortController = controller;
 		const signal = abortController.signal;
 
+		// La frame courante d'abord : au démarrage, le préchargement lancé pendant
+		// son chargement lui disputait les connexions vers le stockage.
+		await whenIdle(loading, signal);
+		if (signal.aborted) return;
+
 		const base = {
 			startDate: neighborWindow.startDate,
 			endDate: neighborWindow.endDate,
@@ -166,21 +205,28 @@ export const initNeighborPrefetch = (): (() => void) => {
 		if (signal.aborted) return;
 
 		// Décode anticipé des voisins : au-delà des octets chauffés ci-dessus, on peuple
-		// `state.data` du protocole `om://` pour ces échéances. Un saut ultérieur vers
-		// l'une d'elles réutilise alors la frame déjà décodée (~280 ms vs ~750 ms) au lieu
-		// de relire métadonnées + décoder. L'URL est bâtie via le **même** chemin que la
-		// source MapLibre (`'om://' + getOMUrlFor`) pour que la clé du `stateByKey` matche
-		// exactement. Séquentiel (le décode est coûteux), abortable, erreurs silencieuses.
+		// `state.data` du protocole `om://` pour ces échéances (cf.
+		// `neighborDecodeRequestUrl`). Un saut ultérieur vers l'une d'elles réutilise
+		// alors la frame déjà décodée. Séquentiel (le décode est coûteux), abortable,
+		// erreurs silencieuses.
 		const decodeTimes = neighborTimesToDecode(neighborWindow, validTimes, current);
 		const decodeVariables = get(layer2Enabled) ? [get(variable), get(variable2)] : [get(variable)];
 		const settings = get(omProtocolSettings);
 		for (const decodeTime of decodeTimes) {
 			for (const decodeVariable of decodeVariables) {
 				if (signal.aborted) return;
-				const omUrl = getOMUrlFor(decodeVariable, decodeTime);
+				const omUrl = getOMUrlFor(decodeVariable, decodeTime, {
+					arrows: false,
+					contours: false,
+					grid: false
+				});
 				if (!omUrl) continue;
 				try {
-					await omProtocol({ url: 'om://' + omUrl, type: 'json' }, abortController, settings);
+					await omProtocol(
+						{ url: neighborDecodeRequestUrl(omUrl), type: 'arrayBuffer' },
+						abortController,
+						settings
+					);
 				} catch {
 					// Voisin manquant / abort : on continue, le décode reste best-effort.
 				}

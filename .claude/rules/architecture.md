@@ -135,20 +135,28 @@ s'abonne au store `time` (initialisé dans `+page.svelte`), debounce
 variable principale → couverts sans requête dédiée. Remplace l'ancien préchargement
 header-only du `postReadCallback` (`getNextOmUrls`, retiré).
 
+**Après la frame courante.** `triggerPrefetch` attend que le store `loading` repasse à
+`false` (`whenIdle`) avant de lancer quoi que ce soit : au démarrage, le préchargement
+partait pendant le chargement de la frame courante et lui disputait les connexions vers le
+stockage (31 requêtes `.om` avant le premier affichage, contre ~12 désormais).
+
 **Décode anticipé des voisins (action 1, perf scrubbing).** Au-delà des octets chauffés par
 `prefetchData()`, `triggerPrefetch` **décode** ensuite chaque échéance voisine via
-`omProtocol({ url: 'om://' + getOMUrlFor(variable, neighborTime), type: 'json' }, …)` →
-peuple `state.data` dans le `stateByKey` de l'instance partagée (`getProtocolInstance`,
+`omProtocol({ url: neighborDecodeRequestUrl(getOMUrlFor(variable, neighborTime, { arrows: false, contours: false, grid: false })), type: 'arrayBuffer' }, …)`.
+C'est une tuile vectorielle `/0/0/0` sans flèches, isolignes ni grille : le package lit les
+données puis renvoie une tuile vide sans passer par le worker de rendu. **Piège** : une
+requête `type: 'json'` (TileJSON) ne lit plus les données depuis `weather-map-layer` 0.3.0.
+Le décode anticipé était donc inopérant jusqu'à ce correctif. Il peuple `state.data` dans le `stateByKey` de l'instance partagée (`getProtocolInstance`,
 rétention `maxStatesWithData: 24` dans `omProtocolSettings`, contre 2 par défaut dans le package). Un saut ultérieur vers ce voisin réutilise la frame
 décodée au lieu de refaire la lecture + le décode. **L'URL est bâtie via le même
-`getOMUrlFor(variable, timeOverride)` que la source MapLibre** (`'om://' + getOMUrl()`) : c'est
-la condition pour que la clé du `stateByKey` matche — toute divergence de suffixe (dark,
-vector, tile_size, hashes) ferait silencieusement échouer la réutilisation. `getOMUrlFor`
+`getOMUrlFor(variable, timeOverride)` que la source MapLibre** (`'om://' + getOMUrl()`). La clé du
+`stateByKey` ne garde que les paramètres de `DATA_RELEVANT_PARAMS` (aujourd'hui `variable`) :
+retirer flèches/isolignes/grille de l'URL de décode ne change donc pas la clé. `getOMUrlFor`
 accepte un `timeOverride?: Date` (défaut = `get(time)`) pour construire l'URL d'une autre
 échéance sans toucher au store. Quelles échéances décoder : `neighborTimesToDecode()` (fenêtre,
 courante exclue, plus proche d'abord). Décode séquentiel, abortable, erreurs silencieuses.
-**Impact mesuré** (Chrome réel, AROME France) : saut vers voisin décodé **~175 ms** vs frame
-froide même fichier **~900-1700 ms**, 0 requête réseau. **Limite** : le décode anticipé
+**Impact mesuré** (Chromium headless, AROME France, octets déjà en cache) : pas suivant affiché en
+**~75 ms** décodé contre ~105 ms non décodé ; frame froide avec réseau ~1,5-2 s. **Limite** : le décode anticipé
 s'abonne à `time` seulement → un **changement de variable** ne le re-déclenche pas, donc le
 1ᵉʳ pas d'heure après un changement de variable reste froid (puis se réchauffe).
 

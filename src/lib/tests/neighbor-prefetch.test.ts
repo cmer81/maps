@@ -1,9 +1,13 @@
+import { writable } from 'svelte/store';
+
 import { describe, expect, it } from 'vitest';
 
 import {
 	computeNeighborWindow,
 	isPrefetchableDomain,
-	neighborTimesToDecode
+	neighborDecodeRequestUrl,
+	neighborTimesToDecode,
+	whenIdle
 } from '$lib/neighbor-prefetch';
 
 // 6 pas horaires : 00:00 … 05:00
@@ -100,5 +104,37 @@ describe('isPrefetchableDomain', () => {
 	it('autorise les domaines standard et bucket arome', () => {
 		expect(isPrefetchableDomain('meteofrance_arome_france0025')).toBe(true);
 		expect(isPrefetchableDomain('arome_france')).toBe(true);
+	});
+});
+
+describe('neighborDecodeRequestUrl', () => {
+	it('demande une tuile (lecture des données), pas le TileJSON', () => {
+		expect(neighborDecodeRequestUrl('https://x/a.om?variable=temperature_2m&dark=true')).toBe(
+			'om://https://x/a.om?variable=temperature_2m&dark=true/0/0/0'
+		);
+	});
+});
+
+describe('whenIdle', () => {
+	it('résout tout de suite si rien ne charge', async () => {
+		await expect(whenIdle(writable(false), new AbortController().signal)).resolves.toBe(undefined);
+	});
+
+	it('attend la fin du chargement en cours', async () => {
+		const busy = writable(true);
+		let settled = false;
+		const p = whenIdle(busy, new AbortController().signal).then(() => (settled = true));
+		await Promise.resolve();
+		expect(settled).toBe(false);
+		busy.set(false);
+		await p;
+		expect(settled).toBe(true);
+	});
+
+	it("résout à l'annulation même si le chargement ne finit pas", async () => {
+		const controller = new AbortController();
+		const p = whenIdle(writable(true), controller.signal);
+		controller.abort();
+		await expect(p).resolves.toBe(undefined);
 	});
 });
