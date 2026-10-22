@@ -4,7 +4,7 @@
 	import {
 		WEATHER_AI_ATTRIBUTION,
 		WEATHER_AI_LICENSE_NOTICE,
-		WEATHER_AI_SOURCES_LINK_ATTR
+		WEATHER_AI_SOURCES_HREF
 	} from '$lib/weather-ai-domain';
 
 	// Mentions complètes du modèle Weather AI de « Données », ouvertes par le lien
@@ -18,7 +18,7 @@
 		// Le lien est du HTML injecté par MapLibre : délégation au niveau du document.
 		const onClick = (event: MouseEvent) => {
 			if (!(event.target instanceof Element)) return;
-			if (!event.target.closest(`[${WEATHER_AI_SOURCES_LINK_ATTR}]`)) return;
+			if (!event.target.closest(`a[href="${WEATHER_AI_SOURCES_HREF}"]`)) return;
 			event.preventDefault();
 			open = true;
 		};

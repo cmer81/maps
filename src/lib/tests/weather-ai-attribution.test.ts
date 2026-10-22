@@ -10,7 +10,7 @@ import { WEATHER_AI_DOMAIN } from '$lib/constants';
 import { SlotManager } from '$lib/slot-manager';
 import {
 	WEATHER_AI_ATTRIBUTION,
-	WEATHER_AI_SOURCES_LINK_ATTR,
+	WEATHER_AI_SOURCES_HREF,
 	omSourceAttribution,
 	registerWeatherAiDomain
 } from '$lib/weather-ai-domain';
@@ -68,7 +68,7 @@ describe('attribution Weather AI dans la notice « i » de la carte', () => {
 		const { attribution } = omSourceAttribution(WEATHER_AI_URL);
 		expect(attribution).toContain(WEATHER_AI_ATTRIBUTION);
 		expect(attribution).toMatch(
-			new RegExp(`<a href="#" ${WEATHER_AI_SOURCES_LINK_ATTR}>Sources et licence</a>$`)
+			new RegExp(`<a href="${WEATHER_AI_SOURCES_HREF}">Sources et licence</a>$`)
 		);
 	});
 
