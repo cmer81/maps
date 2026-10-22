@@ -2,7 +2,7 @@
  * Demande au navigateur de marquer le stockage de l'origine comme « persistant »
  * (StorageManager.persist). Sans ça, le navigateur peut évincer **tout** le
  * stockage de l'origine (dont le cache de blocs OMfile) sous pression disque,
- * indépendamment du LRU applicatif (`BrowserBlockCache.maxBytes`).
+ * indépendamment de l'éviction applicative (`GenerationalBlockCache.maxBytes`).
  *
  * Best practice PWA/offline : à appeler une fois au démarrage. Sur Chrome la
  * permission est accordée selon des heuristiques d'engagement (pas de prompt) ;
