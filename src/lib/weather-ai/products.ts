@@ -53,6 +53,10 @@ export interface DiscoveredProduct {
 	spec: ProductSpec;
 	attribution: string;
 	licenseNotice: string;
+	/** Cônes : `valid_time` (amorce) de l'unique document du run, à passer à `/data`. */
+	validTime?: string;
+	/** Cônes : empreinte du document, pour recharger s'il est remplacé dans le même run. */
+	sha256?: string;
 }
 
 /**
@@ -67,6 +71,8 @@ export function discoverProducts(catalog: Catalog): {
 	const ignored = new Set<string>();
 	for (const entry of catalog.produits) {
 		const spec = PRODUCT_SPECS[entry.product_id];
+		// Les cônes ne viennent que du champ `cones` (leur propre catalogue).
+		if (spec?.kind === 'cones') continue;
 		if (!spec) {
 			ignored.add(entry.product_id);
 			continue;
@@ -80,5 +86,29 @@ export function discoverProducts(catalog: Catalog): {
 			});
 		}
 	}
+	const cones = conesProduct(catalog);
+	if (cones) seen.set(cones.productId, cones);
 	return { known: [...seen.values()], ignored: [...ignored] };
+}
+
+/**
+ * Cônes annoncés par le champ `cones` du catalogue, seulement s'ils sont du run
+ * et du snapshot des autres produits : des cônes d'un autre run ne sont jamais
+ * proposés (le portail applique la même règle, on la vérifie aussi).
+ */
+function conesProduct(catalog: Catalog): DiscoveredProduct | undefined {
+	const entry = catalog.cones;
+	if (!entry || entry.product_id !== CONES_PRODUCT_ID) return undefined;
+	const snapshots = new Set(catalog.produits.map((p) => p.snapshot_id));
+	if (entry.run_id !== catalog.run_id || snapshots.size !== 1 || !snapshots.has(entry.snapshot_id))
+		return undefined;
+	if (entry.experimental !== true || typeof entry.valid_time !== 'string') return undefined;
+	return {
+		productId: entry.product_id,
+		spec: PRODUCT_SPECS[CONES_PRODUCT_ID],
+		attribution: entry.attribution,
+		licenseNotice: entry.license_notice,
+		validTime: entry.valid_time,
+		sha256: entry.sha256
+	};
 }

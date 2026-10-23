@@ -1,7 +1,9 @@
 // Client HTTP de l'API Weather AI du portail (lecture seule, GET public).
 //
 // Contrats de référence : infoclimat-labs/weather-ai (`docs/front-carto-integration.md`,
-// `schema/carto-grid-product.schema.json`, `schema/cyclone-tracks-product.schema.json`).
+// `schema/carto-grid-product.schema.json`, `schema/cyclone-tracks-product.schema.json`,
+// `schema/cyclone-cones-public-product.schema.json`) ; cônes servis par
+// infoclimat-labs/chom-poc-data#260 (`scripts/serving_weather_ai.py`).
 // Les URI `s3://…` des réponses sont de la provenance : jamais téléchargées.
 
 /** Entrée du catalogue : un couple produit × échéance du run actif. */
@@ -16,12 +18,25 @@ export interface CatalogEntry {
 	experimental: boolean;
 }
 
+/**
+ * Entrée des cônes publics (`global-cyclone-cones-public`) : champ frère de
+ * `produits`, issu de leur propre catalogue (`cones-catalog.json`). Un seul
+ * document par run, daté de l'amorce (`valid_time = init_time`). `null` tant que
+ * le run servi n'a pas de cônes validés (job `cone-members` en cours, run sans
+ * cyclone) ; le portail ne les sert que pour le run en ligne et son snapshot.
+ */
+export interface ConesCatalogEntry extends CatalogEntry {
+	calibration_status: string;
+	mention: string;
+}
+
 export interface Catalog {
 	run_id: string;
 	run_date: string;
 	published_at: string;
 	experimental: boolean;
 	produits: CatalogEntry[];
+	cones?: ConesCatalogEntry | null;
 }
 
 export interface RunEntry {

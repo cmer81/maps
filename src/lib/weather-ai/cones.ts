@@ -1,14 +1,17 @@
-// Cônes d'incertitude cycloniques (`global-cyclone-cones-public`), derrière un
-// feature flag : contrat proposé côté producteur (weather-ai#261,
-// `schema/cyclone-cones-public-product.schema.json`), PAS encore servi par le
-// portail. Un document unique par run, toutes échéances comprises, avec un
-// catalogue distinct : on ne réutilise pas la boucle « une frame = un document »
-// des grilles, et le chargement passe par un adaptateur isolé (`loadConesDocument`).
+// Cônes d'incertitude cycloniques publics (`global-cyclone-cones-public`,
+// contrat weather-ai#261, `schema/cyclone-cones-public-product.schema.json`),
+// servis par le portail pour le run en ligne (chom-poc-data#260). Un document
+// unique par run, toutes échéances comprises, annoncé par le champ `cones` du
+// catalogue (hors de `produits`) : on ne réutilise pas la boucle « une frame =
+// un document » des grilles, le chargement passe par `loadConesDocument`.
 import { convex, featureCollection, point, polygon, union } from '@turf/turf';
 
 import { getWeatherAiConesMode } from '$lib/runtime-env';
 
+import { type DataResponse, dataUrl, getJson } from './api';
 import { unwrapLongitudes } from './tracks';
+
+import type { DiscoveredProduct } from './products';
 
 export const CONES_PRODUCT_ID = 'global-cyclone-cones-public';
 export const CONES_SCHEMA_VERSION = 'cyclone-cones-public-product/1.0.0';
@@ -228,23 +231,19 @@ export function conesToGeoJson(doc: ConesProduct): {
 export const coneAt = (doc: ConesProduct, stormId: string, validTime: string): Cone | undefined =>
 	doc.storms.find((s) => s.storm_id === stormId)?.cones.find((c) => c.valid_time === validTime);
 
-/** Le portail n'a pas encore publié de route HTTP pour ce produit. */
-export class ConesRouteUnavailableError extends Error {
-	constructor() {
-		super('Route HTTP des cônes non définie par le portail');
-		this.name = 'ConesRouteUnavailableError';
-	}
-}
-
 /**
  * Adaptateur de chargement isolé. `fixture` : document de démonstration bundlé
- * (import dynamique, hors du bundle principal). `on` : à brancher quand le
- * portail aura défini la route du document unique par run et de son catalogue.
- * `off` : rien n'est chargé.
+ * (import dynamique, hors du bundle principal). `on` : `GET /products/{cônes}/data`
+ * à la date d'amorce annoncée par le catalogue ; `null` si le catalogue n'annonce
+ * pas de cônes, ou si le portail ne les sert plus (404 : cônes retirés entre le
+ * catalogue et la lecture). `off` : rien n'est chargé. Le document renvoyé n'est
+ * pas encore validé : l'appelant le passe à `validateCones` (même run, même snapshot).
  */
 export async function loadConesDocument(
-	runId: string,
-	signal?: AbortSignal
+	run: { runId: string; available: DiscoveredProduct[] },
+	base: string,
+	signal?: AbortSignal,
+	fetchJson: <T>(url: string, signal?: AbortSignal) => Promise<T> = (url, s) => getJson(url, s)
 ): Promise<ConesProduct | null> {
 	const mode = getWeatherAiConesMode();
 	if (mode === 'off') return null;
@@ -252,7 +251,19 @@ export async function loadConesDocument(
 		const mod = await import('./fixtures/cones-public.fixture.json');
 		signal?.throwIfAborted();
 		const doc = mod.default as unknown as ConesProduct;
-		return doc.run_id === runId ? doc : null;
+		return doc.run_id === run.runId ? doc : null;
 	}
-	throw new ConesRouteUnavailableError();
+	const entry = run.available.find((p) => p.productId === CONES_PRODUCT_ID);
+	if (!entry?.validTime) return null;
+	try {
+		const res = await fetchJson<DataResponse<ConesProduct>>(
+			dataUrl(base, CONES_PRODUCT_ID, entry.validTime),
+			signal
+		);
+		if (res?.experimental !== true) throw new Error('cônes : réponse non expérimentale');
+		return res.product ?? null;
+	} catch (err) {
+		if ((err as { status?: number })?.status === 404) return null;
+		throw err;
+	}
 }

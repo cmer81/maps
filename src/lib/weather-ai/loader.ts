@@ -286,6 +286,23 @@ export async function extendRun(
 	return { ...run, loaded: { ...run.loaded, [productId]: loaded } };
 }
 
+/**
+ * Même run, catalogue relu : les cônes peuvent y apparaître après coup (calculés
+ * par le job `cone-members`, après le catalogue du run), être remplacés ou
+ * retirés. Renvoie le run avec l'entrée des cônes à jour, ou le même objet si
+ * rien n'a changé. Les autres produits du run affiché ne bougent pas.
+ */
+export function withCatalogCones(run: LoadedRun, catalog: Catalog): LoadedRun {
+	const sameSnapshot = catalogIdentity(catalog).snapshotId === run.snapshotId;
+	const next = sameSnapshot
+		? discoverProducts(catalog).known.find((p) => p.spec.kind === 'cones')
+		: undefined;
+	const prev = run.available.find((p) => p.spec.kind === 'cones');
+	if (prev?.sha256 === next?.sha256 && prev?.validTime === next?.validTime) return run;
+	const others = run.available.filter((p) => p.spec.kind !== 'cones');
+	return { ...run, available: next ? [...others, next] : others };
+}
+
 export const fetchCatalog = (
 	base: string,
 	signal?: AbortSignal,

@@ -1,7 +1,7 @@
 // Orchestration des couches Weather AI : relecture du catalogue toutes les
 // 5 minutes, chargement hors écran d'un nouveau run puis bascule atomique,
 // chargement à la demande d'une couche activée après coup (même run), cônes via
-// leur adaptateur isolé. Démarré au premier besoin (onglet ouvert ou couche
+// leur adaptateur isolé (et relus quand ils apparaissent ou changent dans le même run). Démarré au premier besoin (onglet ouvert ou couche
 // active), arrêté quand plus rien ne l'utilise.
 import { get } from 'svelte/store';
 
@@ -23,7 +23,8 @@ import {
 	extendRun,
 	fetchCatalog,
 	prepareRun,
-	pruneCache
+	pruneCache,
+	withCatalogCones
 } from './loader';
 
 import type { ProductKind } from './products';
@@ -80,6 +81,12 @@ export async function refresh(retry = 0): Promise<void> {
 		}
 		const catalog = await fetchCatalog(base, ctl.signal);
 		if (active && catalog.run_id === active.runId) {
+			// Même run : seuls les cônes peuvent avoir changé (apparus en fin de cycle).
+			const next = withCatalogCones(active, catalog);
+			if (next !== active) {
+				weatherAiRun.set(next);
+				weatherAiCones.set(null);
+			}
 			weatherAiStatus.set({ state: 'ready' });
 			refreshCtl = undefined;
 			await ensureEnabledLoaded();
@@ -158,24 +165,30 @@ export function conesOffered(run: LoadedRun | undefined): boolean {
 async function syncCones(): Promise<void> {
 	const run = get(weatherAiRun);
 	if (!run || !get(weatherAiLayers).cones || !conesOffered(run)) return;
-	if (get(weatherAiCones)?.runId === run.runId) return;
+	const sha256 = run.available.find((p) => p.productId === CONES_PRODUCT_ID)?.sha256;
+	const current = get(weatherAiCones);
+	if (current?.runId === run.runId && current.sha256 === sha256) return;
 	conesCtl?.abort();
 	const ctl = new AbortController();
 	conesCtl = ctl;
 	try {
-		const doc = await loadConesDocument(run.runId, ctl.signal);
-		if (get(weatherAiRun)?.runId !== run.runId) return;
+		const doc = await loadConesDocument(run, getWeatherAiApiUrl(), ctl.signal);
+		// Run ou document des cônes remplacé pendant la lecture : on n'applique pas.
+		const now = get(weatherAiRun);
+		if (now?.runId !== run.runId) return;
+		if (now.available.find((p) => p.productId === CONES_PRODUCT_ID)?.sha256 !== sha256) return;
 		const refusal = doc
 			? validateCones(doc, { runId: run.runId, snapshotId: run.snapshotId })
 			: 'aucun document de cônes pour ce run';
 		weatherAiCones.set({
 			runId: run.runId,
+			sha256,
 			doc: refusal ? null : doc,
 			message: refusal ?? undefined
 		});
 	} catch (err) {
 		if (isAbort(err)) return;
-		weatherAiCones.set({ runId: run.runId, doc: null, message: errorMessage(err) });
+		weatherAiCones.set({ runId: run.runId, sha256, doc: null, message: errorMessage(err) });
 	}
 }
 

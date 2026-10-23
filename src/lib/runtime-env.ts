@@ -91,13 +91,16 @@ export function getWeatherAiApiUrl(): string {
 }
 
 /**
- * Feature flag des cônes d'incertitude (`global-cyclone-cones-public`, pas encore
- * servis par le portail). `off` (défaut) : jamais affichés. `on` : affichés quand
- * le produit apparaît dans le catalogue. `fixture` : démonstration hors API
- * (trajectoires archivées du run de référence + cônes fictifs du même run),
- * activable aussi par le paramètre d'URL `?weather_ai_cones=fixture` pour juger
- * le rendu en prévisualisation. Le paramètre d'URL ne peut que demander la démo,
- * jamais allumer `on`.
+ * Feature flag des cônes d'incertitude publics (`global-cyclone-cones-public`).
+ * `on` (défaut, décision de Pam du 23/10/2026) : affichés quand le champ `cones`
+ * du catalogue les annonce pour le run affiché — le portail ne sert que des cônes
+ * validés, avec leur mention de calibration, et `null` sinon (rien n'est proposé).
+ * `off` : interrupteur de retrait, jamais affichés (`VITE_WEATHER_AI_CONES=off`
+ * au build, `WEATHER_AI_CONES=off` au runtime Docker). `fixture` : démonstration
+ * hors API (trajectoires archivées du run de référence + cônes fictifs du même
+ * run), activable aussi par le paramètre d'URL `?weather_ai_cones=fixture` pour
+ * juger le rendu en prévisualisation. Le paramètre d'URL ne peut que demander la
+ * démo, jamais couper ou allumer les cônes réels.
  */
 export type WeatherAiConesMode = 'off' | 'on' | 'fixture';
 
@@ -112,5 +115,5 @@ export function getWeatherAiConesMode(): WeatherAiConesMode {
 	} else {
 		raw = import.meta.env.VITE_WEATHER_AI_CONES as string | undefined;
 	}
-	return raw === 'on' || raw === 'fixture' ? raw : 'off';
+	return raw === 'off' || raw === 'fixture' ? raw : 'on';
 }

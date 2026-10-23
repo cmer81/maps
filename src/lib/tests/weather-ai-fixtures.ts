@@ -1,6 +1,10 @@
 // Documents Weather AI synthétiques, construits d'après les contrats
-// (carto-grid-product, cyclone-tracks-product) et les réponses réelles du portail.
-import type { Catalog, DataResponse, Runs, Timeline } from '$lib/weather-ai/api';
+// (carto-grid-product, cyclone-tracks-product, cyclone-cones-public-product) et
+// les réponses réelles du portail.
+import { CONES_MENTION, CONES_PRODUCT_ID, type ConesProduct } from '$lib/weather-ai/cones';
+import conesFixture from '$lib/weather-ai/fixtures/cones-public.fixture.json';
+
+import type { Catalog, ConesCatalogEntry, DataResponse, Runs, Timeline } from '$lib/weather-ai/api';
 import type { GridProduct } from '$lib/weather-ai/grid';
 import type { TrackPoint, TracksProduct } from '$lib/weather-ai/tracks';
 
@@ -139,4 +143,27 @@ export const data = <P>(product: P): DataResponse<P> => ({
 	license_notice: LICENSE,
 	experimental: true,
 	product
+});
+
+/** Entrée `cones` du catalogue, telle que le portail la projette (chom-poc-data#260). */
+export const conesEntry = (over: Partial<ConesCatalogEntry> = {}): ConesCatalogEntry => ({
+	product_id: CONES_PRODUCT_ID,
+	run_id: RUN_ID,
+	valid_time: INIT_TIME,
+	sha256: 'c'.repeat(64),
+	snapshot_id: SNAPSHOT_ID,
+	license_notice: LICENSE,
+	attribution: ATTRIBUTION,
+	experimental: true,
+	calibration_status: 'best_track_only_operational_coverage_pending',
+	mention: CONES_MENTION,
+	...over
+});
+
+/** Document des cônes du run des fixtures (la fixture de démo, rattachée à ce run). */
+export const conesDoc = (over: Partial<ConesProduct> = {}): ConesProduct => ({
+	...(conesFixture as unknown as ConesProduct),
+	run_id: RUN_ID,
+	snapshot_id: SNAPSHOT_ID,
+	...over
 });

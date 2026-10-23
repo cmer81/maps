@@ -1,16 +1,32 @@
 import { bbox } from '@turf/turf';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { getWeatherAiConesMode } from '$lib/runtime-env';
+import { WeatherAiHttpError, dataUrl } from '$lib/weather-ai/api';
 import {
 	CONES_MENTION,
+	CONES_PRODUCT_ID,
 	type Cone,
 	type ConesProduct,
 	availableRuns,
 	conesToGeoJson,
 	envelope,
+	loadConesDocument,
 	validateCones
 } from '$lib/weather-ai/cones';
 import fixture from '$lib/weather-ai/fixtures/cones-public.fixture.json';
+import { discoverProducts } from '$lib/weather-ai/products';
+
+import {
+	INIT_TIME,
+	RUN_ID,
+	SNAPSHOT_ID,
+	TRACKS_ID,
+	catalog,
+	conesDoc,
+	conesEntry,
+	data
+} from './weather-ai-fixtures';
 
 const doc = fixture as unknown as ConesProduct;
 const expected = { runId: doc.run_id, snapshotId: doc.snapshot_id };
@@ -134,5 +150,85 @@ describe('limite de l’hémisphère sud (southern_maximum_lead_hours)', () => {
 			reason: 'southern_hemisphere_availability_below_threshold'
 		};
 		expect(validateCones(d, expected)).toBeNull();
+	});
+});
+
+describe('chargement des cônes servis par le portail', () => {
+	const BASE = 'https://portail.test/api/weather-ai';
+	const known = (cones: ReturnType<typeof conesEntry> | null) =>
+		discoverProducts(catalog([TRACKS_ID], { cones })).known;
+	const fakeFetch = (body: unknown, status = 200) => {
+		const calls: string[] = [];
+		const fetchJson = async <T>(url: string): Promise<T> => {
+			calls.push(url);
+			if (status !== 200) throw new WeatherAiHttpError(status, url, '');
+			return body as T;
+		};
+		return { calls, fetchJson };
+	};
+
+	afterEach(() => vi.unstubAllEnvs());
+
+	it('flag : `on` par défaut, `off` seulement sur demande explicite', () => {
+		expect(getWeatherAiConesMode()).toBe('on');
+		vi.stubEnv('VITE_WEATHER_AI_CONES', 'off');
+		expect(getWeatherAiConesMode()).toBe('off');
+		vi.stubEnv('VITE_WEATHER_AI_CONES', 'fixture');
+		expect(getWeatherAiConesMode()).toBe('fixture');
+	});
+
+	it('découverte : cônes pris du champ `cones`, datés de l’amorce, jamais de `produits`', () => {
+		const cones = known(conesEntry()).find((p) => p.productId === CONES_PRODUCT_ID);
+		expect(cones?.validTime).toBe(INIT_TIME);
+		expect(cones?.attribution).toBe(conesEntry().attribution);
+		expect(known(null).some((p) => p.productId === CONES_PRODUCT_ID)).toBe(false);
+		const inProduits = discoverProducts(catalog([TRACKS_ID, CONES_PRODUCT_ID])).known;
+		expect(inProduits.some((p) => p.productId === CONES_PRODUCT_ID)).toBe(false);
+	});
+
+	it('`on` : lit /data à la date d’amorce et renvoie le document', async () => {
+		const { calls, fetchJson } = fakeFetch(data(conesDoc()));
+		const doc = await loadConesDocument(
+			{ runId: RUN_ID, available: known(conesEntry()) },
+			BASE,
+			undefined,
+			fetchJson
+		);
+		expect(calls).toEqual([dataUrl(BASE, CONES_PRODUCT_ID, INIT_TIME)]);
+		expect(doc?.run_id).toBe(RUN_ID);
+	});
+
+	it('`on` sans cônes au catalogue : aucune requête', async () => {
+		const { calls, fetchJson } = fakeFetch(data(conesDoc()));
+		const doc = await loadConesDocument(
+			{ runId: RUN_ID, available: known(null) },
+			BASE,
+			undefined,
+			fetchJson
+		);
+		expect(doc).toBeNull();
+		expect(calls).toEqual([]);
+	});
+
+	it('`on`, cônes retirés entre-temps (404) : null ; autre erreur : levée', async () => {
+		const run = { runId: RUN_ID, available: known(conesEntry()) };
+		expect(
+			await loadConesDocument(run, BASE, undefined, fakeFetch(null, 404).fetchJson)
+		).toBeNull();
+		await expect(
+			loadConesDocument(run, BASE, undefined, fakeFetch(null, 503).fetchJson)
+		).rejects.toThrow(/503/);
+	});
+
+	it('`off` : rien n’est lu', async () => {
+		vi.stubEnv('VITE_WEATHER_AI_CONES', 'off');
+		const { calls, fetchJson } = fakeFetch(data(conesDoc()));
+		const run = { runId: RUN_ID, available: known(conesEntry()) };
+		expect(await loadConesDocument(run, BASE, undefined, fetchJson)).toBeNull();
+		expect(calls).toEqual([]);
+	});
+
+	it('le document servi pour le run des fixtures passe la validation de ce run', () => {
+		expect(validateCones(conesDoc(), { runId: RUN_ID, snapshotId: SNAPSHOT_ID })).toBeNull();
 	});
 });
