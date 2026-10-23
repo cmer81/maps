@@ -3,8 +3,14 @@ import { render } from 'svelte/server';
 import { bbox } from '@turf/turf';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { weatherAiCones, weatherAiLayers, weatherAiRun } from '$lib/stores/weather-ai';
+import {
+	weatherAiCones,
+	weatherAiDisplayed,
+	weatherAiLayers,
+	weatherAiRun
+} from '$lib/stores/weather-ai';
 
+import WeatherAiMapCard from '$lib/components/weather-ai/weather-ai-map-card.svelte';
 import WeatherAiPanel from '$lib/components/weather-ai/weather-ai-panel.svelte';
 
 import { getWeatherAiConesMode } from '$lib/runtime-env';
@@ -442,5 +448,38 @@ describe('onglet Cyclones IA : statut de calibration affiché tel quel', () => {
 		const body = render(WeatherAiPanel).body;
 		expect(body).toContain(CONES_MENTION);
 		expect(body).toContain(conesDoc().calibration_status);
+	});
+});
+
+describe('carte flottante : mention et statut de calibration des cônes affichés', () => {
+	afterEach(() => {
+		weatherAiDisplayed.set(null);
+		weatherAiCones.set(null);
+		weatherAiLayers.set({ tracks: false, cones: false });
+	});
+
+	const show = (displayedRunId: string) => {
+		weatherAiLayers.set({ tracks: true, cones: true });
+		weatherAiCones.set({ runId: RUN_ID, sha256: 'c'.repeat(64), doc: conesDoc() });
+		weatherAiDisplayed.set({
+			runId: displayedRunId,
+			validTime: INIT_TIME,
+			initTime: INIT_TIME,
+			demo: false
+		});
+		return render(WeatherAiMapCard).body;
+	};
+
+	it('cônes du run affiché : mention et statut tel quel', () => {
+		const body = show(RUN_ID);
+		expect(body).toContain(CONES_MENTION);
+		expect(body).toContain('Statut de calibration');
+		expect(body).toContain(conesDoc().calibration_status);
+	});
+
+	it('cônes d’un autre run que celui affiché : ni mention ni statut', () => {
+		const body = show('wn2-oper-20261017T180000Z-autre');
+		expect(body).not.toContain(CONES_MENTION);
+		expect(body).not.toContain(conesDoc().calibration_status);
 	});
 });
