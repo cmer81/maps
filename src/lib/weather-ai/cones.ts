@@ -94,6 +94,8 @@ export function validateCones(
 	if (doc.public_delivery_allowed !== true) return 'diffusion publique non permise';
 	if (doc.mention !== CONES_MENTION) return 'mention de calibration absente ou différente';
 	if (!Array.isArray(doc.storms)) return 'cyclones absents';
+	const shape = invalidShape(doc);
+	if (shape) return shape;
 	for (const storm of doc.storms) {
 		const limit = stormLeadLimit(doc, storm);
 		if (storm.maximum_lead_hours > limit) {
@@ -102,6 +104,44 @@ export function validateCones(
 		// Hémisphère sud : aucun cône disponible au-delà de southern_maximum_lead_hours.
 		if (storm.cones.some((c) => c.available && c.lead_hours > limit)) {
 			return `cône disponible au-delà de +${limit} h pour ${storm.storm_id}`;
+		}
+	}
+	return null;
+}
+
+const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+
+/**
+ * Types du document, désormais lu sur le réseau : nombres finis, chaînes, raisons
+ * connues. Ce qui est affiché (infobulle HTML, géométrie) ne vient que de champs
+ * vérifiés ici. Renvoie la raison du refus, ou `null`.
+ */
+function invalidShape(doc: ConesProduct): string | null {
+	if (![doc.member_count, doc.maximum_lead_hours, doc.southern_maximum_lead_hours].every(finite))
+		return 'bornes du document invalides';
+	for (const storm of doc.storms) {
+		if (typeof storm?.storm_id !== 'string' || !Array.isArray(storm.cones))
+			return 'cyclone invalide';
+		if (storm.hemisphere !== 'north' && storm.hemisphere !== 'south')
+			return `hémisphère invalide pour ${storm.storm_id}`;
+		if (!finite(storm.maximum_lead_hours))
+			return `échéance maximale invalide pour ${storm.storm_id}`;
+		for (const c of storm.cones) {
+			if (
+				!finite(c?.lead_hours) ||
+				typeof c.valid_time !== 'string' ||
+				!finite(c.available_members)
+			)
+				return `cône invalide pour ${storm.storm_id}`;
+			if (c.available === true) {
+				const ok =
+					finite(c.centre?.latitude) &&
+					finite(c.centre?.longitude) &&
+					CONE_LEVELS.every((l) => finite(c.radius_km?.[l]) && c.radius_km[l] > 0);
+				if (!ok) return `centre ou rayon invalide pour ${storm.storm_id}`;
+			} else if (c.available !== false || !(c.reason in CONE_REASON_LABELS)) {
+				return `indisponibilité invalide pour ${storm.storm_id}`;
+			}
 		}
 	}
 	return null;

@@ -446,6 +446,12 @@ const esc = (s: string) =>
 		(c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!
 	);
 
+/** Nombre des documents de l'API pour le HTML de l'infobulle : entier, ou « ? » (jamais de texte brut). */
+const int = (v: unknown) => {
+	const n = Number(v);
+	return Number.isFinite(n) ? String(Math.round(n)) : '?';
+};
+
 let tooltipMap: maplibregl.Map | undefined;
 let tooltip: maplibregl.Popup | undefined;
 
@@ -455,20 +461,20 @@ function tooltipHtml(feature: maplibregl.MapGeoJSONFeature, coneCentres: boolean
 	const time = String(p.time ?? '');
 	const when = `${esc(formatLead(leadHours(run?.initTime, time)))} · ${esc(formatUtc(time))}`;
 	if (coneCentres) {
-		return `<strong>Cône ${esc(String(p.storm).split(':').pop() ?? '')}</strong><br>${when}<br>Membres : ${p.members}/${p.memberCount}<br>Rayon 68 % : ${Math.round(Number(p.r68))} km · 90 % : ${Math.round(Number(p.r90))} km`;
+		return `<strong>Cône ${esc(String(p.storm).split(':').pop() ?? '')}</strong><br>${when}<br>Membres : ${int(p.members)}/${int(p.memberCount)}<br>Rayon 68 % : ${int(p.r68)} km · 90 % : ${int(p.r90)} km`;
 	}
 	if (p.kind === 'candidate') {
 		return `<strong>${CANDIDATE_LABEL}</strong><br>${when}<br>Candidat de cyclogenèse détecté par le modèle, sans système réel associé. Ce n'est pas un cyclone.`;
 	}
-	let html = `<strong>${esc(String(p.label))}</strong><br>${when}<br>Pression centrale : ${Math.round(Number(p.mslp))} hPa<br>Vent max : ${Math.round(msToKmh(Number(p.vmax)))} km/h`;
+	let html = `<strong>${esc(String(p.label))}</strong><br>${when}<br>Pression centrale : ${int(p.mslp)} hPa<br>Vent max : ${int(msToKmh(Number(p.vmax)))} km/h`;
 	const cones = get(weatherAiCones);
 	if (get(weatherAiLayers).cones && cones?.doc && cones.runId === run?.runId) {
 		const cone = coneAt(cones.doc, String(p.id), time);
 		if (cone && !cone.available)
-			html += `<br>Cône indisponible : ${esc(CONE_REASON_LABELS[cone.reason])}`;
+			html += `<br>Cône indisponible : ${esc(CONE_REASON_LABELS[cone.reason] ?? 'raison inconnue')}`;
 		const storm = cones.doc.storms.find((s) => s.storm_id === p.id);
 		if (!cone && storm?.hemisphere === 'south') {
-			html += `<br>Pas de cône au-delà de +${storm.maximum_lead_hours} h (hémisphère sud)`;
+			html += `<br>Pas de cône au-delà de +${int(storm.maximum_lead_hours)} h (hémisphère sud)`;
 		}
 	}
 	return html;

@@ -232,3 +232,46 @@ describe('chargement des cônes servis par le portail', () => {
 		expect(validateCones(conesDoc(), { runId: RUN_ID, snapshotId: SNAPSHOT_ID })).toBeNull();
 	});
 });
+
+describe('validateCones : types du document lu sur le réseau', () => {
+	const storm0 = doc.storms[0];
+	const withCone = (c: unknown) => ({
+		...doc,
+		storms: [{ ...storm0, cones: [c as Cone] }]
+	});
+
+	it('refuse un nombre remplacé par du texte (infobulle HTML)', () => {
+		const c = storm0.cones.find((x) => x.available)!;
+		expect(
+			validateCones(withCone({ ...c, available_members: '<img src=x onerror=alert(1)>' }), expected)
+		).toMatch(/cône invalide/);
+		expect(validateCones({ ...doc, member_count: '<b>' as unknown as number }, expected)).toMatch(
+			/bornes/
+		);
+		expect(
+			validateCones(
+				{ ...doc, storms: [{ ...storm0, maximum_lead_hours: '24<b>' as unknown as number }] },
+				expected
+			)
+		).toMatch(/échéance maximale invalide/);
+	});
+
+	it('refuse un rayon non fini ou nul, et une raison d’indisponibilité inconnue', () => {
+		const c = storm0.cones.find((x) => x.available)!;
+		expect(
+			validateCones(withCone({ ...c, radius_km: { '0.68': Infinity, '0.90': 200 } }), expected)
+		).toMatch(/rayon/);
+		expect(
+			validateCones(
+				withCone({
+					lead_hours: 6,
+					valid_time: c.valid_time,
+					available: false,
+					available_members: 1,
+					reason: '<b>x</b>'
+				}),
+				expected
+			)
+		).toMatch(/indisponibilité invalide/);
+	});
+});
