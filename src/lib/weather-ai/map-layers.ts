@@ -27,7 +27,13 @@ import {
 	weatherAiTime
 } from '$lib/stores/weather-ai';
 
-import { CONE_REASON_LABELS, type ConesProduct, coneAt, conesToGeoJson } from './cones';
+import {
+	CONE_REASON_LABELS,
+	type ConesProduct,
+	coneAt,
+	conesToGeoJson,
+	isConeReason
+} from './cones';
 import { CATALOG_POLL_MS } from './controller';
 import { displayedAfterCommit } from './displayed';
 import { createLayerSwitcher } from './layer-switcher';
@@ -60,16 +66,21 @@ export interface RenderPlan {
 const tracksCache = new RunScopedCache<ReturnType<typeof buildTracks>>();
 const conesCache = new RunScopedCache<ReturnType<typeof conesToGeoJson>>();
 
-interface PlanInput {
+export interface PlanInput {
 	run: LoadedRun | undefined;
 	vt: string | undefined;
 	layers: WeatherAiLayers;
 	cones: ConesProduct | null;
+	/**
+	 * Identité du document des cônes (`sha256` annoncé par le catalogue) : un
+	 * document remplacé dans le même run change la signature et la géométrie.
+	 */
+	conesId?: string;
 	dark: boolean;
 }
 
 /** Signature de l'état à afficher : deux appels de même signature ne recommutent pas. */
-const planSignature = ({ run, vt, layers, cones, dark }: PlanInput) =>
+export const planSignature = ({ run, vt, layers, cones, conesId, dark }: PlanInput) =>
 	[
 		run?.runId ?? '-',
 		Object.keys(run?.loaded ?? {})
@@ -80,16 +91,17 @@ const planSignature = ({ run, vt, layers, cones, dark }: PlanInput) =>
 			.filter(([, on]) => on)
 			.map(([k]) => k)
 			.join(','),
-		cones ? cones.run_id : '-',
+		cones ? `${cones.run_id}:${conesId ?? ''}` : '-',
 		dark ? 'dark' : 'light'
 	].join('|');
 
 /** Prépare hors écran tout le contenu d'un slot ; `null` = rien à afficher. */
-async function preparePlan({
+export async function preparePlan({
 	run,
 	vt,
 	layers,
 	cones,
+	conesId,
 	dark
 }: PlanInput): Promise<RenderPlan | null> {
 	if (!run || !vt) return null;
@@ -115,8 +127,9 @@ async function preparePlan({
 
 	// Cônes : seulement ceux du run affiché, déjà validés (mention exacte).
 	if (layers.cones && cones && cones.run_id === runId) {
-		const gen = conesCache.scope(runId);
-		const key = renderKey(runId, cones.product_id, '*');
+		// Portée run × document : un document remplacé (nouveau sha256) purge l'ancienne géométrie.
+		const gen = conesCache.scope(`${runId}#${conesId ?? ''}`);
+		const key = renderKey(runId, cones.product_id, conesId ?? '*');
 		let geo = conesCache.get(key);
 		if (!geo) {
 			geo = conesToGeoJson(cones);
@@ -412,6 +425,7 @@ export async function syncWeatherAiLayers(): Promise<void> {
 		vt: get(weatherAiTime),
 		layers: get(weatherAiLayers),
 		cones: cones && run && cones.runId === run.runId ? cones.doc : null,
+		conesId: cones?.sha256,
 		dark: get(basemapTheme) === 'dark'
 	};
 	clearTimeout(retryTimer);
@@ -471,7 +485,7 @@ function tooltipHtml(feature: maplibregl.MapGeoJSONFeature, coneCentres: boolean
 	if (get(weatherAiLayers).cones && cones?.doc && cones.runId === run?.runId) {
 		const cone = coneAt(cones.doc, String(p.id), time);
 		if (cone && !cone.available)
-			html += `<br>Cône indisponible : ${esc(CONE_REASON_LABELS[cone.reason] ?? 'raison inconnue')}`;
+			html += `<br>Cône indisponible : ${esc(isConeReason(cone.reason) ? CONE_REASON_LABELS[cone.reason] : 'raison inconnue')}`;
 		const storm = cones.doc.storms.find((s) => s.storm_id === p.id);
 		if (!cone && storm?.hemisphere === 'south') {
 			html += `<br>Pas de cône au-delà de +${int(storm.maximum_lead_hours)} h (hémisphère sud)`;

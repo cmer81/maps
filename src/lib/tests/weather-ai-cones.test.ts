@@ -1,5 +1,11 @@
+import { render } from 'svelte/server';
+
 import { bbox } from '@turf/turf';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { weatherAiCones, weatherAiLayers, weatherAiRun } from '$lib/stores/weather-ai';
+
+import WeatherAiPanel from '$lib/components/weather-ai/weather-ai-panel.svelte';
 
 import { getWeatherAiConesMode } from '$lib/runtime-env';
 import { WeatherAiHttpError, dataUrl } from '$lib/weather-ai/api';
@@ -11,10 +17,12 @@ import {
 	availableRuns,
 	conesToGeoJson,
 	envelope,
+	isConeReason,
 	loadConesDocument,
 	validateCones
 } from '$lib/weather-ai/cones';
 import fixture from '$lib/weather-ai/fixtures/cones-public.fixture.json';
+import { type PlanInput, planSignature, preparePlan } from '$lib/weather-ai/map-layers';
 import { discoverProducts } from '$lib/weather-ai/products';
 
 import {
@@ -273,5 +281,166 @@ describe('validateCones : types du document lu sur le réseau', () => {
 				expected
 			)
 		).toMatch(/indisponibilité invalide/);
+	});
+});
+
+describe('revue Codex #150', () => {
+	afterEach(() => {
+		vi.unstubAllEnvs();
+		vi.unstubAllGlobals();
+	});
+
+	describe('géométrie des cônes remplacés dans le même run (P1)', () => {
+		const run = {
+			runId: RUN_ID,
+			snapshotId: SNAPSHOT_ID,
+			publishedAt: '',
+			initTime: INIT_TIME,
+			available: [],
+			ignored: [],
+			loaded: {}
+		};
+		const input = (cones: ConesProduct | null, conesId?: string): PlanInput => ({
+			run,
+			vt: INIT_TIME,
+			layers: { tracks: false, cones: true },
+			cones,
+			conesId,
+			dark: false
+		});
+		const A = conesDoc();
+		// B : même run, centres déplacés de 20° (document remplacé, nouveau sha256).
+		const B = conesDoc({
+			storms: A.storms.map((s) => ({
+				...s,
+				cones: s.cones.map((c) =>
+					c.available ? { ...c, centre: { ...c.centre, latitude: c.centre.latitude + 20 } } : c
+				)
+			}))
+		});
+		const lats = async (i: PlanInput) =>
+			(await preparePlan(i))!.coneCentres!.features.map(
+				(f) => (f.geometry as GeoJSON.Point).coordinates[1]
+			);
+
+		it('A → B : signature et géométrie suivent le nouveau document', async () => {
+			const a = await lats(input(A, 'sha-A'));
+			const b = await lats(input(B, 'sha-B'));
+			expect(planSignature(input(A, 'sha-A'))).not.toBe(planSignature(input(B, 'sha-B')));
+			expect(b).toEqual(a.map((lat) => lat + 20));
+		});
+
+		it('retrait puis ajout de B : jamais la géométrie de A', async () => {
+			const a = await lats(input(A, 'sha-A'));
+			expect(await preparePlan(input(null))).toBeNull();
+			expect(await lats(input(B, 'sha-B'))).toEqual(a.map((lat) => lat + 20));
+		});
+	});
+
+	describe('raisons d’indisponibilité du contrat seulement (P2)', () => {
+		it.each(['toString', '__proto__', 'constructor', 'hasOwnProperty'])('refuse %s', (reason) => {
+			const storm0 = doc.storms[0];
+			const c = storm0.cones[0];
+			const bad = {
+				...doc,
+				storms: [
+					{
+						...storm0,
+						cones: [
+							{
+								lead_hours: c.lead_hours,
+								valid_time: c.valid_time,
+								available: false,
+								available_members: 0,
+								reason
+							} as unknown as Cone
+						]
+					}
+				]
+			};
+			expect(validateCones(bad, expected)).toMatch(/indisponibilité invalide/);
+			expect(isConeReason(reason)).toBe(false);
+		});
+
+		it('accepte les trois raisons du contrat', () => {
+			for (const r of [
+				'insufficient_members',
+				'undefined_centre',
+				'southern_hemisphere_availability_below_threshold'
+			])
+				expect(isConeReason(r)).toBe(true);
+		});
+	});
+
+	describe('statut de calibration (P2)', () => {
+		const exp = { runId: RUN_ID, snapshotId: SNAPSHOT_ID };
+		it('exigé, et identique à celui du catalogue', () => {
+			const d = conesDoc();
+			expect(validateCones(d, { ...exp, calibrationStatus: d.calibration_status })).toBeNull();
+			expect(validateCones({ ...d, calibration_status: '' }, exp)).toMatch(/statut/);
+			expect(validateCones({ ...d, calibration_status: 3 as unknown as string }, exp)).toMatch(
+				/statut/
+			);
+			expect(validateCones(d, { ...exp, calibrationStatus: 'autre_statut' })).toMatch(
+				/différent du catalogue/
+			);
+		});
+
+		it('découverte : entrée sans la mention exacte ou sans statut, non proposée', () => {
+			const has = (e: ReturnType<typeof conesEntry>) =>
+				discoverProducts(catalog([TRACKS_ID], { cones: e })).known.some(
+					(p) => p.productId === CONES_PRODUCT_ID
+				);
+			expect(has(conesEntry())).toBe(true);
+			expect(has(conesEntry({ mention: 'autre' }))).toBe(false);
+			expect(has(conesEntry({ calibration_status: undefined as unknown as string }))).toBe(false);
+		});
+	});
+
+	describe('`off` gagne partout, y compris contre l’URL de démonstration', () => {
+		const withUrl = (search: string, config?: Record<string, string>) =>
+			vi.stubGlobal('window', { location: { search }, __OM_CONFIG: config });
+
+		it('build `off` + ?weather_ai_cones=fixture : off', () => {
+			vi.stubEnv('VITE_WEATHER_AI_CONES', 'off');
+			withUrl('?weather_ai_cones=fixture');
+			expect(getWeatherAiConesMode()).toBe('off');
+		});
+
+		it('runtime `off` + ?weather_ai_cones=fixture : off', () => {
+			withUrl('?weather_ai_cones=fixture', { WEATHER_AI_CONES: 'off' });
+			expect(getWeatherAiConesMode()).toBe('off');
+		});
+
+		it('sans `off`, l’URL peut encore demander la démo', () => {
+			withUrl('?weather_ai_cones=fixture');
+			expect(getWeatherAiConesMode()).toBe('fixture');
+		});
+	});
+});
+
+describe('onglet Cyclones IA : statut de calibration affiché tel quel', () => {
+	afterEach(() => {
+		weatherAiRun.set(undefined);
+		weatherAiCones.set(null);
+		weatherAiLayers.set({ tracks: false, cones: false });
+	});
+
+	it('à côté de la mention, quand les cônes du run sont affichés', () => {
+		const { known } = discoverProducts(catalog([TRACKS_ID], { cones: conesEntry() }));
+		weatherAiRun.set({
+			runId: RUN_ID,
+			snapshotId: SNAPSHOT_ID,
+			publishedAt: '',
+			initTime: INIT_TIME,
+			available: known,
+			ignored: [],
+			loaded: {}
+		});
+		weatherAiLayers.set({ tracks: true, cones: true });
+		weatherAiCones.set({ runId: RUN_ID, sha256: 'c'.repeat(64), doc: conesDoc() });
+		const body = render(WeatherAiPanel).body;
+		expect(body).toContain(CONES_MENTION);
+		expect(body).toContain(conesDoc().calibration_status);
 	});
 });

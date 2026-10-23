@@ -165,7 +165,8 @@ export function conesOffered(run: LoadedRun | undefined): boolean {
 async function syncCones(): Promise<void> {
 	const run = get(weatherAiRun);
 	if (!run || !get(weatherAiLayers).cones || !conesOffered(run)) return;
-	const sha256 = run.available.find((p) => p.productId === CONES_PRODUCT_ID)?.sha256;
+	const entry = run.available.find((p) => p.productId === CONES_PRODUCT_ID);
+	const sha256 = entry?.sha256;
 	const current = get(weatherAiCones);
 	if (current?.runId === run.runId && current.sha256 === sha256) return;
 	conesCtl?.abort();
@@ -178,7 +179,11 @@ async function syncCones(): Promise<void> {
 		if (now?.runId !== run.runId) return;
 		if (now.available.find((p) => p.productId === CONES_PRODUCT_ID)?.sha256 !== sha256) return;
 		const refusal = doc
-			? validateCones(doc, { runId: run.runId, snapshotId: run.snapshotId })
+			? validateCones(doc, {
+					runId: run.runId,
+					snapshotId: run.snapshotId,
+					calibrationStatus: entry?.calibrationStatus
+				})
 			: 'aucun document de cônes pour ce run';
 		weatherAiCones.set({
 			runId: run.runId,

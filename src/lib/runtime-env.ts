@@ -99,21 +99,24 @@ export function getWeatherAiApiUrl(): string {
  * au build, `WEATHER_AI_CONES=off` au runtime Docker). `fixture` : démonstration
  * hors API (trajectoires archivées du run de référence + cônes fictifs du même
  * run), activable aussi par le paramètre d'URL `?weather_ai_cones=fixture` pour
- * juger le rendu en prévisualisation. Le paramètre d'URL ne peut que demander la
- * démo, jamais couper ou allumer les cônes réels.
+ * juger le rendu en prévisualisation — sauf en `off`, qui gagne partout. Le
+ * paramètre d'URL ne peut que demander la démo, jamais couper ou allumer les
+ * cônes réels.
  */
 export type WeatherAiConesMode = 'off' | 'on' | 'fixture';
 
 export function getWeatherAiConesMode(): WeatherAiConesMode {
-	if (typeof window !== 'undefined') {
-		const fromUrl = new URLSearchParams(window.location.search).get('weather_ai_cones');
-		if (fromUrl === 'fixture') return 'fixture';
-	}
 	let raw: string | undefined;
 	if (typeof window !== 'undefined' && window.__OM_CONFIG?.WEATHER_AI_CONES) {
 		raw = window.__OM_CONFIG.WEATHER_AI_CONES;
 	} else {
 		raw = import.meta.env.VITE_WEATHER_AI_CONES as string | undefined;
 	}
-	return raw === 'off' || raw === 'fixture' ? raw : 'on';
+	// `off` gagne partout : le paramètre d'URL ne peut pas rallumer la démo.
+	if (raw === 'off') return 'off';
+	if (typeof window !== 'undefined') {
+		const fromUrl = new URLSearchParams(window.location.search).get('weather_ai_cones');
+		if (fromUrl === 'fixture') return 'fixture';
+	}
+	return raw === 'fixture' ? 'fixture' : 'on';
 }

@@ -78,12 +78,12 @@ export interface ConesProduct {
 
 /**
  * Accepte le document seulement s'il appartient au run affiché et porte les
- * garde-fous du contrat (mention exacte, diffusion publique permise, pas
- * d'autorité d'alerte). Renvoie la raison du refus, ou `null`.
+ * garde-fous du contrat (mention exacte, statut de calibration du catalogue,
+ * diffusion publique permise, pas d'autorité d'alerte). Renvoie la raison du refus, ou `null`.
  */
 export function validateCones(
 	doc: ConesProduct,
-	expected: { runId: string; snapshotId: string }
+	expected: { runId: string; snapshotId: string; calibrationStatus?: string }
 ): string | null {
 	if (doc?.schema_version !== CONES_SCHEMA_VERSION) return 'schéma inattendu';
 	if (doc.product_id !== CONES_PRODUCT_ID) return 'produit inattendu';
@@ -93,6 +93,14 @@ export function validateCones(
 	if (doc.experimental !== true || doc.alert_authority !== false) return 'qualification invalide';
 	if (doc.public_delivery_allowed !== true) return 'diffusion publique non permise';
 	if (doc.mention !== CONES_MENTION) return 'mention de calibration absente ou différente';
+	// Statut affiché tel quel à côté de la mention : chaîne non vide, et celui du catalogue.
+	if (typeof doc.calibration_status !== 'string' || !doc.calibration_status.trim())
+		return 'statut de calibration absent';
+	if (
+		expected.calibrationStatus !== undefined &&
+		doc.calibration_status !== expected.calibrationStatus
+	)
+		return 'statut de calibration différent du catalogue';
 	if (!Array.isArray(doc.storms)) return 'cyclones absents';
 	const shape = invalidShape(doc);
 	if (shape) return shape;
@@ -110,6 +118,10 @@ export function validateCones(
 }
 
 const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+
+/** Raison du contrat seulement : propriété propre de `CONE_REASON_LABELS` (pas `toString`, `__proto__`…). */
+export const isConeReason = (v: unknown): v is ConeUnavailableReason =>
+	typeof v === 'string' && Object.hasOwn(CONE_REASON_LABELS, v);
 
 /**
  * Types du document, désormais lu sur le réseau : nombres finis, chaînes, raisons
@@ -139,7 +151,7 @@ function invalidShape(doc: ConesProduct): string | null {
 					finite(c.centre?.longitude) &&
 					CONE_LEVELS.every((l) => finite(c.radius_km?.[l]) && c.radius_km[l] > 0);
 				if (!ok) return `centre ou rayon invalide pour ${storm.storm_id}`;
-			} else if (c.available !== false || !(c.reason in CONE_REASON_LABELS)) {
+			} else if (c.available !== false || !isConeReason(c.reason)) {
 				return `indisponibilité invalide pour ${storm.storm_id}`;
 			}
 		}

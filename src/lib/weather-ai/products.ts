@@ -5,7 +5,7 @@
 // Tant que le portail ne sert pas `products[].presentation`, le rendu de chaque
 // produit connu est défini ici ; le contrat (schéma, variable, unité) est
 // re-vérifié sur chaque document reçu.
-import { CONES_PRODUCT_ID } from './cones';
+import { CONES_MENTION, CONES_PRODUCT_ID } from './cones';
 
 import type { Catalog } from './api';
 
@@ -57,6 +57,8 @@ export interface DiscoveredProduct {
 	validTime?: string;
 	/** Cônes : empreinte du document, pour recharger s'il est remplacé dans le même run. */
 	sha256?: string;
+	/** Cônes : statut de calibration annoncé par le catalogue (le document doit porter le même). */
+	calibrationStatus?: string;
 }
 
 /**
@@ -103,12 +105,15 @@ function conesProduct(catalog: Catalog): DiscoveredProduct | undefined {
 	if (entry.run_id !== catalog.run_id || snapshots.size !== 1 || !snapshots.has(entry.snapshot_id))
 		return undefined;
 	if (entry.experimental !== true || typeof entry.valid_time !== 'string') return undefined;
+	if (entry.mention !== CONES_MENTION || typeof entry.calibration_status !== 'string')
+		return undefined;
 	return {
 		productId: entry.product_id,
 		spec: PRODUCT_SPECS[CONES_PRODUCT_ID],
 		attribution: entry.attribution,
 		licenseNotice: entry.license_notice,
 		validTime: entry.valid_time,
-		sha256: entry.sha256
+		sha256: entry.sha256,
+		calibrationStatus: entry.calibration_status
 	};
 }

@@ -254,6 +254,12 @@
 				<h3 class="text-xs font-semibold text-white/80">Cônes d'incertitude</h3>
 				{#if $weatherAiCones?.doc}
 					<p class="text-[11px] font-medium text-amber-100">{CONES_MENTION}</p>
+					<!-- Statut reçu du portail, affiché tel quel (validé : celui du catalogue). -->
+					<p class="text-[11px] text-white/55">
+						Statut de calibration : <span class="font-mono break-all"
+							>{$weatherAiCones.doc.calibration_status}</span
+						>
+					</p>
 					<p class="text-[11px] text-white/55">
 						Zone claire : 90 % · zone soutenue : 68 %. Enveloppe coupée là où le cône est
 						indisponible ; hémisphère sud : pas de cône au-delà de +24 h.
