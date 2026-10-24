@@ -150,6 +150,11 @@
 
 		{#if showCones}
 			<p class="mt-1 text-[11px] leading-snug text-amber-100">{CONES_MENTION}</p>
+			<p class="text-[10px] leading-snug text-white/50">
+				Statut de calibration : <span class="font-mono break-all"
+					>{$weatherAiCones?.doc?.calibration_status}</span
+				>
+			</p>
 		{/if}
 
 		{#if infoOpen}

@@ -70,6 +70,8 @@ export const weatherAiStatus = writable<WeatherAiStatus>({ state: 'idle' });
 /** Cônes du run affiché (même `run_id`), ou la raison de leur absence. */
 export const weatherAiCones = writable<{
 	runId: string;
+	/** Empreinte du document annoncé par le catalogue : un remplacement le fait relire. */
+	sha256?: string;
 	doc: ConesProduct | null;
 	message?: string;
 } | null>(null);
