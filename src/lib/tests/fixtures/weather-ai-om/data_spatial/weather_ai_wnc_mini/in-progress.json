@@ -3,5 +3,11 @@
 	"last_modified_time": "2026-10-19T14:05:00Z",
 	"reference_time": "2026-10-19T06:00:00Z",
 	"valid_times": ["2026-10-19T12:00:00Z", "2026-10-19T18:00:00Z"],
-	"variables": ["pressure_msl", "cyclone_existence_probability"]
+	"variables": [
+		"pressure_msl",
+		"cyclone_existence_probability",
+		"precipitation",
+		"wind_u_component_10m",
+		"wind_v_component_10m"
+	]
 }

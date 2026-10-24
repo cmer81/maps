@@ -26,7 +26,7 @@
 	} from '$lib/constants';
 	import { throttle } from '$lib/helpers';
 	import { changeOMfileURL } from '$lib/layers';
-	import { StaleMetadataError, getMetaData } from '$lib/metadata';
+	import { StaleMetadataError, getMetaData, matchVariableOrFirst } from '$lib/metadata';
 	import {
 		formatISOWithoutTimezone,
 		formatLocalDate,
@@ -254,6 +254,9 @@
 			$modelRun = new Date(setToModelRun);
 			try {
 				$metaJson = await getMetaData();
+				// Un run plus ancien peut ne pas publier la variable affichée
+				// (Weather AI : vent et précipitation absents des runs à reçu /1).
+				matchVariableOrFirst();
 			} catch (e) {
 				// Domaine ou run changé pendant la lecture : rien à rattraper ici.
 				if (e instanceof StaleMetadataError) return;
@@ -314,6 +317,7 @@
 		$modelRun = step;
 		try {
 			$metaJson = await getMetaData();
+			matchVariableOrFirst();
 		} catch (e) {
 			// Autre run ou autre domaine choisi entre-temps : son chargement prend le relais.
 			if (e instanceof StaleMetadataError) return;

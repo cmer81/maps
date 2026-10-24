@@ -17,7 +17,11 @@
 	import LayerToggle from '$lib/components/chrome/layer-toggle.svelte';
 
 	import { WEATHER_AI_DOMAIN } from '$lib/constants';
-	import { WEATHER_AI_FIELDS, frenchList } from '$lib/weather-ai-domain';
+	import {
+		fetchWeatherAiVariables,
+		frenchList,
+		weatherAiFieldLabels
+	} from '$lib/weather-ai-domain';
 	import { CONES_MENTION } from '$lib/weather-ai/cones';
 	import { conesOffered, useWeatherAi } from '$lib/weather-ai/controller';
 	import { cardSummary } from '$lib/weather-ai/displayed';
@@ -31,6 +35,21 @@
 	// Champs continus servis comme modèle « Weather AI (WeatherNext) » de l'onglet
 	// Données dès que son bucket .om est configuré (weather-ai-domain.ts).
 	const modelAvailable = domainOptions.some((d) => d.value === WEATHER_AI_DOMAIN);
+
+	// Champs annoncés : ceux que le dernier run publié liste dans `variables`
+	// (vent et précipitation absents des anciens runs). Sans réponse, champs de base.
+	let publishedVariables = $state<string[] | undefined>();
+	$effect(() => {
+		if (!modelAvailable) return;
+		let current = true;
+		void fetchWeatherAiVariables().then((variables) => {
+			if (current) publishedVariables = variables;
+		});
+		return () => {
+			current = false;
+		};
+	});
+	const fields = $derived(frenchList(weatherAiFieldLabels(publishedVariables)));
 
 	// L'onglet monté suffit à lire le catalogue (le menu en dépend).
 	$effect(() => useWeatherAi());
@@ -160,13 +179,12 @@
 	     (bucket .om), pas du catalogue du portail, qui peut être en échec. -->
 	{#if modelAvailable}
 		<p class="px-1 text-[11px] leading-snug text-white/45">
-			{frenchList(WEATHER_AI_FIELDS)} : modèle « Weather AI (WeatherNext) » de l'onglet Données, avec
-			légende et échelle standards.
+			{fields} : modèle « Weather AI (WeatherNext) » de l'onglet Données, avec légende et échelle standards.
 		</p>
 	{:else if continuousFields.length}
 		<p class="px-1 text-[11px] leading-snug text-white/45">
-			{frenchList(WEATHER_AI_FIELDS)} : à venir comme variables d'un modèle « Weather AI » du sélecteur
-			de modèles, avec légende et échelle standards.
+			{fields} : à venir comme variables d'un modèle « Weather AI » du sélecteur de modèles, avec légende
+			et échelle standards.
 		</p>
 	{/if}
 	{#if $weatherAiRun}

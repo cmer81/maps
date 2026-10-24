@@ -8,8 +8,11 @@
 
 	import { WEATHER_AI_DOMAIN } from '$lib/constants';
 	import { translateVariableLabel } from '$lib/i18n/variables-fr';
+	import { weatherAiVariableNote } from '$lib/weather-ai-domain';
 
 	const label = $derived($selectedVariable ? translateVariableLabel($selectedVariable.label) : '');
+	// Précision de la grandeur affichée (précipitation Weather AI : taux moyen sur 6 h).
+	const note = $derived(weatherAiVariableNote($domain, $variable));
 
 	// Unité d'affichage : miroir de la dérivation de scale.svelte (lignes 48-53 &
 	// 139). Pas de cycle d'import entre units.ts/variables.ts/om-protocol-settings.ts
@@ -35,6 +38,7 @@
 	>
 		<span class="min-w-0 truncate font-medium text-white">{label}</span>
 		{#if displayUnit}<span class="shrink-0 tabular-nums text-white/50">({displayUnit})</span>{/if}
+		{#if note}<span class="min-w-0 truncate text-white/50">· {note}</span>{/if}
 		{#if $domain === WEATHER_AI_DOMAIN}
 			<!-- Visible panneau replié : le modèle IA reste signalé comme expérimental.
 			     Mentions complètes : lien « Sources et licence » de la notice « i » de la carte (weather-ai-sources-dialog). -->
