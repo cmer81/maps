@@ -3,10 +3,10 @@ import { get } from 'svelte/store';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { loading } from '$lib/stores/preferences';
-import { inProgress, latest, modelRun } from '$lib/stores/time';
+import { inProgress, latest, metaJson, modelRun } from '$lib/stores/time';
 import { domain } from '$lib/stores/variables';
 
-import { StaleMetadataError, getInitialMetaData, getMetaData } from '$lib/metadata';
+import { StaleMetadataError, getInitialMetaData, getMetaData, loadModelRun } from '$lib/metadata';
 
 // Deux domaines upstream (bucket Open-Meteo), runs distincts : 06Z pour ECMWF,
 // 12Z pour ICON. La course de prod : la réponse tardive de l'ancien domaine
@@ -226,5 +226,54 @@ describe('getMetaData : meta.json d’un run passé', () => {
 		await bucket.flush();
 		await bucket.release('/1800Z/meta.json', 404);
 		expect(await missing).toEqual({ error: new Error('HTTP 404') });
+	});
+});
+
+describe('loadModelRun : meta.json du run choisi en échec', () => {
+	const PAST = new Date('2026-10-18T18:00:00Z');
+
+	async function onLatest() {
+		const bucket = deferredBucket();
+		const load = getInitialMetaData();
+		await bucket.release('/ecmwf_ifs025/');
+		await load;
+		metaJson.set(await getMetaData());
+		return bucket;
+	}
+
+	afterEach(() => metaJson.set(undefined));
+
+	it('404 : run et métadonnées précédents restaurés, erreur relevée', async () => {
+		const bucket = await onLatest();
+		const pending = outcome(loadModelRun(PAST));
+		await bucket.flush();
+		// Pendant la lecture, le run choisi est sélectionné.
+		expect(get(modelRun)?.getTime()).toBe(PAST.getTime());
+		await bucket.release('/meta.json', 404);
+		expect(await pending).toEqual({ error: new Error('HTTP 404') });
+		// Run et meta.json concordent de nouveau : getOMUrlFor ne reste pas bloqué.
+		expect(get(modelRun)?.toISOString()).toBe(new Date(RUNS.ecmwf_ifs025).toISOString());
+		expect(get(metaJson)?.reference_time).toBe(RUNS.ecmwf_ifs025);
+	});
+
+	it('succès : run et métadonnées du run choisi', async () => {
+		const bucket = await onLatest();
+		const pending = loadModelRun(PAST);
+		await bucket.flush();
+		await bucket.release('/meta.json');
+		expect((await pending).reference_time).toBe('2026-10-18T18:00:00Z');
+		expect(get(metaJson)?.reference_time).toBe('2026-10-18T18:00:00Z');
+		expect(get(modelRun)?.getTime()).toBe(PAST.getTime());
+	});
+
+	it('sélection changée pendant la lecture : rien n’est restauré par-dessus', async () => {
+		const bucket = await onLatest();
+		const pending = outcome(loadModelRun(PAST));
+		await bucket.flush();
+		const OTHER = new Date('2026-10-18T12:00:00Z');
+		modelRun.set(OTHER); // autre run choisi entre-temps
+		await bucket.release('/2026/10/18/1800Z/meta.json', 404);
+		expect(((await pending) as { error: unknown }).error).toBeInstanceOf(StaleMetadataError);
+		expect(get(modelRun)?.getTime()).toBe(OTHER.getTime());
 	});
 });

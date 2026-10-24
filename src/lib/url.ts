@@ -38,7 +38,8 @@ import {
 	ANOMALY_DOMAIN,
 	ANOMALY_VARIABLE,
 	CATEGORICAL_VARIABLES,
-	DEFAULT_PREFERENCES
+	DEFAULT_PREFERENCES,
+	WEATHER_AI_DOMAIN
 } from '$lib/constants';
 
 import {
@@ -345,12 +346,18 @@ export const getOMUrlFor = (
 		);
 	}
 
-	// Run changé, son `meta.json` pas encore reçu : `metaJson` (variables, échéances)
-	// décrit encore l'ancien run. Une URL bâtie maintenant viserait une variable
-	// peut-être absente du run choisi (vent, précipitation Weather AI) ; aucune
-	// source n'est chargée avant la fin de la lecture, qui recharge les couches.
+	// Weather AI, run changé, son `meta.json` pas encore reçu : `metaJson` (variables,
+	// échéances) décrit encore l'ancien run. Une URL bâtie maintenant viserait une
+	// variable peut-être absente du run choisi (vent, précipitation des anciens
+	// runs) ; aucune source n'est chargée avant la fin de la lecture, qui recharge
+	// les couches. En cas d'échec, `loadModelRun` restaure run et métadonnées. Les
+	// autres modèles publient les mêmes variables à chaque run : pas de garde.
 	const metaJson = get(mJ);
-	if (metaJson && new Date(metaJson.reference_time).getTime() !== modelRun.getTime()) {
+	if (
+		domain === WEATHER_AI_DOMAIN &&
+		metaJson &&
+		new Date(metaJson.reference_time).getTime() !== modelRun.getTime()
+	) {
 		return undefined;
 	}
 

@@ -156,6 +156,30 @@ export const getMetaData = async (): Promise<DomainMetaDataJson> => {
 	return result;
 };
 
+/**
+ * Sélectionne le run `run` et lit ses métadonnées. Sur échec (404 du `meta.json`,
+ * réseau), restaure le run et les métadonnées d'avant puis relève l'erreur : sans
+ * ça, `modelRun` restait sur le run introuvable et `metaJson` sur l'ancien, et
+ * `getOMUrlFor` refusait toute URL Weather AI jusqu'au choix d'un autre run.
+ * Une `StaleMetadataError` (sélection changée entre-temps) ne restaure rien.
+ */
+export const loadModelRun = async (run: Date): Promise<DomainMetaDataJson> => {
+	const previousRun = get(mR);
+	const previousMeta = get(mJ);
+	mR.set(run);
+	try {
+		const meta = await getMetaData();
+		mJ.set(meta);
+		return meta;
+	} catch (e) {
+		if (!(e instanceof StaleMetadataError)) {
+			mR.set(previousRun);
+			mJ.set(previousMeta);
+		}
+		throw e;
+	}
+};
+
 export const matchVariableOrFirst = () => {
 	const variable = get(v);
 	const metaJson = get(mJ);

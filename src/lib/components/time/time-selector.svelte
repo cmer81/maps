@@ -26,7 +26,12 @@
 	} from '$lib/constants';
 	import { throttle } from '$lib/helpers';
 	import { changeOMfileURL } from '$lib/layers';
-	import { StaleMetadataError, getMetaData, matchVariableOrFirst } from '$lib/metadata';
+	import {
+		StaleMetadataError,
+		getMetaData,
+		loadModelRun,
+		matchVariableOrFirst
+	} from '$lib/metadata';
 	import {
 		formatISOWithoutTimezone,
 		formatLocalDate,
@@ -313,19 +318,24 @@
 	// changes the selected model run and updates available time steps
 	const onModelRunChange = async (step: Date) => {
 		$loading = true;
+		const wasLocked = $modelRunLocked;
 		$modelRunLocked = true;
-		$modelRun = step;
+		let meta;
 		try {
-			$metaJson = await getMetaData();
+			meta = await loadModelRun(step);
 			matchVariableOrFirst();
 		} catch (e) {
 			// Autre run ou autre domaine choisi entre-temps : son chargement prend le relais.
 			if (e instanceof StaleMetadataError) return;
-			throw e;
+			// meta.json introuvable : run et métadonnées précédents déjà restaurés.
+			$modelRunLocked = wasLocked;
+			$loading = false;
+			toast.warning(`Run indisponible : ${(e as Error).message}`);
+			return;
 		}
 
-		let closestTime = new SvelteDate($modelRun);
-		for (const vT of $metaJson.valid_times) {
+		let closestTime = new SvelteDate(step);
+		for (const vT of meta.valid_times) {
 			const validTime = new Date(vT);
 			if (validTime.getTime() <= $time.getTime()) {
 				closestTime.setTime(validTime.getTime());
@@ -334,8 +344,8 @@
 
 		onDateChange(closestTime);
 
-		if ($modelRun.getTime() !== latestReferenceTime.getTime()) {
-			updateUrl('model_run', formatISOWithoutTimezone($modelRun));
+		if (step.getTime() !== latestReferenceTime.getTime()) {
+			updateUrl('model_run', formatISOWithoutTimezone(step));
 		} else {
 			updateUrl('model_run', undefined);
 		}

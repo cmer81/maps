@@ -9,7 +9,7 @@ import {
 	windOverlayLevel
 } from '$lib/stores/vector';
 
-import { ANOMALY_DOMAIN } from '$lib/constants';
+import { ANOMALY_DOMAIN, WEATHER_AI_DOMAIN } from '$lib/constants';
 import { getOMUrl, getOMUrlFor, getOverlayOmUrl, getWindOverlayUrl } from '$lib/url';
 
 describe('getOMUrlFor', () => {
@@ -51,9 +51,7 @@ describe('getOMUrlFor', () => {
 			expect(getOMUrlFor('precipitation')).toContain('&delta_time_hours=0.25');
 		});
 
-		it('métadonnées d’un autre run (meta.json en cours de lecture) : aucune URL', () => {
-			// Run ancien choisi : `modelRun` change avant l'arrivée de son meta.json,
-			// `metaJson` décrit encore le run récent et ses variables.
+		const otherRunMeta = () =>
 			mJ.set({
 				completed: true,
 				last_modified_time: '',
@@ -61,11 +59,26 @@ describe('getOMUrlFor', () => {
 				valid_times: ['2026-05-23T12:00Z', '2026-05-23T15:00Z'],
 				variables: ['precipitation', 'temperature_2m']
 			});
+
+		it('Weather AI, métadonnées d’un autre run (meta.json en cours de lecture) : aucune URL', () => {
+			vi.stubEnv('VITE_WEATHER_AI_OM_BUCKET_URL', 'https://wai.test');
+			d.set(WEATHER_AI_DOMAIN);
+			// Run ancien choisi : `modelRun` change avant l'arrivée de son meta.json,
+			// `metaJson` décrit encore le run récent et ses variables.
+			otherRunMeta();
 			expect(getOMUrlFor('precipitation')).toBeUndefined();
 			expect(getOMUrl()).toBeUndefined();
 			// meta.json reçu : le run et ses métadonnées concordent.
 			setValidTimes(['2026-05-23T12:00Z', '2026-05-23T15:00Z']);
 			expect(getOMUrlFor('precipitation')).toContain('/2026/05/23/0000Z/');
+		});
+
+		it('autres modèles : la garde run/meta.json ne bloque aucune URL', () => {
+			// Même décalage sur AROME HD : l'URL reste bâtie, aucun modèle hors
+			// Weather AI ne peut rester figé sur un meta.json en échec.
+			otherRunMeta();
+			expect(getOMUrlFor('precipitation')).toContain('/2026/05/23/0000Z/');
+			expect(getOMUrl()).toContain('/2026/05/23/0000Z/');
 		});
 
 		it('suit l’échéance demandée, pas celle du store', () => {
