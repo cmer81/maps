@@ -196,6 +196,23 @@ describe('controller', () => {
 			}
 		});
 
+		it('statut de calibration du document différent de celui du catalogue : refusé', async () => {
+			stubPortal(Promise.resolve(), [TRACKS_ID], {
+				cones: conesEntry({ calibration_status: 'statut_annonce_par_le_catalogue' }),
+				routes: { [CONES_DATA]: data(conesDoc()) }
+			});
+			weatherAiLayers.set({ tracks: true, cones: true });
+			const release = useWeatherAi();
+			try {
+				await until(() => get(weatherAiCones)?.runId === RUN_ID);
+				// Le contrôleur transmet le statut du catalogue à validateCones.
+				expect(get(weatherAiCones)?.doc).toBeNull();
+				expect(get(weatherAiCones)?.message).toMatch(/statut de calibration différent/);
+			} finally {
+				release();
+			}
+		});
+
 		it('cônes retirés entre catalogue et lecture (404) : aucun cône, pas d’erreur du run', async () => {
 			stubPortal(Promise.resolve(), [TRACKS_ID], { cones: conesEntry() });
 			weatherAiLayers.set({ tracks: true, cones: true });
