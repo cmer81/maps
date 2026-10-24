@@ -8,7 +8,11 @@ au nord et de −180 à 179, `pressure_msl` en hPa (facteur 20) et
 
 Scénario : run 00Z achevé (`latest.json`, sans .om) et run 06Z en cours de
 publication progressive (`in-progress.json` avec `completed: false` et les
-deux seules échéances déposées, sans `meta.json`).
+deux seules échéances déposées, sans `meta.json`). Le run 00Z est un ancien
+run (reçu `om-maps-receipt/1`) : ni vent ni précipitation dans `variables`. Le
+run 06Z porte en plus `precipitation` (cumul en mm sur les 6 h précédant
+l'échéance, facteur 10) et `wind_u_component_10m` / `wind_v_component_10m`
+(m/s, facteur 100), comme les couches maps de weather-ai#318.
 
 Régénération (omfiles 1.2.0) :
     python -I generate_fixture.py <dossier de cette fixture>
@@ -38,13 +42,27 @@ def probability():
     return np.round(0.9 * np.exp(-d2 / (2 * 4.0**2)), 3)
 
 
+def precipitation():
+    # Cumul 6 h : 12 mm au centre du cyclone synthétique, au dixième de mm.
+    d2 = (GRID_LAT + 20) ** 2 + (GRID_LON - 55) ** 2
+    return np.round(12 * np.exp(-d2 / (2 * 4.0**2)), 1)
+
+
+def wind(component):
+    # Vent uniforme u = 3, v = −4 m/s : 5 m/s (18 km/h) partout.
+    return np.full(GRID_LAT.shape, 3.0 if component == 'u' else -4.0)
+
+
 def write(path, valid, offset):
     writer = OmFileWriter(str(path))
     metadata = {'run_id': 'wn2-oper-20261019T060000Z-fixture', 'init_time': '2026-10-19T06:00:00Z',
                 'valid_time': valid}
     children = [writer.write_scalar(json.dumps(metadata), 'metadata')]
     for name, values, factor in (('pressure_msl', pressure(offset), 20.0),
-                                 ('cyclone_existence_probability', probability(), 1000.0)):
+                                 ('cyclone_existence_probability', probability(), 1000.0),
+                                 ('precipitation', precipitation(), 10.0),
+                                 ('wind_u_component_10m', wind('u'), 100.0),
+                                 ('wind_v_component_10m', wind('v'), 100.0)):
         children.append(writer.write_array(values.astype(np.float32), chunks=(64, 64),
                                            scale_factor=factor, add_offset=0,
                                            compression='pfor_delta_2d_int16', name=name))
@@ -65,7 +83,8 @@ def main(root):
         write(run / (valid[:13] + '00.om'), valid, k)
     in_progress = {'completed': False, 'last_modified_time': '2026-10-19T14:05:00Z',
                    'reference_time': '2026-10-19T06:00:00Z', 'valid_times': deposited,
-                   'variables': variables}
+                   'variables': variables + ['precipitation', 'wind_u_component_10m',
+                                             'wind_v_component_10m']}
     (base / '2026' / '10' / '19' / '0000Z').mkdir(parents=True, exist_ok=True)
     (base / '2026' / '10' / '19' / '0000Z' / 'meta.json').write_text(json.dumps(latest) + '\n')
     (base / 'latest.json').write_text(json.dumps(latest) + '\n')

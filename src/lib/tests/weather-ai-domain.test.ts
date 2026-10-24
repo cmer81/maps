@@ -39,11 +39,15 @@ import {
 } from '$lib/metadata';
 import { applyModelSelectorLabels } from '$lib/model-selector-labels';
 import { getOMUrlFor } from '$lib/url';
+import { deriveDisplayedWindLevel } from '$lib/vector-styles';
 import {
-	WEATHER_AI_FIELDS,
+	fetchWeatherAiVariables,
 	frenchList,
 	registerWeatherAiDomain,
-	weatherAiDomain
+	watchWeatherAiVariables,
+	weatherAiDomain,
+	weatherAiFieldLabels,
+	weatherAiVariableNote
 } from '$lib/weather-ai-domain';
 import { PRODUCT_SPECS } from '$lib/weather-ai/products';
 
@@ -186,10 +190,93 @@ describe('sélecteur de modèles', () => {
 });
 
 describe('champs annoncés par l’onglet Cyclones IA', () => {
-	it('énumère les trois champs publiés, initiale en capitale', () => {
-		expect(frenchList(WEATHER_AI_FIELDS)).toBe(
+	const ALL = [
+		'pressure_msl',
+		'cyclone_existence_probability',
+		'temperature_2m',
+		'precipitation',
+		'wind_u_component_10m',
+		'wind_v_component_10m'
+	];
+
+	it('sans liste connue : les trois champs de tous les runs, initiale en capitale', () => {
+		expect(frenchList(weatherAiFieldLabels())).toBe(
 			"Pression au niveau de la mer, probabilité d'existence cyclonique et température à 2 m"
 		);
+	});
+
+	it('run à trois couches maps : vent à 10 m et précipitations en taux moyen', () => {
+		expect(frenchList(weatherAiFieldLabels(ALL))).toBe(
+			"Pression au niveau de la mer, probabilité d'existence cyclonique, température à 2 m, vent à 10 m et précipitations (taux moyen sur 6 h)"
+		);
+	});
+
+	it('ancien run (reçu /1, t2m seule) : ni vent ni précipitations', () => {
+		const labels = weatherAiFieldLabels([
+			'pressure_msl',
+			'cyclone_existence_probability',
+			'temperature_2m'
+		]);
+		expect(labels).not.toContain('vent à 10 m');
+		expect(labels.some((l) => l.startsWith('précipitations'))).toBe(false);
+	});
+
+	it('vent annoncé seulement avec ses deux composantes', () => {
+		expect(weatherAiFieldLabels(['wind_u_component_10m'])).toEqual([]);
+	});
+
+	it('lit `variables` du latest.json public ; bucket muet → undefined, sans lever', async () => {
+		vi.stubGlobal('fetch', async (url: string) =>
+			respond(url, JSON.stringify({ variables: ALL }), { status: 200 })
+		);
+		expect(await fetchWeatherAiVariables()).toEqual(ALL);
+		vi.stubGlobal('fetch', async (url: string) => respond(url, 'NoSuchKey', { status: 404 }));
+		expect(await fetchWeatherAiVariables()).toBeUndefined();
+		vi.stubGlobal('fetch', async () => {
+			throw new TypeError('Failed to fetch');
+		});
+		expect(await fetchWeatherAiVariables()).toBeUndefined();
+		vi.stubEnv('VITE_WEATHER_AI_OM_BUCKET_URL', '');
+		expect(await fetchWeatherAiVariables()).toBeUndefined();
+	});
+
+	it('suit `variables` du latest.json public au rythme du rafraîchissement des métadonnées', async () => {
+		vi.useFakeTimers();
+		let body: unknown = { variables: ['pressure_msl', 'temperature_2m'] };
+		vi.stubGlobal('fetch', async (url: string) =>
+			body === undefined
+				? respond(url, 'NoSuchKey', { status: 404 })
+				: respond(url, JSON.stringify(body), { status: 200 })
+		);
+		const seen: string[][] = [];
+		const stop = watchWeatherAiVariables((variables) => seen.push(variables), 1000);
+		try {
+			await vi.advanceTimersByTimeAsync(0);
+			expect(seen).toEqual([['pressure_msl', 'temperature_2m']]);
+			// Nouveau run publié avec vent et précipitation : relu au tick suivant.
+			body = { variables: ALL };
+			await vi.advanceTimersByTimeAsync(1000);
+			expect(seen.at(-1)).toEqual(ALL);
+			// Bucket muet : la dernière liste connue reste annoncée.
+			body = undefined;
+			await vi.advanceTimersByTimeAsync(1000);
+			expect(seen).toHaveLength(2);
+			stop();
+			body = { variables: ['pressure_msl'] };
+			await vi.advanceTimersByTimeAsync(5000);
+			expect(seen).toHaveLength(2);
+		} finally {
+			stop();
+			vi.useRealTimers();
+		}
+	});
+
+	it('libelle la précipitation Weather AI comme un taux moyen, et elle seule', () => {
+		expect(weatherAiVariableNote(WEATHER_AI_DOMAIN, 'precipitation')).toBe(
+			'taux moyen sur les 6 h précédentes'
+		);
+		expect(weatherAiVariableNote(WEATHER_AI_DOMAIN, 'wind_u_component_10m')).toBeUndefined();
+		expect(weatherAiVariableNote('arome_france', 'precipitation')).toBeUndefined();
 	});
 
 	it('reste correcte quand la liste s’allonge ou se réduit', () => {
@@ -230,7 +317,7 @@ describe('onglet Cyclones IA : renvoi vers le modèle de l’onglet Données', (
 		registerWeatherAiDomain();
 		weatherAiRun.set(undefined);
 		const body = panel();
-		expect(body).toContain(frenchList(WEATHER_AI_FIELDS) + ' : ' + MODEL_NOTE);
+		expect(body).toContain(frenchList(weatherAiFieldLabels()) + ' : ' + MODEL_NOTE);
 		expect(body).not.toContain(UPCOMING_NOTE);
 	});
 
@@ -256,6 +343,15 @@ describe('échelles de couleur', () => {
 		expect(p.unit).toBe('%');
 		// Pas le fallback silencieux `temperature` (°C).
 		expect(p).not.toBe(standardColorScales.temperature);
+	});
+
+	it('précipitation en mm/h et vent en m/s : échelles du package, pas le fallback °C', () => {
+		const precipitation = getColorScale('precipitation', false, standardColorScales);
+		expect(precipitation.unit).toBe('mm/h');
+		expect(precipitation).not.toBe(standardColorScales.temperature);
+		const wind = getColorScale('wind_u_component_10m', false, standardColorScales);
+		expect(wind.unit).toBe('m/s');
+		expect(wind).not.toBe(standardColorScales.temperature);
 	});
 
 	it('ramène la probabilité de 0..1 à 0..100 %, pour ce seul domaine', () => {
@@ -318,6 +414,33 @@ describe('métadonnées du bucket', () => {
 		// Le run en cours vient de in-progress.json : aucune lecture de son meta.json,
 		// pas encore publié (le producteur le dépose après le dernier .om).
 		expect(requests.some((u) => u.endsWith('/0600Z/meta.json'))).toBe(false);
+	});
+
+	it('flèches de vent en repli : sur un run à trois couches, jamais sur un ancien run', async () => {
+		stubBucket();
+		await getInitialMetaData();
+		const old = await getMetaData();
+		expect(deriveDisplayedWindLevel('temperature_2m', old.variables)).toBeNull();
+		modelRun.set(RUN_06Z);
+		const current = await getMetaData();
+		expect(deriveDisplayedWindLevel('pressure_msl', current.variables)).toBe('10m');
+	});
+
+	it('retour sur un ancien run avec précipitation ou vent affichés : repli sur la pression', async () => {
+		stubBucket();
+		await getInitialMetaData();
+		for (const shown of ['precipitation', 'wind_u_component_10m']) {
+			modelRun.set(RUN_06Z);
+			metaJson.set(await getMetaData());
+			variable.set(shown);
+			matchVariableOrFirst();
+			expect(get(variable)).toBe(shown); // publiée par le run 06Z
+
+			modelRun.set(new Date('2026-10-19T00:00:00Z'));
+			metaJson.set(await getMetaData());
+			matchVariableOrFirst();
+			expect(get(variable)).toBe('pressure_msl');
+		}
 	});
 
 	it('bascule sur la pression quand la variable courante n’est pas publiée', async () => {
@@ -456,17 +579,21 @@ describe('lecture des .om', () => {
 		modelRun.set(undefined);
 	});
 
-	/** URL bâtie comme celle de la couche MapLibre, lue par le reader du protocole. */
+	/** URL bâtie comme celle de la couche MapLibre, lue par le reader du protocole
+	 *  avec le pas que le protocole tire de `delta_time_hours`. */
 	async function read(variableName: string, validTime: string) {
 		time.set(new Date(validTime));
 		const url = getOMUrlFor(variableName)!;
+		const step = new URL(url).searchParams.get('delta_time_hours');
 		const reader = getProtocolInstance(get(omProtocolSettings)).omFileReader;
 		const data = await reader.readVariable(
 			url.split('?')[0],
 			variableName,
-			getRanges(grid, undefined)
+			getRanges(grid, undefined),
+			undefined,
+			step ? { timeStepHours: Number(step) } : undefined
 		);
-		return { url, values: data.values as Float32Array };
+		return { url, values: data.values as Float32Array, directions: data.directions };
 	}
 
 	// Plan incliné de la fixture : 1000 + 0,2·lat + 0,1·lon (+ 1 hPa à 18Z).
@@ -530,6 +657,58 @@ describe('lecture des .om', () => {
 		};
 		expect(await shown('pressure_msl')).toBeCloseTo(expected(-20, 55), 1);
 		expect(await shown('cyclone_existence_probability')).toBeCloseTo(90, 0);
+	});
+
+	it('précipitation : cumul 6 h divisé par le pas, taux moyen en mm/h', async () => {
+		stubBucket();
+		metaJson.set({
+			completed: false,
+			last_modified_time: '2026-10-19T14:05:00Z',
+			reference_time: '2026-10-19T06:00:00Z',
+			valid_times: ['2026-10-19T12:00:00Z', '2026-10-19T18:00:00Z'],
+			variables: ['precipitation']
+		});
+		try {
+			const { url, values } = await read('precipitation', '2026-10-19T12:00:00Z');
+			expect(url).toContain('&delta_time_hours=6');
+			const g = GridFactory.create(grid as Domain['grid']);
+			// 12 mm en 6 h au centre du cyclone synthétique → 2 mm/h.
+			expect(g.getLinearInterpolatedValue(values, -20, 55)).toBeCloseTo(2, 2);
+			expect(g.getLinearInterpolatedValue(values, 40, -100)).toBeCloseTo(0, 3);
+		} finally {
+			metaJson.set(undefined);
+		}
+	});
+
+	it('précipitation à la seule échéance d’un run progressif : pas de 6 h par défaut', async () => {
+		stubBucket();
+		// Première échéance déposée : `in-progress.json` ne liste que +6 h, le pas
+		// ne se déduit pas des `valid_times`.
+		metaJson.set({
+			completed: false,
+			last_modified_time: '2026-10-19T12:05:00Z',
+			reference_time: '2026-10-19T06:00:00Z',
+			valid_times: ['2026-10-19T12:00:00Z'],
+			variables: ['precipitation']
+		});
+		try {
+			const { url, values } = await read('precipitation', '2026-10-19T12:00:00Z');
+			expect(url).toContain('&delta_time_hours=6');
+			const g = GridFactory.create(grid as Domain['grid']);
+			expect(g.getLinearInterpolatedValue(values, -20, 55)).toBeCloseTo(2, 2);
+		} finally {
+			metaJson.set(undefined);
+		}
+	});
+
+	it('vent à 10 m : vitesse et direction dérivées des composantes u/v', async () => {
+		stubBucket();
+		const { values, directions } = await read('wind_u_component_10m', '2026-10-19T12:00:00Z');
+		const g = GridFactory.create(grid as Domain['grid']);
+		// u = 3, v = −4 m/s partout → 5 m/s, vent de nord-nord-ouest (≈ 323°).
+		expect(g.getLinearInterpolatedValue(values, 45, 10)).toBeCloseTo(5, 2);
+		expect(directions).toBeDefined();
+		expect(directions![90 * 360 + 180]).toBeCloseTo(323.13, 1);
 	});
 
 	it('échéance listée par le run achevé mais pas encore déposée : lecture refusée', async () => {

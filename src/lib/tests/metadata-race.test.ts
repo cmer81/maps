@@ -3,10 +3,10 @@ import { get } from 'svelte/store';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { loading } from '$lib/stores/preferences';
-import { inProgress, latest, modelRun } from '$lib/stores/time';
+import { inProgress, latest, metaJson, modelRun } from '$lib/stores/time';
 import { domain } from '$lib/stores/variables';
 
-import { StaleMetadataError, getInitialMetaData, getMetaData } from '$lib/metadata';
+import { StaleMetadataError, getInitialMetaData, getMetaData, loadModelRun } from '$lib/metadata';
 
 // Deux domaines upstream (bucket Open-Meteo), runs distincts : 06Z pour ECMWF,
 // 12Z pour ICON. La course de prod : la réponse tardive de l'ancien domaine
@@ -215,6 +215,14 @@ describe('getMetaData : meta.json d’un run passé', () => {
 		expect(get(loading)).toBe(false);
 	});
 
+	it('prédicat de l’appelant faux, run indéfini : StaleMetadataError, run non initialisé', async () => {
+		await loaded();
+		modelRun.set(undefined);
+		const pending = outcome(getMetaData(() => false));
+		expect(((await pending) as { error: unknown }).error).toBeInstanceOf(StaleMetadataError);
+		expect(get(modelRun)).toBeUndefined();
+	});
+
 	it('sans changement, le meta.json du run passé est renvoyé, et un 404 reste une erreur', async () => {
 		const bucket = await loaded();
 		modelRun.set(PAST);
@@ -226,5 +234,162 @@ describe('getMetaData : meta.json d’un run passé', () => {
 		await bucket.flush();
 		await bucket.release('/1800Z/meta.json', 404);
 		expect(await missing).toEqual({ error: new Error('HTTP 404') });
+	});
+});
+
+describe('loadModelRun : meta.json du run choisi en échec', () => {
+	const PAST = new Date('2026-10-18T18:00:00Z');
+
+	async function onLatest() {
+		const bucket = deferredBucket();
+		const load = getInitialMetaData();
+		await bucket.release('/ecmwf_ifs025/');
+		await load;
+		metaJson.set(await getMetaData());
+		return bucket;
+	}
+
+	afterEach(() => metaJson.set(undefined));
+
+	it('404 : run et métadonnées précédents restaurés, erreur relevée', async () => {
+		const bucket = await onLatest();
+		const pending = outcome(loadModelRun(PAST));
+		await bucket.flush();
+		// Pendant la lecture, le run choisi est sélectionné.
+		expect(get(modelRun)?.getTime()).toBe(PAST.getTime());
+		await bucket.release('/meta.json', 404);
+		expect(await pending).toEqual({ error: new Error('HTTP 404') });
+		// Run et meta.json concordent de nouveau : getOMUrlFor ne reste pas bloqué.
+		expect(get(modelRun)?.toISOString()).toBe(new Date(RUNS.ecmwf_ifs025).toISOString());
+		expect(get(metaJson)?.reference_time).toBe(RUNS.ecmwf_ifs025);
+	});
+
+	it('succès : run et métadonnées du run choisi', async () => {
+		const bucket = await onLatest();
+		const pending = loadModelRun(PAST);
+		await bucket.flush();
+		await bucket.release('/meta.json');
+		expect((await pending).reference_time).toBe('2026-10-18T18:00:00Z');
+		expect(get(metaJson)?.reference_time).toBe('2026-10-18T18:00:00Z');
+		expect(get(modelRun)?.getTime()).toBe(PAST.getTime());
+	});
+
+	it('sélection changée pendant la lecture : rien n’est restauré par-dessus', async () => {
+		const bucket = await onLatest();
+		const pending = outcome(loadModelRun(PAST));
+		await bucket.flush();
+		const OTHER = new Date('2026-10-18T12:00:00Z');
+		modelRun.set(OTHER); // autre run choisi entre-temps
+		await bucket.release('/2026/10/18/1800Z/meta.json', 404);
+		expect(((await pending) as { error: unknown }).error).toBeInstanceOf(StaleMetadataError);
+		expect(get(modelRun)?.getTime()).toBe(OTHER.getTime());
+	});
+
+	const OTHER = new Date('2026-10-18T12:00:00Z');
+
+	it('A puis B, A ignoré puis B en échec : retour au dernier couple chargé, pas à A', async () => {
+		const bucket = await onLatest();
+		const a = outcome(loadModelRun(PAST));
+		await bucket.flush();
+		const b = outcome(loadModelRun(OTHER));
+		await bucket.flush();
+		await bucket.release('/1800Z/meta.json'); // A répond, B est sélectionné
+		expect(((await a) as { error: unknown }).error).toBeInstanceOf(StaleMetadataError);
+		await bucket.release('/1200Z/meta.json', 404);
+		expect(await b).toEqual({ error: new Error('HTTP 404') });
+		// Run et meta.json concordent : ceux du run chargé avant A.
+		expect(get(modelRun)?.toISOString()).toBe(new Date(RUNS.ecmwf_ifs025).toISOString());
+		expect(get(metaJson)?.reference_time).toBe(RUNS.ecmwf_ifs025);
+	});
+
+	it('A → B → A : l’échec tardif de la 1re requête A ne défait pas la 2de', async () => {
+		const bucket = await onLatest();
+		const first = outcome(loadModelRun(PAST));
+		await bucket.flush();
+		const b = outcome(loadModelRun(OTHER));
+		await bucket.flush();
+		const again = outcome(loadModelRun(PAST));
+		await bucket.flush();
+		const [firstReq, bReq, againReq] = bucket.requests.filter((r) => r.url.endsWith('/meta.json'));
+		againReq.release();
+		await bucket.flush();
+		expect(((await again) as { value: { reference_time: string } }).value.reference_time).toBe(
+			'2026-10-18T18:00:00Z'
+		);
+		bReq.release(404);
+		await bucket.flush();
+		expect(((await b) as { error: unknown }).error).toBeInstanceOf(StaleMetadataError);
+		firstReq.release(404); // la 1re requête A échoue en retard
+		await bucket.flush();
+		// Périmée, donc ni toast ni restauration.
+		expect(((await first) as { error: unknown }).error).toBeInstanceOf(StaleMetadataError);
+		expect(get(modelRun)?.getTime()).toBe(PAST.getTime());
+		expect(get(metaJson)?.reference_time).toBe('2026-10-18T18:00:00Z');
+	});
+
+	it('A → B → A : l’échec de la 1re A pendant la 2de laisse l’indicateur de chargement intact', async () => {
+		const bucket = await onLatest();
+		const first = outcome(loadModelRun(PAST));
+		await bucket.flush();
+		const b = outcome(loadModelRun(OTHER));
+		await bucket.flush();
+		loading.set(true); // chargement de la 2de A en cours
+		const again = outcome(loadModelRun(PAST));
+		await bucket.flush();
+		const [firstReq, bReq, againReq] = bucket.requests.filter((r) => r.url.endsWith('/meta.json'));
+		bReq.release(404);
+		firstReq.release(404); // la 1re A échoue alors que la 2de est en vol
+		await bucket.flush();
+		expect(((await first) as { error: unknown }).error).toBeInstanceOf(StaleMetadataError);
+		expect(((await b) as { error: unknown }).error).toBeInstanceOf(StaleMetadataError);
+		expect(get(loading)).toBe(true);
+		againReq.release();
+		await bucket.flush();
+		expect(((await again) as { value: { reference_time: string } }).value.reference_time).toBe(
+			'2026-10-18T18:00:00Z'
+		);
+	});
+
+	it('run lu depuis `latest` en mémoire, B lancé avant la reprise de A : A périmé, rien écrit', async () => {
+		const bucket = await onLatest();
+		const LATEST = new Date(RUNS.ecmwf_ifs025);
+		metaJson.set(undefined);
+		// A n'attend aucun fetch : son prédicat interne passe, puis B démarre avant
+		// que `loadModelRun` ne reprenne après l'await.
+		const a = outcome(loadModelRun(LATEST));
+		const b = outcome(loadModelRun(OTHER));
+		expect(((await a) as { error: unknown }).error).toBeInstanceOf(StaleMetadataError);
+		expect(get(metaJson)).toBeUndefined();
+		await bucket.release('/1200Z/meta.json');
+		expect(((await b) as { value: { reference_time: string } }).value.reference_time).toBe(
+			'2026-10-18T12:00:00Z'
+		);
+	});
+
+	it('run lu depuis `latest` en mémoire, domaine changé avant la reprise de A : A périmé, rien écrit', async () => {
+		await onLatest();
+		const LATEST = new Date(RUNS.ecmwf_ifs025);
+		metaJson.set(undefined);
+		const a = outcome(loadModelRun(LATEST));
+		domain.set('dwd_icon'); // la sélection de run ne bouge pas, le domaine si
+		expect(((await a) as { error: unknown }).error).toBeInstanceOf(StaleMetadataError);
+		expect(get(metaJson)).toBeUndefined();
+	});
+
+	it('échec de A, domaine changé avant la restauration : périmé, rien restauré', async () => {
+		const bucket = await onLatest();
+		const a = outcome(loadModelRun(PAST));
+		await bucket.flush();
+		// L'échec, encore courant dans getMetaData, lève `loading` à faux puis se
+		// propage : le domaine change dans cette fenêtre, avant la reprise de A.
+		const unsubscribe = loading.subscribe((value) => {
+			if (value === false && get(domain) === 'ecmwf_ifs025') domain.set('dwd_icon');
+		});
+		loading.set(true);
+		await bucket.release('/meta.json', 404);
+		unsubscribe();
+		expect(get(domain)).toBe('dwd_icon');
+		expect(((await a) as { error: unknown }).error).toBeInstanceOf(StaleMetadataError);
+		expect(get(modelRun)?.getTime()).toBe(PAST.getTime());
 	});
 });

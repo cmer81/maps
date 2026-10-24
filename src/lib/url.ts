@@ -38,7 +38,8 @@ import {
 	ANOMALY_DOMAIN,
 	ANOMALY_VARIABLE,
 	CATEGORICAL_VARIABLES,
-	DEFAULT_PREFERENCES
+	DEFAULT_PREFERENCES,
+	WEATHER_AI_DOMAIN
 } from '$lib/constants';
 
 import {
@@ -52,6 +53,7 @@ import { clippingCountryCodes } from './stores/clipping';
 import { omProtocolSettings } from './stores/om-protocol-settings';
 import { parseISOWithoutTimezone } from './time-format';
 import { deriveDisplayedWindLevel, isWindVariable } from './vector-styles';
+import { fallbackTimeStepHours } from './weather-ai-domain';
 
 import type { ChartSource } from '$lib/chart-types';
 
@@ -344,6 +346,21 @@ export const getOMUrlFor = (
 		);
 	}
 
+	// Weather AI, run changé, son `meta.json` pas encore reçu : `metaJson` (variables,
+	// échéances) décrit encore l'ancien run. Une URL bâtie maintenant viserait une
+	// variable peut-être absente du run choisi (vent, précipitation des anciens
+	// runs) ; aucune source n'est chargée avant la fin de la lecture, qui recharge
+	// les couches. En cas d'échec, `loadModelRun` restaure run et métadonnées. Les
+	// autres modèles publient les mêmes variables à chaque run : pas de garde.
+	const metaJson = get(mJ);
+	if (
+		domain === WEATHER_AI_DOMAIN &&
+		metaJson &&
+		new Date(metaJson.reference_time).getTime() !== modelRun.getTime()
+	) {
+		return undefined;
+	}
+
 	const base = `${getBaseUri(domain)}/data_spatial/${domain}`;
 	let result = `${base}/${fmtModelRun(modelRun)}/${fmtSelectedTime(selectedTime)}.om`;
 	result += `?variable=${variable}`;
@@ -352,7 +369,8 @@ export const getOMUrlFor = (
 	// divise le cumul stocké par la durée du pas. Sans `delta_time_hours`, la
 	// lecture est rejetée (calque vide, popup sans valeur).
 	if (variableUsesTimeStep(variable)) {
-		const step = timeStepHoursAt(selectedTime, get(mJ)?.valid_times);
+		const step =
+			timeStepHoursAt(selectedTime, metaJson?.valid_times) ?? fallbackTimeStepHours(domain);
 		if (step) result += `&delta_time_hours=${step}`;
 	}
 

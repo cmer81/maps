@@ -120,9 +120,14 @@ const fetchMetaData = async (
 /**
  * Métadonnées du run sélectionné (`latest`, `inProgress` ou `meta.json` d'un run
  * passé). Lève `StaleMetadataError` si le domaine ou le run a changé pendant la
- * lecture du `meta.json` : l'appelant ne doit alors rien écrire.
+ * lecture du `meta.json` : l'appelant ne doit alors rien écrire. `isCurrent` ajoute
+ * le contrôle de génération de l'appelant (`loadModelRun`), vérifié avant toute
+ * écriture d'état (`modelRun` initial et `loading` compris) : même domaine et même
+ * date ne suffisent pas.
  */
-export const getMetaData = async (): Promise<DomainMetaDataJson> => {
+export const getMetaData = async (
+	isCurrent: () => boolean = () => true
+): Promise<DomainMetaDataJson> => {
 	const selection = domainSelection;
 	const domain = get(d);
 	const uri = getBaseUri(domain);
@@ -130,11 +135,14 @@ export const getMetaData = async (): Promise<DomainMetaDataJson> => {
 	const latest = get(l);
 	const latestReferenceTime = toDate(latest?.reference_time);
 
+	// Avant toute écriture, initialisation de `modelRun` comprise.
+	if (!isCurrent()) throw new StaleMetadataError();
 	if (get(mR) === undefined) {
 		mR.set(latestReferenceTime);
 	}
 	const modelRun = get(mR) as Date;
-	const isStale = () => selection !== domainSelection || get(mR)?.getTime() !== modelRun.getTime();
+	const isStale = () =>
+		!isCurrent() || selection !== domainSelection || get(mR)?.getTime() !== modelRun.getTime();
 
 	const inProgress = get(iP);
 	const inProgressReferenceTime = toDate(inProgress?.reference_time);
@@ -154,6 +162,60 @@ export const getMetaData = async (): Promise<DomainMetaDataJson> => {
 
 	result.valid_times.sort();
 	return result;
+};
+
+// Sélections successives de run via `loadModelRun` : seule la dernière applique
+// son résultat ou restaure. Le domaine et la date ne suffisent pas à distinguer
+// deux requêtes (A → B → A : l'échec tardif de la 1re A défaisait la 2de).
+let runSelection = 0;
+// Dernier couple (run, métadonnées) concordant, cible de la restauration : celui
+// capturé au départ d'une sélection peut être bancal si une autre était en vol
+// (A puis B : pendant B, `modelRun` vaut A mais `metaJson` décrit encore R).
+let lastLoaded: { run: Date | undefined; meta: DomainMetaDataJson | undefined } | undefined;
+
+/**
+ * Sélectionne le run `run` et lit ses métadonnées. Sur échec (404 du `meta.json`,
+ * réseau), restaure le dernier run chargé et ses métadonnées puis relève l'erreur :
+ * sans ça, `modelRun` restait sur le run introuvable et `metaJson` sur l'ancien, et
+ * `getOMUrlFor` refusait toute URL Weather AI jusqu'au choix d'un autre run.
+ * Lève `StaleMetadataError`, sans rien écrire, si une autre sélection de run, un
+ * changement de domaine ou de run a eu lieu.
+ */
+export const loadModelRun = async (run: Date): Promise<DomainMetaDataJson> => {
+	const selection = ++runSelection;
+	const domainAtStart = domainSelection;
+	// Seul contrôle de péremption, vérifié avant chaque écriture d'état (dans
+	// getMetaData comme après l'await, succès ou restauration) : même génération,
+	// même domaine et run demandé toujours sélectionné.
+	const isCurrent = () =>
+		selection === runSelection &&
+		domainAtStart === domainSelection &&
+		get(mR)?.getTime() === run.getTime();
+	const currentMeta = get(mJ);
+	const currentRun = get(mR);
+	if (
+		!lastLoaded ||
+		(currentRun && matchesModelRun(toDate(currentMeta?.reference_time), currentRun))
+	) {
+		lastLoaded = { run: currentRun, meta: currentMeta };
+	}
+	mR.set(run);
+	try {
+		const meta = await getMetaData(isCurrent);
+		// Le prédicat interne ne couvre pas la reprise : servie depuis `latest` sans
+		// fetch, la promesse est résolue mais run ou domaine ont pu changer avant.
+		if (!isCurrent()) throw new StaleMetadataError();
+		mJ.set(meta);
+		lastLoaded = { run, meta };
+		return meta;
+	} catch (e) {
+		if (e instanceof StaleMetadataError || !isCurrent()) {
+			throw new StaleMetadataError();
+		}
+		mR.set(lastLoaded.run);
+		mJ.set(lastLoaded.meta);
+		throw e;
+	}
 };
 
 export const matchVariableOrFirst = () => {
