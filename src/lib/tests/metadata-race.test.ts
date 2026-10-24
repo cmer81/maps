@@ -215,6 +215,14 @@ describe('getMetaData : meta.json d’un run passé', () => {
 		expect(get(loading)).toBe(false);
 	});
 
+	it('prédicat de l’appelant faux, run indéfini : StaleMetadataError, run non initialisé', async () => {
+		await loaded();
+		modelRun.set(undefined);
+		const pending = outcome(getMetaData(() => false));
+		expect(((await pending) as { error: unknown }).error).toBeInstanceOf(StaleMetadataError);
+		expect(get(modelRun)).toBeUndefined();
+	});
+
 	it('sans changement, le meta.json du run passé est renvoyé, et un 404 reste une erreur', async () => {
 		const bucket = await loaded();
 		modelRun.set(PAST);
@@ -339,6 +347,22 @@ describe('loadModelRun : meta.json du run choisi en échec', () => {
 		await bucket.flush();
 		expect(((await again) as { value: { reference_time: string } }).value.reference_time).toBe(
 			'2026-10-18T18:00:00Z'
+		);
+	});
+
+	it('run lu depuis `latest` en mémoire, B lancé avant la reprise de A : A périmé, rien écrit', async () => {
+		const bucket = await onLatest();
+		const LATEST = new Date(RUNS.ecmwf_ifs025);
+		metaJson.set(undefined);
+		// A n'attend aucun fetch : son prédicat interne passe, puis B démarre avant
+		// que `loadModelRun` ne reprenne après l'await.
+		const a = outcome(loadModelRun(LATEST));
+		const b = outcome(loadModelRun(OTHER));
+		expect(((await a) as { error: unknown }).error).toBeInstanceOf(StaleMetadataError);
+		expect(get(metaJson)).toBeUndefined();
+		await bucket.release('/1200Z/meta.json');
+		expect(((await b) as { value: { reference_time: string } }).value.reference_time).toBe(
+			'2026-10-18T12:00:00Z'
 		);
 	});
 });

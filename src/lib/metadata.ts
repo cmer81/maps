@@ -122,7 +122,8 @@ const fetchMetaData = async (
  * passé). Lève `StaleMetadataError` si le domaine ou le run a changé pendant la
  * lecture du `meta.json` : l'appelant ne doit alors rien écrire. `isCurrent` ajoute
  * le contrôle de génération de l'appelant (`loadModelRun`), vérifié avant toute
- * écriture d'état, `loading` compris : même domaine et même date ne suffisent pas.
+ * écriture d'état (`modelRun` initial et `loading` compris) : même domaine et même
+ * date ne suffisent pas.
  */
 export const getMetaData = async (
 	isCurrent: () => boolean = () => true
@@ -134,6 +135,8 @@ export const getMetaData = async (
 	const latest = get(l);
 	const latestReferenceTime = toDate(latest?.reference_time);
 
+	// Avant toute écriture, initialisation de `modelRun` comprise.
+	if (!isCurrent()) throw new StaleMetadataError();
 	if (get(mR) === undefined) {
 		mR.set(latestReferenceTime);
 	}
@@ -190,6 +193,9 @@ export const loadModelRun = async (run: Date): Promise<DomainMetaDataJson> => {
 	mR.set(run);
 	try {
 		const meta = await getMetaData(() => selection === runSelection);
+		// Le prédicat interne ne couvre pas la reprise : servie depuis `latest` sans
+		// fetch, la promesse est résolue mais une autre sélection a pu démarrer avant.
+		if (selection !== runSelection) throw new StaleMetadataError();
 		mJ.set(meta);
 		lastLoaded = { run, meta };
 		return meta;
