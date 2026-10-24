@@ -51,6 +51,23 @@ describe('getOMUrlFor', () => {
 			expect(getOMUrlFor('precipitation')).toContain('&delta_time_hours=0.25');
 		});
 
+		it('métadonnées d’un autre run (meta.json en cours de lecture) : aucune URL', () => {
+			// Run ancien choisi : `modelRun` change avant l'arrivée de son meta.json,
+			// `metaJson` décrit encore le run récent et ses variables.
+			mJ.set({
+				completed: true,
+				last_modified_time: '',
+				reference_time: '2026-05-23T06:00:00Z',
+				valid_times: ['2026-05-23T12:00Z', '2026-05-23T15:00Z'],
+				variables: ['precipitation', 'temperature_2m']
+			});
+			expect(getOMUrlFor('precipitation')).toBeUndefined();
+			expect(getOMUrl()).toBeUndefined();
+			// meta.json reçu : le run et ses métadonnées concordent.
+			setValidTimes(['2026-05-23T12:00Z', '2026-05-23T15:00Z']);
+			expect(getOMUrlFor('precipitation')).toContain('/2026/05/23/0000Z/');
+		});
+
 		it('suit l’échéance demandée, pas celle du store', () => {
 			setValidTimes(['2026-05-23T14:00Z', '2026-05-23T15:00Z', '2026-05-23T18:00Z']);
 			expect(getOMUrlFor('rain')).toContain('&delta_time_hours=1');
@@ -164,8 +181,8 @@ describe('getWindOverlayUrl', () => {
 const meta = (variables: string[]) => ({
 	completed: true,
 	last_modified_time: '',
-	reference_time: '2026-06-01T00:00:00Z',
-	valid_times: ['2026-06-01T01:00'],
+	reference_time: '2026-05-23T00:00:00Z',
+	valid_times: ['2026-05-23T15:00'],
 	variables
 });
 

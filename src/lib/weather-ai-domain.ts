@@ -1,6 +1,6 @@
 import { type Domain, domainOptions } from '@openmeteo/weather-map-layer';
 
-import { WEATHER_AI_DOMAIN } from '$lib/constants';
+import { METADATA_REFRESH_INTERVAL, WEATHER_AI_DOMAIN } from '$lib/constants';
 import { getWeatherAiOmBucketUrl } from '$lib/runtime-env';
 
 /** Pseudo-domaine Weather AI (WeatherNext Cyclones Mini, Google DeepMind) : grille
@@ -36,6 +36,17 @@ export const weatherAiDomain: Domain = {
 	time_interval: '6_hourly',
 	model_interval: '6_hourly'
 };
+
+/** Pas des échéances Weather AI, en heures : durée du cumul de `precipitation`. */
+export const WEATHER_AI_TIME_STEP_HOURS = 6;
+
+/** Pas à passer en `delta_time_hours` quand les `valid_times` ne permettent pas de
+ *  le déduire (`timeStepHoursAt()` renvoie `undefined` avec une seule échéance :
+ *  première échéance d'un run progressif, `in-progress.json` à +6 h seulement).
+ *  Weather AI a un pas fixe ; les autres domaines restent sans repli. */
+export function fallbackTimeStepHours(domainValue: string): number | undefined {
+	return domainValue === WEATHER_AI_DOMAIN ? WEATHER_AI_TIME_STEP_HOURS : undefined;
+}
 
 /**
  * Pousse le pseudo-domaine Weather AI dans `domainOptions` (mutable). Idempotent.
@@ -95,6 +106,36 @@ export async function fetchWeatherAiVariables(): Promise<string[] | undefined> {
 	} catch {
 		return undefined;
 	}
+}
+
+/**
+ * Suit `variables` du `latest.json` public : lecture immédiate, puis relecture à
+ * la cadence du rafraîchissement des métadonnées (`METADATA_REFRESH_INTERVAL`).
+ * `onChange` reçoit chaque liste lue ; un échec garde la dernière liste connue.
+ * Une réponse arrivée après une plus récente, ou après l'arrêt, est ignorée.
+ * Renvoie la fonction d'arrêt.
+ */
+export function watchWeatherAiVariables(
+	onChange: (variables: string[]) => void,
+	intervalMs = METADATA_REFRESH_INTERVAL
+): () => void {
+	let issued = 0;
+	let applied = 0;
+	let stopped = false;
+	const poll = () => {
+		const request = ++issued;
+		void fetchWeatherAiVariables().then((variables) => {
+			if (stopped || !variables || request < applied) return;
+			applied = request;
+			onChange(variables);
+		});
+	};
+	poll();
+	const timer = setInterval(poll, intervalMs);
+	return () => {
+		stopped = true;
+		clearInterval(timer);
+	};
 }
 
 /** Précision affichée à côté du libellé d'une variable Weather AI. `precipitation`

@@ -44,6 +44,7 @@ import {
 	fetchWeatherAiVariables,
 	frenchList,
 	registerWeatherAiDomain,
+	watchWeatherAiVariables,
 	weatherAiDomain,
 	weatherAiFieldLabels,
 	weatherAiVariableNote
@@ -237,6 +238,37 @@ describe('champs annoncés par l’onglet Cyclones IA', () => {
 		expect(await fetchWeatherAiVariables()).toBeUndefined();
 		vi.stubEnv('VITE_WEATHER_AI_OM_BUCKET_URL', '');
 		expect(await fetchWeatherAiVariables()).toBeUndefined();
+	});
+
+	it('suit `variables` du latest.json public au rythme du rafraîchissement des métadonnées', async () => {
+		vi.useFakeTimers();
+		let body: unknown = { variables: ['pressure_msl', 'temperature_2m'] };
+		vi.stubGlobal('fetch', async (url: string) =>
+			body === undefined
+				? respond(url, 'NoSuchKey', { status: 404 })
+				: respond(url, JSON.stringify(body), { status: 200 })
+		);
+		const seen: string[][] = [];
+		const stop = watchWeatherAiVariables((variables) => seen.push(variables), 1000);
+		try {
+			await vi.advanceTimersByTimeAsync(0);
+			expect(seen).toEqual([['pressure_msl', 'temperature_2m']]);
+			// Nouveau run publié avec vent et précipitation : relu au tick suivant.
+			body = { variables: ALL };
+			await vi.advanceTimersByTimeAsync(1000);
+			expect(seen.at(-1)).toEqual(ALL);
+			// Bucket muet : la dernière liste connue reste annoncée.
+			body = undefined;
+			await vi.advanceTimersByTimeAsync(1000);
+			expect(seen).toHaveLength(2);
+			stop();
+			body = { variables: ['pressure_msl'] };
+			await vi.advanceTimersByTimeAsync(5000);
+			expect(seen).toHaveLength(2);
+		} finally {
+			stop();
+			vi.useRealTimers();
+		}
 	});
 
 	it('libelle la précipitation Weather AI comme un taux moyen, et elle seule', () => {
@@ -643,6 +675,27 @@ describe('lecture des .om', () => {
 			// 12 mm en 6 h au centre du cyclone synthétique → 2 mm/h.
 			expect(g.getLinearInterpolatedValue(values, -20, 55)).toBeCloseTo(2, 2);
 			expect(g.getLinearInterpolatedValue(values, 40, -100)).toBeCloseTo(0, 3);
+		} finally {
+			metaJson.set(undefined);
+		}
+	});
+
+	it('précipitation à la seule échéance d’un run progressif : pas de 6 h par défaut', async () => {
+		stubBucket();
+		// Première échéance déposée : `in-progress.json` ne liste que +6 h, le pas
+		// ne se déduit pas des `valid_times`.
+		metaJson.set({
+			completed: false,
+			last_modified_time: '2026-10-19T12:05:00Z',
+			reference_time: '2026-10-19T06:00:00Z',
+			valid_times: ['2026-10-19T12:00:00Z'],
+			variables: ['precipitation']
+		});
+		try {
+			const { url, values } = await read('precipitation', '2026-10-19T12:00:00Z');
+			expect(url).toContain('&delta_time_hours=6');
+			const g = GridFactory.create(grid as Domain['grid']);
+			expect(g.getLinearInterpolatedValue(values, -20, 55)).toBeCloseTo(2, 2);
 		} finally {
 			metaJson.set(undefined);
 		}

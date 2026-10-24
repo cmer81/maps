@@ -18,8 +18,8 @@
 
 	import { WEATHER_AI_DOMAIN } from '$lib/constants';
 	import {
-		fetchWeatherAiVariables,
 		frenchList,
+		watchWeatherAiVariables,
 		weatherAiFieldLabels
 	} from '$lib/weather-ai-domain';
 	import { CONES_MENTION } from '$lib/weather-ai/cones';
@@ -37,17 +37,15 @@
 	const modelAvailable = domainOptions.some((d) => d.value === WEATHER_AI_DOMAIN);
 
 	// Champs annoncés : ceux que le dernier run publié liste dans `variables`
-	// (vent et précipitation absents des anciens runs). Sans réponse, champs de base.
+	// (vent et précipitation absents des anciens runs), relus à chaque
+	// rafraîchissement des métadonnées tant que l'onglet est ouvert. Sans réponse,
+	// champs de base.
 	let publishedVariables = $state<string[] | undefined>();
 	$effect(() => {
 		if (!modelAvailable) return;
-		let current = true;
-		void fetchWeatherAiVariables().then((variables) => {
-			if (current) publishedVariables = variables;
+		return watchWeatherAiVariables((variables) => {
+			publishedVariables = variables;
 		});
-		return () => {
-			current = false;
-		};
 	});
 	const fields = $derived(frenchList(weatherAiFieldLabels(publishedVariables)));
 
