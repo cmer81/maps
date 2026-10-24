@@ -156,26 +156,45 @@ export const getMetaData = async (): Promise<DomainMetaDataJson> => {
 	return result;
 };
 
+// Sélections successives de run via `loadModelRun` : seule la dernière applique
+// son résultat ou restaure. Le domaine et la date ne suffisent pas à distinguer
+// deux requêtes (A → B → A : l'échec tardif de la 1re A défaisait la 2de).
+let runSelection = 0;
+// Dernier couple (run, métadonnées) concordant, cible de la restauration : celui
+// capturé au départ d'une sélection peut être bancal si une autre était en vol
+// (A puis B : pendant B, `modelRun` vaut A mais `metaJson` décrit encore R).
+let lastLoaded: { run: Date | undefined; meta: DomainMetaDataJson | undefined } | undefined;
+
 /**
  * Sélectionne le run `run` et lit ses métadonnées. Sur échec (404 du `meta.json`,
- * réseau), restaure le run et les métadonnées d'avant puis relève l'erreur : sans
- * ça, `modelRun` restait sur le run introuvable et `metaJson` sur l'ancien, et
+ * réseau), restaure le dernier run chargé et ses métadonnées puis relève l'erreur :
+ * sans ça, `modelRun` restait sur le run introuvable et `metaJson` sur l'ancien, et
  * `getOMUrlFor` refusait toute URL Weather AI jusqu'au choix d'un autre run.
- * Une `StaleMetadataError` (sélection changée entre-temps) ne restaure rien.
+ * Lève `StaleMetadataError`, sans rien écrire, si une autre sélection a eu lieu.
  */
 export const loadModelRun = async (run: Date): Promise<DomainMetaDataJson> => {
-	const previousRun = get(mR);
-	const previousMeta = get(mJ);
+	const selection = ++runSelection;
+	const currentMeta = get(mJ);
+	const currentRun = get(mR);
+	if (
+		!lastLoaded ||
+		(currentRun && matchesModelRun(toDate(currentMeta?.reference_time), currentRun))
+	) {
+		lastLoaded = { run: currentRun, meta: currentMeta };
+	}
 	mR.set(run);
 	try {
 		const meta = await getMetaData();
+		if (selection !== runSelection) throw new StaleMetadataError();
 		mJ.set(meta);
+		lastLoaded = { run, meta };
 		return meta;
 	} catch (e) {
-		if (!(e instanceof StaleMetadataError)) {
-			mR.set(previousRun);
-			mJ.set(previousMeta);
+		if (e instanceof StaleMetadataError || selection !== runSelection) {
+			throw new StaleMetadataError();
 		}
+		mR.set(lastLoaded.run);
+		mJ.set(lastLoaded.meta);
 		throw e;
 	}
 };

@@ -276,4 +276,46 @@ describe('loadModelRun : meta.json du run choisi en échec', () => {
 		expect(((await pending) as { error: unknown }).error).toBeInstanceOf(StaleMetadataError);
 		expect(get(modelRun)?.getTime()).toBe(OTHER.getTime());
 	});
+
+	const OTHER = new Date('2026-10-18T12:00:00Z');
+
+	it('A puis B, A ignoré puis B en échec : retour au dernier couple chargé, pas à A', async () => {
+		const bucket = await onLatest();
+		const a = outcome(loadModelRun(PAST));
+		await bucket.flush();
+		const b = outcome(loadModelRun(OTHER));
+		await bucket.flush();
+		await bucket.release('/1800Z/meta.json'); // A répond, B est sélectionné
+		expect(((await a) as { error: unknown }).error).toBeInstanceOf(StaleMetadataError);
+		await bucket.release('/1200Z/meta.json', 404);
+		expect(await b).toEqual({ error: new Error('HTTP 404') });
+		// Run et meta.json concordent : ceux du run chargé avant A.
+		expect(get(modelRun)?.toISOString()).toBe(new Date(RUNS.ecmwf_ifs025).toISOString());
+		expect(get(metaJson)?.reference_time).toBe(RUNS.ecmwf_ifs025);
+	});
+
+	it('A → B → A : l’échec tardif de la 1re requête A ne défait pas la 2de', async () => {
+		const bucket = await onLatest();
+		const first = outcome(loadModelRun(PAST));
+		await bucket.flush();
+		const b = outcome(loadModelRun(OTHER));
+		await bucket.flush();
+		const again = outcome(loadModelRun(PAST));
+		await bucket.flush();
+		const [firstReq, bReq, againReq] = bucket.requests.filter((r) => r.url.endsWith('/meta.json'));
+		againReq.release();
+		await bucket.flush();
+		expect(((await again) as { value: { reference_time: string } }).value.reference_time).toBe(
+			'2026-10-18T18:00:00Z'
+		);
+		bReq.release(404);
+		await bucket.flush();
+		expect(((await b) as { error: unknown }).error).toBeInstanceOf(StaleMetadataError);
+		firstReq.release(404); // la 1re requête A échoue en retard
+		await bucket.flush();
+		// Périmée, donc ni toast ni restauration.
+		expect(((await first) as { error: unknown }).error).toBeInstanceOf(StaleMetadataError);
+		expect(get(modelRun)?.getTime()).toBe(PAST.getTime());
+		expect(get(metaJson)?.reference_time).toBe('2026-10-18T18:00:00Z');
+	});
 });
