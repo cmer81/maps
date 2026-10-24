@@ -318,4 +318,27 @@ describe('loadModelRun : meta.json du run choisi en échec', () => {
 		expect(get(modelRun)?.getTime()).toBe(PAST.getTime());
 		expect(get(metaJson)?.reference_time).toBe('2026-10-18T18:00:00Z');
 	});
+
+	it('A → B → A : l’échec de la 1re A pendant la 2de laisse l’indicateur de chargement intact', async () => {
+		const bucket = await onLatest();
+		const first = outcome(loadModelRun(PAST));
+		await bucket.flush();
+		const b = outcome(loadModelRun(OTHER));
+		await bucket.flush();
+		loading.set(true); // chargement de la 2de A en cours
+		const again = outcome(loadModelRun(PAST));
+		await bucket.flush();
+		const [firstReq, bReq, againReq] = bucket.requests.filter((r) => r.url.endsWith('/meta.json'));
+		bReq.release(404);
+		firstReq.release(404); // la 1re A échoue alors que la 2de est en vol
+		await bucket.flush();
+		expect(((await first) as { error: unknown }).error).toBeInstanceOf(StaleMetadataError);
+		expect(((await b) as { error: unknown }).error).toBeInstanceOf(StaleMetadataError);
+		expect(get(loading)).toBe(true);
+		againReq.release();
+		await bucket.flush();
+		expect(((await again) as { value: { reference_time: string } }).value.reference_time).toBe(
+			'2026-10-18T18:00:00Z'
+		);
+	});
 });

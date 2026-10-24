@@ -120,9 +120,13 @@ const fetchMetaData = async (
 /**
  * Métadonnées du run sélectionné (`latest`, `inProgress` ou `meta.json` d'un run
  * passé). Lève `StaleMetadataError` si le domaine ou le run a changé pendant la
- * lecture du `meta.json` : l'appelant ne doit alors rien écrire.
+ * lecture du `meta.json` : l'appelant ne doit alors rien écrire. `isCurrent` ajoute
+ * le contrôle de génération de l'appelant (`loadModelRun`), vérifié avant toute
+ * écriture d'état, `loading` compris : même domaine et même date ne suffisent pas.
  */
-export const getMetaData = async (): Promise<DomainMetaDataJson> => {
+export const getMetaData = async (
+	isCurrent: () => boolean = () => true
+): Promise<DomainMetaDataJson> => {
 	const selection = domainSelection;
 	const domain = get(d);
 	const uri = getBaseUri(domain);
@@ -134,7 +138,8 @@ export const getMetaData = async (): Promise<DomainMetaDataJson> => {
 		mR.set(latestReferenceTime);
 	}
 	const modelRun = get(mR) as Date;
-	const isStale = () => selection !== domainSelection || get(mR)?.getTime() !== modelRun.getTime();
+	const isStale = () =>
+		!isCurrent() || selection !== domainSelection || get(mR)?.getTime() !== modelRun.getTime();
 
 	const inProgress = get(iP);
 	const inProgressReferenceTime = toDate(inProgress?.reference_time);
@@ -184,8 +189,7 @@ export const loadModelRun = async (run: Date): Promise<DomainMetaDataJson> => {
 	}
 	mR.set(run);
 	try {
-		const meta = await getMetaData();
-		if (selection !== runSelection) throw new StaleMetadataError();
+		const meta = await getMetaData(() => selection === runSelection);
 		mJ.set(meta);
 		lastLoaded = { run, meta };
 		return meta;
