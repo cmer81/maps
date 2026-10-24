@@ -178,10 +178,19 @@ let lastLoaded: { run: Date | undefined; meta: DomainMetaDataJson | undefined } 
  * réseau), restaure le dernier run chargé et ses métadonnées puis relève l'erreur :
  * sans ça, `modelRun` restait sur le run introuvable et `metaJson` sur l'ancien, et
  * `getOMUrlFor` refusait toute URL Weather AI jusqu'au choix d'un autre run.
- * Lève `StaleMetadataError`, sans rien écrire, si une autre sélection a eu lieu.
+ * Lève `StaleMetadataError`, sans rien écrire, si une autre sélection de run, un
+ * changement de domaine ou de run a eu lieu.
  */
 export const loadModelRun = async (run: Date): Promise<DomainMetaDataJson> => {
 	const selection = ++runSelection;
+	const domainAtStart = domainSelection;
+	// Seul contrôle de péremption, vérifié avant chaque écriture d'état (dans
+	// getMetaData comme après l'await, succès ou restauration) : même génération,
+	// même domaine et run demandé toujours sélectionné.
+	const isCurrent = () =>
+		selection === runSelection &&
+		domainAtStart === domainSelection &&
+		get(mR)?.getTime() === run.getTime();
 	const currentMeta = get(mJ);
 	const currentRun = get(mR);
 	if (
@@ -192,15 +201,15 @@ export const loadModelRun = async (run: Date): Promise<DomainMetaDataJson> => {
 	}
 	mR.set(run);
 	try {
-		const meta = await getMetaData(() => selection === runSelection);
+		const meta = await getMetaData(isCurrent);
 		// Le prédicat interne ne couvre pas la reprise : servie depuis `latest` sans
-		// fetch, la promesse est résolue mais une autre sélection a pu démarrer avant.
-		if (selection !== runSelection) throw new StaleMetadataError();
+		// fetch, la promesse est résolue mais run ou domaine ont pu changer avant.
+		if (!isCurrent()) throw new StaleMetadataError();
 		mJ.set(meta);
 		lastLoaded = { run, meta };
 		return meta;
 	} catch (e) {
-		if (e instanceof StaleMetadataError || selection !== runSelection) {
+		if (e instanceof StaleMetadataError || !isCurrent()) {
 			throw new StaleMetadataError();
 		}
 		mR.set(lastLoaded.run);

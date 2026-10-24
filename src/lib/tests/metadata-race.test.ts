@@ -365,4 +365,31 @@ describe('loadModelRun : meta.json du run choisi en échec', () => {
 			'2026-10-18T12:00:00Z'
 		);
 	});
+
+	it('run lu depuis `latest` en mémoire, domaine changé avant la reprise de A : A périmé, rien écrit', async () => {
+		await onLatest();
+		const LATEST = new Date(RUNS.ecmwf_ifs025);
+		metaJson.set(undefined);
+		const a = outcome(loadModelRun(LATEST));
+		domain.set('dwd_icon'); // la sélection de run ne bouge pas, le domaine si
+		expect(((await a) as { error: unknown }).error).toBeInstanceOf(StaleMetadataError);
+		expect(get(metaJson)).toBeUndefined();
+	});
+
+	it('échec de A, domaine changé avant la restauration : périmé, rien restauré', async () => {
+		const bucket = await onLatest();
+		const a = outcome(loadModelRun(PAST));
+		await bucket.flush();
+		// L'échec, encore courant dans getMetaData, lève `loading` à faux puis se
+		// propage : le domaine change dans cette fenêtre, avant la reprise de A.
+		const unsubscribe = loading.subscribe((value) => {
+			if (value === false && get(domain) === 'ecmwf_ifs025') domain.set('dwd_icon');
+		});
+		loading.set(true);
+		await bucket.release('/meta.json', 404);
+		unsubscribe();
+		expect(get(domain)).toBe('dwd_icon');
+		expect(((await a) as { error: unknown }).error).toBeInstanceOf(StaleMetadataError);
+		expect(get(modelRun)?.getTime()).toBe(PAST.getTime());
+	});
 });
