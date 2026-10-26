@@ -14,7 +14,7 @@
 		weatherAiTime
 	} from '$lib/stores/weather-ai';
 
-	import { CONES_MENTION } from '$lib/weather-ai/cones';
+	import { CONES_MENTION, previousConesNotice } from '$lib/weather-ai/cones';
 	import { useWeatherAi } from '$lib/weather-ai/controller';
 	import { cardSummary } from '$lib/weather-ai/displayed';
 	import { syncWeatherAiLayers } from '$lib/weather-ai/map-layers';
@@ -61,6 +61,14 @@
 		$weatherAiLayers.cones &&
 			!!$weatherAiCones?.doc &&
 			$weatherAiCones.runId === $weatherAiDisplayed?.runId
+	);
+	// Cônes du run précédent, gardés tant que ceux du run affiché sont en calcul.
+	const previousCones = $derived(
+		$weatherAiLayers.cones &&
+			!$weatherAiCones?.doc &&
+			$weatherAiCones?.runId === $weatherAiDisplayed?.runId
+			? $weatherAiCones?.previous
+			: undefined
 	);
 </script>
 
@@ -153,6 +161,21 @@
 			<p class="text-[10px] leading-snug text-white/50">
 				Statut de calibration : <span class="font-mono break-all"
 					>{$weatherAiCones?.doc?.calibration_status}</span
+				>
+			</p>
+		{/if}
+
+		{#if previousCones}
+			<p
+				class="mt-1 rounded bg-sky-400/15 px-2 py-1 text-[11px] leading-snug text-sky-100"
+				role="note"
+			>
+				{previousConesNotice(previousCones)} Contour en pointillés.
+			</p>
+			<p class="mt-1 text-[11px] leading-snug text-amber-100">{CONES_MENTION}</p>
+			<p class="text-[10px] leading-snug text-white/50">
+				Statut de calibration (run des cônes) : <span class="font-mono break-all"
+					>{previousCones.doc.calibration_status}</span
 				>
 			</p>
 		{/if}

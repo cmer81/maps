@@ -319,3 +319,57 @@ export async function loadConesDocument(
 		throw err;
 	}
 }
+
+/**
+ * Cônes validés d'un run antérieur, gardés en mémoire de session pour couvrir
+ * l'intervalle (~1 h) entre la bascule du catalogue sur un nouveau run et la fin
+ * du job `cone-members` : le portail ne sert les cônes que du run en ligne
+ * (`_cones_du_run`), un chargement à froid ne peut donc pas les obtenir.
+ */
+export interface PreviousCones {
+	runId: string;
+	snapshotId: string;
+	sha256?: string;
+	calibrationStatus?: string;
+	attribution: string;
+	licenseNotice: string;
+	doc: ConesProduct;
+}
+
+/** Écart maximal entre l'amorce des cônes gardés et celle du run affiché. */
+export const PREVIOUS_CONES_MAX_AGE_MS = 12 * 3_600_000;
+
+/**
+ * Cônes à garder au passage sur `next`, ou `null`. Seulement ceux du run affiché
+ * juste avant (`prevRunId`), si `next` n'annonce pas encore les siens, amorcés
+ * avant `next` et au plus 12 h plus tôt, et toujours conformes au contrat
+ * (`validateCones` rejoué contre LEUR run, jamais contre celui affiché).
+ */
+export function keepPreviousCones(
+	kept: PreviousCones | null,
+	prevRunId: string | undefined,
+	next: { runId: string; initTime: string | undefined; available: DiscoveredProduct[] }
+): PreviousCones | null {
+	if (!kept || kept.runId !== prevRunId || kept.runId === next.runId) return null;
+	if (next.available.some((p) => p.productId === CONES_PRODUCT_ID)) return null;
+	const age = Date.parse(next.initTime ?? '') - Date.parse(kept.doc.init_time);
+	if (!(age > 0 && age <= PREVIOUS_CONES_MAX_AGE_MS)) return null;
+	const refusal = validateCones(kept.doc, {
+		runId: kept.runId,
+		snapshotId: kept.snapshotId,
+		calibrationStatus: kept.calibrationStatus
+	});
+	return refusal ? null : kept;
+}
+
+/** Amorce au format court des mentions, ex. « 26/10 00Z ». */
+export function shortRunLabel(initTime: string): string {
+	const d = new Date(initTime);
+	if (Number.isNaN(d.getTime())) return 'inconnu';
+	const p = (n: number) => String(n).padStart(2, '0');
+	return `${p(d.getUTCDate())}/${p(d.getUTCMonth() + 1)} ${p(d.getUTCHours())}Z`;
+}
+
+/** Mention imposée dès que des cônes d'un run antérieur sont affichés. */
+export const previousConesNotice = (prev: PreviousCones) =>
+	`Cônes du run ${shortRunLabel(prev.doc.init_time)} : ceux du run affiché sont en cours de calcul.`;

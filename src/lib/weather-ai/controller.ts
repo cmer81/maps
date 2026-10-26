@@ -15,7 +15,13 @@ import {
 
 import { getWeatherAiApiUrl, getWeatherAiConesMode } from '$lib/runtime-env';
 
-import { CONES_PRODUCT_ID, loadConesDocument, validateCones } from './cones';
+import {
+	CONES_PRODUCT_ID,
+	type PreviousCones,
+	keepPreviousCones,
+	loadConesDocument,
+	validateCones
+} from './cones';
 import { loadDemoRun } from './demo';
 import {
 	type LoadedRun,
@@ -43,6 +49,11 @@ let extendCtl: AbortController | undefined;
 let conesCtl: AbortController | undefined;
 let pollTimer: ReturnType<typeof setInterval> | undefined;
 let users = 0;
+/**
+ * Derniers cônes validés de la session (mémoire seule) : au passage sur un run
+ * qui n'a pas encore les siens, ceux du run précédent restent affichés.
+ */
+let lastCones: PreviousCones | null = null;
 let unsubscribeLayers: (() => void) | undefined;
 
 const errorMessage = (err: unknown) =>
@@ -54,7 +65,10 @@ function commitRun(run: LoadedRun) {
 	const prev = get(weatherAiRun);
 	// L'échéance affichée découle de la frise principale (weatherAiFrame).
 	weatherAiRun.set(run);
-	if (prev?.runId !== run.runId) weatherAiCones.set(null);
+	if (prev?.runId !== run.runId) {
+		const previous = run.demo ? null : keepPreviousCones(lastCones, prev?.runId, run);
+		weatherAiCones.set(previous ? { runId: run.runId, doc: null, previous } : null);
+	}
 	pruneCache([run.runId]);
 }
 
@@ -85,7 +99,12 @@ export async function refresh(retry = 0): Promise<void> {
 			const next = withCatalogCones(active, catalog);
 			if (next !== active) {
 				weatherAiRun.set(next);
-				weatherAiCones.set(null);
+				// Les cônes d'un run antérieur restent jusqu'à la validation de ceux du run.
+				weatherAiCones.update((c) =>
+					c?.previous && c.runId === next.runId
+						? { runId: c.runId, doc: null, previous: c.previous }
+						: null
+				);
 			}
 			weatherAiStatus.set({ state: 'ready' });
 			refreshCtl = undefined;
@@ -155,11 +174,20 @@ async function ensureEnabledLoaded(): Promise<void> {
 	void syncCones();
 }
 
-/** Les cônes sont proposés si le flag le permet et que le catalogue les annonce (ou en mode fixture). */
-export function conesOffered(run: LoadedRun | undefined): boolean {
+/**
+ * Les cônes sont proposés si le flag le permet et que le catalogue les annonce
+ * (ou en mode fixture), ou si ceux du run précédent sont gardés pour ce run.
+ */
+export function conesOffered(run: LoadedRun | undefined, cones = get(weatherAiCones)): boolean {
 	const mode = getWeatherAiConesMode();
 	if (mode === 'off' || !run) return false;
+	if (cones?.previous && cones.runId === run.runId) return true;
 	return mode === 'fixture' || run.available.some((p) => p.productId === CONES_PRODUCT_ID);
+}
+
+/** Retour à l'état initial de la mémoire de session (tests). */
+export function forgetSessionCones(): void {
+	lastCones = null;
 }
 
 async function syncCones(): Promise<void> {
@@ -168,6 +196,8 @@ async function syncCones(): Promise<void> {
 	const entry = run.available.find((p) => p.productId === CONES_PRODUCT_ID);
 	const sha256 = entry?.sha256;
 	const current = get(weatherAiCones);
+	// Cônes du run précédent gardés, et rien d'annoncé pour ce run : rien à lire.
+	if (!entry && current?.previous && current.runId === run.runId) return;
 	if (current?.runId === run.runId && current.sha256 === sha256) return;
 	conesCtl?.abort();
 	const ctl = new AbortController();
@@ -185,16 +215,40 @@ async function syncCones(): Promise<void> {
 					calibrationStatus: entry?.calibrationStatus
 				})
 			: 'aucun document de cônes pour ce run';
+		if (!refusal && doc && entry && getWeatherAiConesMode() === 'on') {
+			lastCones = {
+				runId: run.runId,
+				snapshotId: run.snapshotId,
+				sha256,
+				calibrationStatus: entry.calibrationStatus,
+				attribution: entry.attribution,
+				licenseNotice: entry.licenseNotice,
+				doc
+			};
+		}
 		weatherAiCones.set({
 			runId: run.runId,
 			sha256,
 			doc: refusal ? null : doc,
-			message: refusal ?? undefined
+			message: refusal ?? undefined,
+			// Refus : les cônes du run précédent, s'il y en a, restent affichés.
+			previous: refusal ? previousFor(run.runId) : undefined
 		});
 	} catch (err) {
 		if (isAbort(err)) return;
-		weatherAiCones.set({ runId: run.runId, sha256, doc: null, message: errorMessage(err) });
+		weatherAiCones.set({
+			runId: run.runId,
+			sha256,
+			doc: null,
+			message: errorMessage(err),
+			previous: previousFor(run.runId)
+		});
 	}
+}
+
+function previousFor(runId: string): PreviousCones | undefined {
+	const c = get(weatherAiCones);
+	return c?.runId === runId ? c.previous : undefined;
 }
 
 /**

@@ -22,7 +22,7 @@
 		watchWeatherAiVariables,
 		weatherAiFieldLabels
 	} from '$lib/weather-ai-domain';
-	import { CONES_MENTION } from '$lib/weather-ai/cones';
+	import { CONES_MENTION, previousConesNotice } from '$lib/weather-ai/cones';
 	import { conesOffered, useWeatherAi } from '$lib/weather-ai/controller';
 	import { cardSummary } from '$lib/weather-ai/displayed';
 	import { formatUtc } from '$lib/weather-ai/render';
@@ -66,7 +66,8 @@
 		const items: { kind: WeatherAiOverlay; label: string }[] = run.available
 			.filter((p) => p.spec.kind === 'tracks')
 			.map(() => ({ kind: 'tracks', label: 'Cyclones, trajectoires et zones à surveiller' }));
-		if (conesOffered(run)) items.push({ kind: 'cones', label: "Cônes d'incertitude" });
+		if (conesOffered(run, $weatherAiCones))
+			items.push({ kind: 'cones', label: "Cônes d'incertitude" });
 		return items;
 	});
 	const continuousFields = $derived(
@@ -265,7 +266,7 @@
 			</section>
 		{/if}
 
-		{#if $weatherAiLayers.cones && conesOffered($weatherAiRun)}
+		{#if $weatherAiLayers.cones && conesOffered($weatherAiRun, $weatherAiCones)}
 			<section class="flex flex-col gap-1 px-1">
 				<h3 class="text-xs font-semibold text-white/80">Cônes d'incertitude</h3>
 				{#if $weatherAiCones?.doc}
@@ -279,6 +280,22 @@
 					<p class="text-[11px] text-white/55">
 						Zone claire : 90 % · zone soutenue : 68 %. Enveloppe coupée là où le cône est
 						indisponible ; hémisphère sud : pas de cône au-delà de +24 h.
+					</p>
+				{:else if $weatherAiCones?.previous}
+					<p class="text-[11px] font-medium text-sky-100" role="note">
+						{previousConesNotice($weatherAiCones.previous)} Rendu atténué, contour en pointillés ; trajectoires
+						du run affiché.
+					</p>
+					{#if $weatherAiCones.message}
+						<p class="text-[11px] text-white/55">
+							Cônes du run affiché non retenus : {$weatherAiCones.message}.
+						</p>
+					{/if}
+					<p class="text-[11px] font-medium text-amber-100">{CONES_MENTION}</p>
+					<p class="text-[11px] text-white/55">
+						Statut de calibration (run des cônes) : <span class="font-mono break-all"
+							>{$weatherAiCones.previous.doc.calibration_status}</span
+						>
 					</p>
 				{:else if $weatherAiCones?.message}
 					<p class="text-[11px] text-white/55">Cônes non affichés : {$weatherAiCones.message}.</p>

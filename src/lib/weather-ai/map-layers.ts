@@ -30,9 +30,11 @@ import {
 import {
 	CONE_REASON_LABELS,
 	type ConesProduct,
+	type PreviousCones,
 	coneAt,
 	conesToGeoJson,
-	isConeReason
+	isConeReason,
+	shortRunLabel
 } from './cones';
 import { CATALOG_POLL_MS } from './controller';
 import { displayedAfterCommit } from './displayed';
@@ -59,6 +61,8 @@ export interface RenderPlan {
 	trackPoints?: Fc;
 	cones?: Fc;
 	coneCentres?: Fc;
+	/** Les cônes sont ceux d'un run antérieur : rendu atténué, contour en pointillés. */
+	previousCones?: boolean;
 }
 
 // Rendus mémoïsés pour le run affiché (données immuables) ; un rendu terminé
@@ -76,11 +80,13 @@ export interface PlanInput {
 	 * document remplacé dans le même run change la signature et la géométrie.
 	 */
 	conesId?: string;
+	/** Cônes du run précédent, gardés tant que `cones` est absent pour le run affiché. */
+	previous?: PreviousCones | null;
 	dark: boolean;
 }
 
 /** Signature de l'état à afficher : deux appels de même signature ne recommutent pas. */
-export const planSignature = ({ run, vt, layers, cones, conesId, dark }: PlanInput) =>
+export const planSignature = ({ run, vt, layers, cones, conesId, previous, dark }: PlanInput) =>
 	[
 		run?.runId ?? '-',
 		Object.keys(run?.loaded ?? {})
@@ -91,7 +97,11 @@ export const planSignature = ({ run, vt, layers, cones, conesId, dark }: PlanInp
 			.filter(([, on]) => on)
 			.map(([k]) => k)
 			.join(','),
-		cones ? `${cones.run_id}:${conesId ?? ''}` : '-',
+		cones
+			? `${cones.run_id}:${conesId ?? ''}`
+			: previous
+				? `prev:${previous.runId}:${previous.sha256 ?? ''}`
+				: '-',
 		dark ? 'dark' : 'light'
 	].join('|');
 
@@ -102,6 +112,7 @@ export async function preparePlan({
 	layers,
 	cones,
 	conesId,
+	previous,
 	dark
 }: PlanInput): Promise<RenderPlan | null> {
 	if (!run || !vt) return null;
@@ -137,6 +148,19 @@ export async function preparePlan({
 		}
 		plan.cones = geo.envelopes;
 		plan.coneCentres = geo.centres;
+	} else if (layers.cones && previous && previous.runId !== runId) {
+		// Cônes du run précédent (ceux du run affiché en cours de calcul) : rendus à part.
+		const id = `prev:${previous.runId}#${previous.sha256 ?? ''}`;
+		const gen = conesCache.scope(`${runId}#${id}`);
+		const key = renderKey(runId, previous.doc.product_id, id);
+		let geo = conesCache.get(key);
+		if (!geo) {
+			geo = conesToGeoJson(previous.doc);
+			conesCache.set(gen, key, geo);
+		}
+		plan.cones = geo.envelopes;
+		plan.coneCentres = geo.centres;
+		plan.previousCones = true;
 	}
 
 	const empty = !plan.trackLines && !plan.cones && !plan.coneCentres;
@@ -150,9 +174,10 @@ type Part = 'trackLines' | 'trackPoints' | 'cones' | 'coneCentres';
 interface LayerDef {
 	id: string;
 	part: Part;
-	spec: (src: string, dark: boolean) => maplibregl.LayerSpecification;
+	/** `previous` : cônes d'un run antérieur (atténués, pointillés). */
+	spec: (src: string, dark: boolean, previous: boolean) => maplibregl.LayerSpecification;
 	/** Propriétés d'opacité : à 0 au montage, valeur cible à l'affichage. */
-	opacity: (dark: boolean) => Record<string, unknown>;
+	opacity: (dark: boolean, previous: boolean) => Record<string, unknown>;
 }
 
 const ink = (dark: boolean) => (dark ? '#e2e8f0' : '#1e293b');
@@ -170,7 +195,7 @@ const LAYER_DEFS: LayerDef[] = [
 			filter: ['==', ['get', 'level'], '0.90'],
 			paint: { 'fill-color': '#f8fafc' }
 		}),
-		opacity: () => ({ 'fill-opacity': 0.28 })
+		opacity: (_dark, previous) => ({ 'fill-opacity': previous ? 0.12 : 0.28 })
 	},
 	{
 		id: 'cones68',
@@ -182,18 +207,22 @@ const LAYER_DEFS: LayerDef[] = [
 			filter: ['==', ['get', 'level'], '0.68'],
 			paint: { 'fill-color': '#f8fafc' }
 		}),
-		opacity: () => ({ 'fill-opacity': 0.5 })
+		opacity: (_dark, previous) => ({ 'fill-opacity': previous ? 0.22 : 0.5 })
 	},
 	{
 		id: 'conesOutline',
 		part: 'cones',
-		spec: (source, dark) => ({
+		spec: (source, dark, previous) => ({
 			id: '',
 			type: 'line',
 			source,
-			paint: { 'line-color': ink(dark), 'line-width': 0.8 }
+			paint: {
+				'line-color': ink(dark),
+				'line-width': previous ? 1.2 : 0.8,
+				...(previous ? { 'line-dasharray': [3, 2] } : {})
+			}
 		}),
-		opacity: () => ({ 'line-opacity': 0.6 })
+		opacity: (_dark, previous) => ({ 'line-opacity': previous ? 0.8 : 0.6 })
 	},
 	{
 		id: 'coneCentres',
@@ -204,7 +233,7 @@ const LAYER_DEFS: LayerDef[] = [
 			source,
 			paint: { 'circle-radius': 3, 'circle-color': ink(dark) }
 		}),
-		opacity: () => ({ 'circle-opacity': 0.5 })
+		opacity: (_dark, previous) => ({ 'circle-opacity': previous ? 0.3 : 0.5 })
 	},
 	// Candidats de cyclogenèse : rendu distinct (pointillés, halo), jamais coloré par le vent.
 	{
@@ -304,7 +333,7 @@ function planParts(plan: RenderPlan): Partial<Record<Part, Fc>> {
 }
 
 // Parties et opacités cibles de chaque slot monté.
-const mounted = new Map<string, { parts: Part[]; dark: boolean }>();
+const mounted = new Map<string, { parts: Part[]; dark: boolean; previous: boolean }>();
 
 function mapAdapter(map: maplibregl.Map) {
 	return {
@@ -321,18 +350,21 @@ function mapAdapter(map: maplibregl.Map) {
 				if (!parts.includes(def.part)) continue;
 				const spec = def.spec(
 					sourceId(slot, def.part),
-					plan.dark
+					plan.dark,
+					!!plan.previousCones
 				) as maplibregl.LayerSpecification & {
 					paint?: Record<string, unknown>;
 				};
-				const hidden = Object.fromEntries(Object.keys(def.opacity(plan.dark)).map((k) => [k, 0]));
+				const hidden = Object.fromEntries(
+					Object.keys(def.opacity(plan.dark, !!plan.previousCones)).map((k) => [k, 0])
+				);
 				map.addLayer({
 					...spec,
 					id: layerId(slot, def.id),
 					paint: { ...(spec.paint ?? {}), ...hidden }
 				} as maplibregl.LayerSpecification);
 			}
-			mounted.set(slot, { parts, dark: plan.dark });
+			mounted.set(slot, { parts, dark: plan.dark, previous: !!plan.previousCones });
 		},
 		loaded(slot: string) {
 			const m = mounted.get(slot);
@@ -347,7 +379,7 @@ function mapAdapter(map: maplibregl.Map) {
 			if (!m) return;
 			for (const def of LAYER_DEFS) {
 				if (!m.parts.includes(def.part)) continue;
-				for (const [prop, value] of Object.entries(def.opacity(m.dark))) {
+				for (const [prop, value] of Object.entries(def.opacity(m.dark, m.previous))) {
 					map.setPaintProperty(
 						layerId(slot, def.id),
 						prop as Parameters<maplibregl.Map['setPaintProperty']>[1],
@@ -426,6 +458,7 @@ export async function syncWeatherAiLayers(): Promise<void> {
 		layers: get(weatherAiLayers),
 		cones: cones && run && cones.runId === run.runId ? cones.doc : null,
 		conesId: cones?.sha256,
+		previous: cones && run && cones.runId === run.runId ? (cones.previous ?? null) : null,
 		dark: get(basemapTheme) === 'dark'
 	};
 	clearTimeout(retryTimer);
@@ -475,7 +508,13 @@ function tooltipHtml(feature: maplibregl.MapGeoJSONFeature, coneCentres: boolean
 	const time = String(p.time ?? '');
 	const when = `${esc(formatLead(leadHours(run?.initTime, time)))} · ${esc(formatUtc(time))}`;
 	if (coneCentres) {
-		return `<strong>Cône ${esc(String(p.storm).split(':').pop() ?? '')}</strong><br>${when}<br>Membres : ${int(p.members)}/${int(p.memberCount)}<br>Rayon 68 % : ${int(p.r68)} km · 90 % : ${int(p.r90)} km`;
+		// Cônes d'un run antérieur : échéance comptée depuis LEUR amorce, run nommé.
+		const prev = get(weatherAiCones);
+		const old = prev && !prev.doc && prev.runId === run?.runId ? prev.previous : undefined;
+		const coneWhen = old
+			? `${esc(formatLead(leadHours(old.doc.init_time, time)))} du run ${esc(shortRunLabel(old.doc.init_time))} (run précédent) · ${esc(formatUtc(time))}`
+			: when;
+		return `<strong>Cône ${esc(String(p.storm).split(':').pop() ?? '')}</strong><br>${coneWhen}<br>Membres : ${int(p.members)}/${int(p.memberCount)}<br>Rayon 68 % : ${int(p.r68)} km · 90 % : ${int(p.r90)} km`;
 	}
 	if (p.kind === 'candidate') {
 		return `<strong>${CANDIDATE_LABEL}</strong><br>${when}<br>Candidat de cyclogenèse détecté par le modèle, sans système réel associé. Ce n'est pas un cyclone.`;
