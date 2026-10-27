@@ -4,6 +4,7 @@
 import { type LoadedRun, leadHours } from './loader';
 import { formatLead, formatUtc } from './render';
 
+import type { ConesProduct, PreviousCones } from './cones';
 import type { FrameRelation, ResolvedFrame } from './frame';
 import type { CommitResult } from './layer-switcher';
 
@@ -12,6 +13,26 @@ export interface DisplayedState {
 	validTime: string;
 	initTime: string | undefined;
 	demo: boolean;
+	/**
+	 * Cônes montrés par le slot affiché : document (calibration) et, pour ceux
+	 * d'un run antérieur, leur run. Les mentions des cônes viennent d'ici, jamais
+	 * du store des cônes, qui peut déjà porter ceux d'un slot pas encore montré.
+	 */
+	cones?: { doc: ConesProduct; previous?: PreviousCones };
+}
+
+/** Cônes que `preparePlan` met dans le slot pour cette entrée (mêmes conditions). */
+export function displayedCones(input: {
+	run: LoadedRun | undefined;
+	layers?: { cones: boolean };
+	cones?: ConesProduct | null;
+	previous?: PreviousCones | null;
+}): DisplayedState['cones'] {
+	const { run, layers, cones, previous } = input;
+	if (!run || !layers?.cones) return undefined;
+	if (cones && cones.run_id === run.runId) return { doc: cones };
+	if (previous && previous.runId !== run.runId) return { doc: previous.doc, previous };
+	return undefined;
 }
 
 /**
@@ -21,7 +42,13 @@ export interface DisplayedState {
  */
 export function displayedAfterCommit(
 	result: CommitResult,
-	input: { run: LoadedRun | undefined; vt: string | undefined },
+	input: {
+		run: LoadedRun | undefined;
+		vt: string | undefined;
+		layers?: { cones: boolean };
+		cones?: ConesProduct | null;
+		previous?: PreviousCones | null;
+	},
 	prev: DisplayedState | null,
 	hasActiveSlot: boolean
 ): DisplayedState | null {
@@ -32,7 +59,8 @@ export function displayedAfterCommit(
 					runId: input.run.runId,
 					validTime: input.vt,
 					initTime: input.run.initTime,
-					demo: !!input.run.demo
+					demo: !!input.run.demo,
+					cones: displayedCones(input)
 				}
 			: null;
 	}

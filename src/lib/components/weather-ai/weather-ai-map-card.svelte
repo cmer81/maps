@@ -57,19 +57,11 @@
 		)
 	);
 	const outOfHorizon = $derived(summary.relation === 'before' || summary.relation === 'after');
-	const showCones = $derived(
-		$weatherAiLayers.cones &&
-			!!$weatherAiCones?.doc &&
-			$weatherAiCones.runId === $weatherAiDisplayed?.runId
-	);
+	// Mention et calibration des cônes du slot réellement affiché (jamais ceux
+	// d'un slot en chargement ou abandonné après un délai dépassé).
+	const shownCones = $derived($weatherAiDisplayed?.cones);
 	// Cônes du run précédent, gardés tant que ceux du run affiché sont en calcul.
-	const previousCones = $derived(
-		$weatherAiLayers.cones &&
-			!$weatherAiCones?.doc &&
-			$weatherAiCones?.runId === $weatherAiDisplayed?.runId
-			? $weatherAiCones?.previous
-			: undefined
-	);
+	const previousCones = $derived(shownCones?.previous);
 </script>
 
 {#if anyOn}
@@ -156,11 +148,11 @@
 			</p>
 		{/if}
 
-		{#if showCones}
+		{#if shownCones && !previousCones}
 			<p class="mt-1 text-[11px] leading-snug text-amber-100">{CONES_MENTION}</p>
 			<p class="text-[10px] leading-snug text-white/50">
 				Statut de calibration : <span class="font-mono break-all"
-					>{$weatherAiCones?.doc?.calibration_status}</span
+					>{shownCones.doc.calibration_status}</span
 				>
 			</p>
 		{/if}

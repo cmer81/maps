@@ -76,6 +76,8 @@
 		)
 	);
 
+	const shownCones = $derived($weatherAiDisplayed?.cones);
+
 	// Échéance réellement affichée (suit la frise principale), pour la légende.
 	const summary = $derived(
 		cardSummary(
@@ -269,24 +271,25 @@
 		{#if $weatherAiLayers.cones && conesOffered($weatherAiRun, $weatherAiCones)}
 			<section class="flex flex-col gap-1 px-1">
 				<h3 class="text-xs font-semibold text-white/80">Cônes d'incertitude</h3>
-				{#if $weatherAiCones?.doc}
+				<!-- Mention et calibration des cônes du slot AFFICHÉ (weatherAiDisplayed). -->
+				{#if shownCones && !shownCones.previous}
 					<p class="text-[11px] font-medium text-amber-100">{CONES_MENTION}</p>
 					<!-- Statut reçu du portail, affiché tel quel (validé : celui du catalogue). -->
 					<p class="text-[11px] text-white/55">
 						Statut de calibration : <span class="font-mono break-all"
-							>{$weatherAiCones.doc.calibration_status}</span
+							>{shownCones.doc.calibration_status}</span
 						>
 					</p>
 					<p class="text-[11px] text-white/55">
 						Zone claire : 90 % · zone soutenue : 68 %. Enveloppe coupée là où le cône est
 						indisponible ; hémisphère sud : pas de cône au-delà de +24 h.
 					</p>
-				{:else if $weatherAiCones?.previous}
+				{:else if shownCones?.previous}
 					<p class="text-[11px] font-medium text-sky-100" role="note">
-						{previousConesNotice($weatherAiCones.previous)} Rendu atténué, contour en pointillés ; trajectoires
+						{previousConesNotice(shownCones.previous)} Rendu atténué, contour en pointillés ; trajectoires
 						du run affiché.
 					</p>
-					{#if $weatherAiCones.message}
+					{#if $weatherAiCones?.message && !$weatherAiCones.doc}
 						<p class="text-[11px] text-white/55">
 							Cônes du run affiché non retenus : {$weatherAiCones.message}.
 						</p>
@@ -294,7 +297,7 @@
 					<p class="text-[11px] font-medium text-amber-100">{CONES_MENTION}</p>
 					<p class="text-[11px] text-white/55">
 						Statut de calibration (run des cônes) : <span class="font-mono break-all"
-							>{$weatherAiCones.previous.doc.calibration_status}</span
+							>{shownCones.previous.doc.calibration_status}</span
 						>
 					</p>
 				{:else if $weatherAiCones?.message}

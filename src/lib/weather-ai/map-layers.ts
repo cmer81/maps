@@ -508,9 +508,8 @@ function tooltipHtml(feature: maplibregl.MapGeoJSONFeature, coneCentres: boolean
 	const time = String(p.time ?? '');
 	const when = `${esc(formatLead(leadHours(run?.initTime, time)))} · ${esc(formatUtc(time))}`;
 	if (coneCentres) {
-		// Cônes d'un run antérieur : échéance comptée depuis LEUR amorce, run nommé.
-		const prev = get(weatherAiCones);
-		const old = prev && !prev.doc && prev.runId === run?.runId ? prev.previous : undefined;
+		// Cônes d'un run antérieur (ceux du slot affiché) : échéance comptée depuis LEUR amorce, run nommé.
+		const old = get(weatherAiDisplayed)?.cones?.previous;
 		const coneWhen = old
 			? `${esc(formatLead(leadHours(old.doc.init_time, time)))} du run ${esc(shortRunLabel(old.doc.init_time))} (run précédent) · ${esc(formatUtc(time))}`
 			: when;
@@ -520,8 +519,9 @@ function tooltipHtml(feature: maplibregl.MapGeoJSONFeature, coneCentres: boolean
 		return `<strong>${CANDIDATE_LABEL}</strong><br>${when}<br>Candidat de cyclogenèse détecté par le modèle, sans système réel associé. Ce n'est pas un cyclone.`;
 	}
 	let html = `<strong>${esc(String(p.label))}</strong><br>${when}<br>Pression centrale : ${int(p.mslp)} hPa<br>Vent max : ${int(msToKmh(Number(p.vmax)))} km/h`;
-	const cones = get(weatherAiCones);
-	if (get(weatherAiLayers).cones && cones?.doc && cones.runId === run?.runId) {
+	// Cônes du slot affiché seulement, et seulement ceux du run des trajectoires.
+	const cones = get(weatherAiDisplayed)?.cones;
+	if (cones && !cones.previous && cones.doc.run_id === run?.runId) {
 		const cone = coneAt(cones.doc, String(p.id), time);
 		if (cone && !cone.available)
 			html += `<br>Cône indisponible : ${esc(isConeReason(cone.reason) ? CONE_REASON_LABELS[cone.reason] : 'raison inconnue')}`;

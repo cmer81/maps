@@ -67,6 +67,10 @@ function commitRun(run: LoadedRun) {
 	weatherAiRun.set(run);
 	if (prev?.runId !== run.runId) {
 		const previous = run.demo ? null : keepPreviousCones(lastCones, prev?.runId, run);
+		// Mémoire invalidée dès qu'elle ne couvre pas ce passage (retour vers un run
+		// plus ancien, run mémorisé qui n'est pas le précédent immédiat, retrait) :
+		// elle ne peut plus resurgir plus tard.
+		if (!previous) lastCones = null;
 		weatherAiCones.set(previous ? { runId: run.runId, doc: null, previous } : null);
 	}
 	pruneCache([run.runId]);
@@ -99,9 +103,17 @@ export async function refresh(retry = 0): Promise<void> {
 			const next = withCatalogCones(active, catalog);
 			if (next !== active) {
 				weatherAiRun.set(next);
-				// Les cônes d'un run antérieur restent jusqu'à la validation de ceux du run.
+				const entry = next.available.find((p) => p.productId === CONES_PRODUCT_ID);
+				// Cônes de ce run retirés ou remplacés : leur mémoire ne vaut plus.
+				if (lastCones?.runId === next.runId && lastCones.sha256 !== entry?.sha256) {
+					lastCones = null;
+				}
+				// Ni attente explicite ni cônes annoncés : retrait, le repli s'efface.
+				const withdrawn = !entry && !next.conesAwaited;
+				if (withdrawn) lastCones = null;
+				// Sinon, les cônes d'un run antérieur restent jusqu'à la validation de ceux du run.
 				weatherAiCones.update((c) =>
-					c?.previous && c.runId === next.runId
+					!withdrawn && c?.previous && c.runId === next.runId
 						? { runId: c.runId, doc: null, previous: c.previous }
 						: null
 				);

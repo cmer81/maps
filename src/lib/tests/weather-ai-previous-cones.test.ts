@@ -29,6 +29,7 @@ import {
 	refresh,
 	useWeatherAi
 } from '$lib/weather-ai/controller';
+import { displayedAfterCommit } from '$lib/weather-ai/displayed';
 import { pruneCache } from '$lib/weather-ai/loader';
 import { type PlanInput, planSignature, preparePlan } from '$lib/weather-ai/map-layers';
 
@@ -70,7 +71,8 @@ const kept = (over: Partial<PreviousCones> = {}): PreviousCones => ({
 const nextRun = (initTime: string | undefined = NEXT_INIT, available = [] as never[]) => ({
 	runId: NEXT.runId,
 	initTime,
-	available
+	available,
+	conesAwaited: true
 });
 
 describe('keepPreviousCones : garde-fous', () => {
@@ -90,6 +92,11 @@ describe('keepPreviousCones : garde-fous', () => {
 		expect(keepPreviousCones(kept(), RUN_ID, nextRun(INIT_TIME))).toBeNull();
 		expect(keepPreviousCones(kept(), RUN_ID, nextRun('2026-10-17T18:00:00Z'))).toBeNull();
 		expect(keepPreviousCones(kept(), RUN_ID, { ...nextRun(), initTime: undefined })).toBeNull();
+	});
+
+	it('catalogue sans champ `cones` (retrait, pas attente) : pas de repli', () => {
+		expect(keepPreviousCones(kept(), RUN_ID, { ...nextRun(), conesAwaited: false })).toBeNull();
+		expect(keepPreviousCones(kept(), RUN_ID, { ...nextRun(), conesAwaited: undefined })).toBeNull();
 	});
 
 	it('le nouveau run annonce déjà ses cônes : pas de repli', () => {
@@ -171,7 +178,8 @@ describe('mentions : carte flottante et onglet', () => {
 			runId: NEXT.runId,
 			validTime: VALID_TIMES[1],
 			initTime: NEXT_INIT,
-			demo: false
+			demo: false,
+			cones: { doc: kept().doc, previous: kept() }
 		});
 	};
 
@@ -189,6 +197,67 @@ describe('mentions : carte flottante et onglet', () => {
 		const body = render(WeatherAiPanel).body;
 		expect(body).toContain(previousConesNotice(kept()));
 		expect(body).toContain(CONES_MENTION);
+	});
+});
+
+describe('mentions : métadonnées du slot réellement affiché', () => {
+	afterEach(() => {
+		weatherAiRun.set(undefined);
+		weatherAiDisplayed.set(null);
+		weatherAiCones.set(null);
+		weatherAiLayers.set({ tracks: false, cones: false });
+	});
+
+	const run = {
+		runId: NEXT.runId,
+		snapshotId: NEXT.snapshotId,
+		publishedAt: '',
+		initTime: NEXT_INIT,
+		available: [],
+		ignored: [],
+		loaded: {}
+	};
+	const layers = { tracks: true, cones: true };
+	const docB = () => rerun(conesDoc({ calibration_status: 'statut-calibration-B' }));
+
+	it('slot B retardé ou abandonné (timeout) : cônes A et leurs métadonnées conservés', () => {
+		const shownA = displayedAfterCommit(
+			'shown',
+			{ run, vt: NEXT_INIT, layers, cones: null, previous: kept() },
+			null,
+			true
+		);
+		expect(shownA?.cones?.previous?.runId).toBe(RUN_ID);
+		const inputB = { run, vt: NEXT_INIT, layers, cones: docB(), previous: null };
+		for (const r of ['stale', 'timeout', 'unchanged'] as const) {
+			expect(displayedAfterCommit(r, inputB, shownA, true)).toBe(shownA);
+		}
+		const shownB = displayedAfterCommit('shown', inputB, shownA, true);
+		expect(shownB?.cones?.previous).toBeUndefined();
+		expect(shownB?.cones?.doc.calibration_status).toBe('statut-calibration-B');
+	});
+
+	it('cônes B validés mais slot A encore affiché : mention du run précédent, calibration A', () => {
+		weatherAiLayers.set(layers);
+		// Catalogue de B : cônes annoncés (validés), donc proposés dans l'onglet.
+		const available = [{ productId: CONES_PRODUCT_ID, spec: { kind: 'cones' } }] as never[];
+		weatherAiRun.set({ ...run, available });
+		// Store déjà sur B (validés), la carte affiche encore le slot A.
+		weatherAiCones.set({ runId: NEXT.runId, sha256: 'd'.repeat(64), doc: docB() });
+		weatherAiDisplayed.set(
+			displayedAfterCommit(
+				'shown',
+				{ run, vt: NEXT_INIT, layers, cones: null, previous: kept() },
+				null,
+				true
+			)
+		);
+		for (const C of [WeatherAiMapCard, WeatherAiPanel]) {
+			const body = render(C).body;
+			expect(body).toContain(previousConesNotice(kept()));
+			expect(body).toContain(conesDoc().calibration_status);
+			expect(body).not.toContain('statut-calibration-B');
+		}
 	});
 });
 
@@ -228,6 +297,17 @@ function portal() {
 			for (const k of Object.keys(routes)) delete routes[k];
 			Object.assign(routes, rerun(runRoutes()), {
 				[`${BASE}/products`]: rerun(catalog([TRACKS_ID], { cones: null }))
+			});
+		},
+		/** Le catalogue du run suivant n'a plus de champ `cones` : retrait, pas attente. */
+		withdrawNextCones() {
+			routes[`${BASE}/products`] = rerun(catalog([TRACKS_ID]));
+		},
+		/** Retour arrière : le catalogue resert le run initial, ses cônes en attente. */
+		backToFirst() {
+			for (const k of Object.keys(routes)) delete routes[k];
+			Object.assign(routes, runRoutes(), {
+				[`${BASE}/products`]: catalog([TRACKS_ID], { cones: null })
 			});
 		},
 		/** Les cônes du run suivant sont publiés. */
@@ -305,6 +385,60 @@ describe('contrôleur : bascule de run pendant le calcul des cônes', () => {
 			await until(() => !!get(weatherAiCones)?.message);
 			expect(get(weatherAiCones)?.doc).toBeNull();
 			expect(get(weatherAiCones)?.previous?.runId).toBe(RUN_ID);
+		} finally {
+			release();
+		}
+	});
+
+	it('champ `cones` retiré du catalogue du run courant : le repli s’efface', async () => {
+		const p = portal();
+		weatherAiLayers.set({ tracks: true, cones: true });
+		const release = useWeatherAi();
+		try {
+			await until(() => get(weatherAiCones)?.doc?.run_id === RUN_ID);
+			p.switchToNext();
+			await refresh();
+			await until(() => get(weatherAiRun)?.runId === NEXT.runId);
+			expect(get(weatherAiCones)?.previous?.runId).toBe(RUN_ID);
+
+			p.withdrawNextCones();
+			await refresh();
+			expect(get(weatherAiRun)?.conesAwaited).toBe(false);
+			expect(get(weatherAiCones)).toBeNull();
+			expect(conesOffered(get(weatherAiRun))).toBe(false);
+
+			// Retour de l'attente explicite : la mémoire a été effacée, rien ne resurgit.
+			p.switchToNext();
+			await refresh();
+			expect(get(weatherAiCones)).toBeNull();
+		} finally {
+			release();
+		}
+	});
+
+	it('retour arrière vers un run plus ancien : les cônes retirés ne ressurgissent pas', async () => {
+		const p = portal();
+		weatherAiLayers.set({ tracks: true, cones: true });
+		const release = useWeatherAi();
+		try {
+			await until(() => get(weatherAiCones)?.doc?.run_id === RUN_ID);
+			p.switchToNext();
+			await refresh();
+			await until(() => get(weatherAiRun)?.runId === NEXT.runId);
+			expect(get(weatherAiCones)?.previous?.runId).toBe(RUN_ID);
+
+			// Le catalogue revient au run initial, dont les cônes ne sont plus servis.
+			p.backToFirst();
+			await refresh();
+			await until(() => get(weatherAiRun)?.runId === RUN_ID);
+			expect(get(weatherAiCones)).toBeNull();
+
+			// Puis repasse au run suivant (6 h plus tard, cônes en attente) : pas de repli.
+			p.switchToNext();
+			await refresh();
+			await until(() => get(weatherAiRun)?.runId === NEXT.runId);
+			expect(get(weatherAiCones)).toBeNull();
+			expect(conesOffered(get(weatherAiRun))).toBe(false);
 		} finally {
 			release();
 		}

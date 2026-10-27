@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { weatherAiCones, weatherAiRun } from '$lib/stores/weather-ai';
+	import { weatherAiDisplayed, weatherAiRun } from '$lib/stores/weather-ai';
 
 	import { previousConesNotice } from '$lib/weather-ai/cones';
 
@@ -7,12 +7,8 @@
 	// telles quelles (catalogue), plus les mentions imposées par les sources
 	// (weather-ai `docs/front-mentions-obligatoires.md` : non-responsabilité ECMWF
 	// non reformulée, « not an officially supported Google product »).
-	// Cônes d'un run antérieur gardés pour le run affiché : leurs mentions s'ajoutent.
-	const previous = $derived(
-		$weatherAiCones?.previous && $weatherAiCones.runId === $weatherAiRun?.runId
-			? $weatherAiCones.previous
-			: undefined
-	);
+	// Cônes d'un run antérieur montrés par le slot affiché : leurs mentions s'ajoutent.
+	const previous = $derived($weatherAiDisplayed?.cones?.previous);
 	const shown = $derived([...($weatherAiRun?.available ?? []), ...(previous ? [previous] : [])]);
 	const attributions = $derived([...new Set(shown.map((p) => p.attribution).filter(Boolean))]);
 	const licenses = $derived([...new Set(shown.map((p) => p.licenseNotice).filter(Boolean))]);

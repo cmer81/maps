@@ -341,16 +341,23 @@ export const PREVIOUS_CONES_MAX_AGE_MS = 12 * 3_600_000;
 
 /**
  * Cônes à garder au passage sur `next`, ou `null`. Seulement ceux du run affiché
- * juste avant (`prevRunId`), si `next` n'annonce pas encore les siens, amorcés
+ * juste avant (`prevRunId`), si le catalogue de `next` annonce explicitement
+ * l'attente des siens (`cones: null` ; un champ absent est un retrait), amorcés
  * avant `next` et au plus 12 h plus tôt, et toujours conformes au contrat
  * (`validateCones` rejoué contre LEUR run, jamais contre celui affiché).
  */
 export function keepPreviousCones(
 	kept: PreviousCones | null,
 	prevRunId: string | undefined,
-	next: { runId: string; initTime: string | undefined; available: DiscoveredProduct[] }
+	next: {
+		runId: string;
+		initTime: string | undefined;
+		available: DiscoveredProduct[];
+		conesAwaited?: boolean;
+	}
 ): PreviousCones | null {
 	if (!kept || kept.runId !== prevRunId || kept.runId === next.runId) return null;
+	if (!next.conesAwaited) return null;
 	if (next.available.some((p) => p.productId === CONES_PRODUCT_ID)) return null;
 	const age = Date.parse(next.initTime ?? '') - Date.parse(kept.doc.init_time);
 	if (!(age > 0 && age <= PREVIOUS_CONES_MAX_AGE_MS)) return null;
