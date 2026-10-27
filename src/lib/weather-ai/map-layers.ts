@@ -502,17 +502,24 @@ const int = (v: unknown) => {
 let tooltipMap: maplibregl.Map | undefined;
 let tooltip: maplibregl.Popup | undefined;
 
-function tooltipHtml(feature: maplibregl.MapGeoJSONFeature, coneCentres: boolean): string {
-	const run = get(weatherAiRun);
-	const p = feature.properties as Record<string, unknown>;
+/**
+ * HTML de l'infobulle, tiré du slot affiché (`weatherAiDisplayed`), jamais de la
+ * sélection : échéances des trajectoires comptées depuis l'amorce du run
+ * affiché, celles des cônes depuis l'amorce de LEUR document (courant ou
+ * précédent), qui peut différer du run sélectionné tant que son slot charge.
+ */
+export function tooltipHtml(p: Record<string, unknown>, coneCentres: boolean): string {
+	const shown = get(weatherAiDisplayed);
 	const time = String(p.time ?? '');
-	const when = `${esc(formatLead(leadHours(run?.initTime, time)))} · ${esc(formatUtc(time))}`;
+	const utc = esc(formatUtc(time));
+	const when = `${esc(formatLead(leadHours(shown?.initTime, time)))} · ${utc}`;
+	const cones = shown?.cones;
 	if (coneCentres) {
-		// Cônes d'un run antérieur (ceux du slot affiché) : échéance comptée depuis LEUR amorce, run nommé.
-		const old = get(weatherAiDisplayed)?.cones?.previous;
-		const coneWhen = old
-			? `${esc(formatLead(leadHours(old.doc.init_time, time)))} du run ${esc(shortRunLabel(old.doc.init_time))} (run précédent) · ${esc(formatUtc(time))}`
-			: when;
+		const lead = esc(formatLead(leadHours(cones?.doc.init_time, time)));
+		// Cônes d'un run antérieur : run nommé.
+		const coneWhen = cones?.previous
+			? `${lead} du run ${esc(shortRunLabel(cones.doc.init_time))} (run précédent) · ${utc}`
+			: `${lead} · ${utc}`;
 		return `<strong>Cône ${esc(String(p.storm).split(':').pop() ?? '')}</strong><br>${coneWhen}<br>Membres : ${int(p.members)}/${int(p.memberCount)}<br>Rayon 68 % : ${int(p.r68)} km · 90 % : ${int(p.r90)} km`;
 	}
 	if (p.kind === 'candidate') {
@@ -520,8 +527,7 @@ function tooltipHtml(feature: maplibregl.MapGeoJSONFeature, coneCentres: boolean
 	}
 	let html = `<strong>${esc(String(p.label))}</strong><br>${when}<br>Pression centrale : ${int(p.mslp)} hPa<br>Vent max : ${int(msToKmh(Number(p.vmax)))} km/h`;
 	// Cônes du slot affiché seulement, et seulement ceux du run des trajectoires.
-	const cones = get(weatherAiDisplayed)?.cones;
-	if (cones && !cones.previous && cones.doc.run_id === run?.runId) {
+	if (cones && !cones.previous && cones.doc.run_id === shown?.runId) {
 		const cone = coneAt(cones.doc, String(p.id), time);
 		if (cone && !cone.available)
 			html += `<br>Cône indisponible : ${esc(isConeReason(cone.reason) ? CONE_REASON_LABELS[cone.reason] : 'raison inconnue')}`;
@@ -562,6 +568,9 @@ function installTooltips(map: maplibregl.Map) {
 		hovering = true;
 		map.getCanvas().style.cursor = 'pointer';
 		const isCone = f.layer.id === layerId(slot!, 'coneCentres');
-		tooltip!.setLngLat(e.lngLat).setHTML(tooltipHtml(f, isCone)).addTo(map);
+		tooltip!
+			.setLngLat(e.lngLat)
+			.setHTML(tooltipHtml(f.properties as Record<string, unknown>, isCone))
+			.addTo(map);
 	});
 }

@@ -57,6 +57,9 @@
 		cones: ConeIcon
 	};
 
+	// Cônes du slot réellement affiché : seule source des mentions et de la calibration.
+	const shownCones = $derived($weatherAiDisplayed?.cones);
+
 	// Superpositions issues du catalogue : seuls les produits annoncés et connus
 	// sont proposés. Les champs continus (WEATHER_AI_FIELDS) n'en sont pas : ce
 	// sont les variables du modèle « Weather AI (WeatherNext) » du sélecteur.
@@ -66,7 +69,8 @@
 		const items: { kind: WeatherAiOverlay; label: string }[] = run.available
 			.filter((p) => p.spec.kind === 'tracks')
 			.map(() => ({ kind: 'tracks', label: 'Cyclones, trajectoires et zones à surveiller' }));
-		if (conesOffered(run, $weatherAiCones))
+		// Cônes encore à l'écran (slot affiché) : bascule gardée pour pouvoir les masquer.
+		if (conesOffered(run, $weatherAiCones) || shownCones)
 			items.push({ kind: 'cones', label: "Cônes d'incertitude" });
 		return items;
 	});
@@ -75,8 +79,6 @@
 			(p) => p.spec.kind === 'mslp' || p.spec.kind === 'existence'
 		)
 	);
-
-	const shownCones = $derived($weatherAiDisplayed?.cones);
 
 	// Échéance réellement affichée (suit la frise principale), pour la légende.
 	const summary = $derived(
@@ -268,7 +270,8 @@
 			</section>
 		{/if}
 
-		{#if $weatherAiLayers.cones && conesOffered($weatherAiRun, $weatherAiCones)}
+		<!-- Section tant que des cônes sont affichés, même retirés du catalogue entre-temps. -->
+		{#if shownCones || ($weatherAiLayers.cones && conesOffered($weatherAiRun, $weatherAiCones))}
 			<section class="flex flex-col gap-1 px-1">
 				<h3 class="text-xs font-semibold text-white/80">Cônes d'incertitude</h3>
 				<!-- Mention et calibration des cônes du slot AFFICHÉ (weatherAiDisplayed). -->
@@ -289,7 +292,7 @@
 						{previousConesNotice(shownCones.previous)} Rendu atténué, contour en pointillés ; trajectoires
 						du run affiché.
 					</p>
-					{#if $weatherAiCones?.message && !$weatherAiCones.doc}
+					{#if $weatherAiCones?.message && !$weatherAiCones.doc && $weatherAiCones.runId === $weatherAiDisplayed?.runId}
 						<p class="text-[11px] text-white/55">
 							Cônes du run affiché non retenus : {$weatherAiCones.message}.
 						</p>

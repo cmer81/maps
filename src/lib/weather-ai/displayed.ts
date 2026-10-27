@@ -1,10 +1,10 @@
 // Ce qui est RÉELLEMENT affiché sur la carte, distinct de la sélection : après
 // un délai dépassé (`timeout`), la carte garde l'état précédent, et les mentions
 // (run, échéance, UTC) doivent décrire cet état-là, pas celui demandé.
+import { CONES_PRODUCT_ID, type ConesProduct, type PreviousCones } from './cones';
 import { type LoadedRun, leadHours } from './loader';
 import { formatLead, formatUtc } from './render';
 
-import type { ConesProduct, PreviousCones } from './cones';
 import type { FrameRelation, ResolvedFrame } from './frame';
 import type { CommitResult } from './layer-switcher';
 
@@ -16,9 +16,15 @@ export interface DisplayedState {
 	/**
 	 * Cônes montrés par le slot affiché : document (calibration) et, pour ceux
 	 * d'un run antérieur, leur run. Les mentions des cônes viennent d'ici, jamais
-	 * du store des cônes, qui peut déjà porter ceux d'un slot pas encore montré.
+	 * du store des cônes, qui peut déjà porter ceux d'un slot pas encore montré,
+	 * ni du catalogue, qui peut déjà les avoir retirés (`credits` : attribution et
+	 * licence lues au commit, ceux du run des cônes).
 	 */
-	cones?: { doc: ConesProduct; previous?: PreviousCones };
+	cones?: {
+		doc: ConesProduct;
+		previous?: PreviousCones;
+		credits?: { attribution: string; licenseNotice: string };
+	};
 }
 
 /** Cônes que `preparePlan` met dans le slot pour cette entrée (mêmes conditions). */
@@ -30,8 +36,13 @@ export function displayedCones(input: {
 }): DisplayedState['cones'] {
 	const { run, layers, cones, previous } = input;
 	if (!run || !layers?.cones) return undefined;
-	if (cones && cones.run_id === run.runId) return { doc: cones };
-	if (previous && previous.runId !== run.runId) return { doc: previous.doc, previous };
+	if (cones && cones.run_id === run.runId) {
+		const entry = run.available.find((p) => p.productId === CONES_PRODUCT_ID);
+		const credits = entry && { attribution: entry.attribution, licenseNotice: entry.licenseNotice };
+		return { doc: cones, credits };
+	}
+	if (previous && previous.runId !== run.runId)
+		return { doc: previous.doc, previous, credits: previous };
 	return undefined;
 }
 

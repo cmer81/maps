@@ -11,6 +11,7 @@ import {
 } from '$lib/stores/weather-ai';
 
 import WeatherAiMapCard from '$lib/components/weather-ai/weather-ai-map-card.svelte';
+import WeatherAiMentions from '$lib/components/weather-ai/weather-ai-mentions.svelte';
 import WeatherAiPanel from '$lib/components/weather-ai/weather-ai-panel.svelte';
 
 import { getWeatherAiApiUrl } from '$lib/runtime-env';
@@ -31,7 +32,12 @@ import {
 } from '$lib/weather-ai/controller';
 import { displayedAfterCommit } from '$lib/weather-ai/displayed';
 import { pruneCache } from '$lib/weather-ai/loader';
-import { type PlanInput, planSignature, preparePlan } from '$lib/weather-ai/map-layers';
+import {
+	type PlanInput,
+	planSignature,
+	preparePlan,
+	tooltipHtml
+} from '$lib/weather-ai/map-layers';
 
 import {
 	ATTRIBUTION,
@@ -258,6 +264,122 @@ describe('mentions : métadonnées du slot réellement affiché', () => {
 			expect(body).toContain(conesDoc().calibration_status);
 			expect(body).not.toContain('statut-calibration-B');
 		}
+	});
+});
+
+describe('infobulle et onglet : cônes du slot affiché, pas de la sélection', () => {
+	afterEach(() => {
+		weatherAiRun.set(undefined);
+		weatherAiDisplayed.set(null);
+		weatherAiCones.set(null);
+		weatherAiLayers.set({ tracks: false, cones: false });
+	});
+
+	const layers = { tracks: true, cones: true };
+	const conesAvailable = [
+		{
+			productId: CONES_PRODUCT_ID,
+			spec: { kind: 'cones' },
+			attribution: 'attribution-cones-A',
+			licenseNotice: 'licence-cones-A'
+		}
+	] as never[];
+	const runA = {
+		runId: RUN_ID,
+		snapshotId: SNAPSHOT_ID,
+		publishedAt: '',
+		initTime: INIT_TIME,
+		available: conesAvailable,
+		ignored: [],
+		loaded: {}
+	};
+	const runB = { ...runA, runId: NEXT.runId, snapshotId: NEXT.snapshotId, initTime: NEXT_INIT };
+	// Centre du cône 01P à +12 h de l'amorce de A (00Z).
+	const centre = { storm: 'ecmwf-tf:2026:01P', time: '2026-10-18T12:00:00Z', members: 40 };
+
+	it('infobulle : A (00Z, cônes courants) affiché, B (06Z) sélectionné : +12 h, pas +6 h', () => {
+		weatherAiDisplayed.set(
+			displayedAfterCommit(
+				'shown',
+				{ run: runA, vt: VALID_TIMES[1], layers, cones: conesDoc(), previous: null },
+				null,
+				true
+			)
+		);
+		weatherAiRun.set({ ...runB, available: [] });
+		const html = tooltipHtml(centre, true);
+		expect(html).toContain('+12 h');
+		expect(html).not.toContain('+6 h');
+		// Trajectoires du slot affiché : même amorce (A).
+		expect(tooltipHtml({ ...centre, label: 'X', kind: 'declared' }, false)).toContain('+12 h');
+	});
+
+	it('infobulle : cônes précédents A sur le slot B : échéance depuis leur amorce, run nommé', () => {
+		weatherAiDisplayed.set(
+			displayedAfterCommit(
+				'shown',
+				{ run: runB, vt: VALID_TIMES[1], layers, cones: null, previous: kept() },
+				null,
+				true
+			)
+		);
+		const html = tooltipHtml(centre, true);
+		expect(html).toContain(`+12 h du run ${shortRunLabel(INIT_TIME)} (run précédent)`);
+	});
+
+	it('onglet : champ `cones` retiré, slot A (cônes précédents) encore visible : calibration gardée', () => {
+		weatherAiLayers.set(layers);
+		weatherAiDisplayed.set(
+			displayedAfterCommit(
+				'shown',
+				{ run: runB, vt: VALID_TIMES[1], layers, cones: null, previous: kept() },
+				null,
+				true
+			)
+		);
+		// Retrait : plus de cônes au catalogue de B, plus de repli dans le store.
+		weatherAiRun.set({ ...runB, available: [] });
+		weatherAiCones.set({ runId: NEXT.runId, doc: null });
+		expect(conesOffered(get(weatherAiRun))).toBe(false);
+		const body = render(WeatherAiPanel).body;
+		expect(body).toContain(previousConesNotice(kept()));
+		expect(body).toContain(CONES_MENTION);
+		expect(body).toContain(conesDoc().calibration_status);
+		expect(body).toContain("Cônes d'incertitude");
+	});
+
+	it('onglet et mentions : cônes courants retirés du catalogue, slot encore visible', () => {
+		weatherAiLayers.set(layers);
+		weatherAiDisplayed.set(
+			displayedAfterCommit(
+				'shown',
+				{ run: runA, vt: VALID_TIMES[1], layers, cones: conesDoc(), previous: null },
+				null,
+				true
+			)
+		);
+		weatherAiRun.set({ ...runA, available: [] });
+		weatherAiCones.set({ runId: RUN_ID, doc: null });
+		const panel = render(WeatherAiPanel).body;
+		expect(panel).toContain(CONES_MENTION);
+		expect(panel).toContain(conesDoc().calibration_status);
+		// Attribution et licence des cônes affichés, lues au commit.
+		const mentions = render(WeatherAiMentions).body;
+		expect(mentions).toContain('attribution-cones-A');
+		expect(mentions).toContain('licence-cones-A');
+	});
+
+	it('mentions : cônes annoncés par le catalogue mais pas encore affichés : pas leurs crédits', () => {
+		weatherAiRun.set(runA);
+		weatherAiDisplayed.set(
+			displayedAfterCommit(
+				'shown',
+				{ run: runA, vt: VALID_TIMES[1], layers: { cones: false } },
+				null,
+				true
+			)
+		);
+		expect(render(WeatherAiMentions).body).not.toContain('attribution-cones-A');
 	});
 });
 
