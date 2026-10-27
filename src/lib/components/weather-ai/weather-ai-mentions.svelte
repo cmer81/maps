@@ -1,19 +1,28 @@
 <script lang="ts">
-	import { weatherAiRun } from '$lib/stores/weather-ai';
+	import { weatherAiDisplayed, weatherAiRun } from '$lib/stores/weather-ai';
+
+	import { CONES_PRODUCT_ID, previousConesNotice } from '$lib/weather-ai/cones';
 
 	// Mentions légales des produits affichés : attribution et licence reçues
 	// telles quelles (catalogue), plus les mentions imposées par les sources
 	// (weather-ai `docs/front-mentions-obligatoires.md` : non-responsabilité ECMWF
 	// non reformulée, « not an officially supported Google product »).
-	const attributions = $derived([
-		...new Set(($weatherAiRun?.available ?? []).map((p) => p.attribution).filter(Boolean))
+	// Cônes : attribution et licence de ceux du slot affiché (run courant ou
+	// précédent), jamais du catalogue, qui peut déjà les avoir retirés.
+	const cones = $derived($weatherAiDisplayed?.cones);
+	const previous = $derived(cones?.previous);
+	const shown = $derived([
+		...($weatherAiRun?.available ?? []).filter((p) => p.productId !== CONES_PRODUCT_ID),
+		...(cones?.credits ? [cones.credits] : [])
 	]);
-	const licenses = $derived([
-		...new Set(($weatherAiRun?.available ?? []).map((p) => p.licenseNotice).filter(Boolean))
-	]);
+	const attributions = $derived([...new Set(shown.map((p) => p.attribution).filter(Boolean))]);
+	const licenses = $derived([...new Set(shown.map((p) => p.licenseNotice).filter(Boolean))]);
 </script>
 
 <div class="flex flex-col gap-2 text-[11px] leading-snug text-white/70">
+	{#if previous}
+		<p class="text-sky-100/80">{previousConesNotice(previous)}</p>
+	{/if}
 	{#each attributions as a (a)}
 		<p>{a}</p>
 	{/each}

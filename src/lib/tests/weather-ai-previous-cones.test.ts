@@ -1,0 +1,584 @@
+import { render } from 'svelte/server';
+import { get } from 'svelte/store';
+
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import {
+	weatherAiCones,
+	weatherAiDisplayed,
+	weatherAiLayers,
+	weatherAiRun
+} from '$lib/stores/weather-ai';
+
+import WeatherAiMapCard from '$lib/components/weather-ai/weather-ai-map-card.svelte';
+import WeatherAiMentions from '$lib/components/weather-ai/weather-ai-mentions.svelte';
+import WeatherAiPanel from '$lib/components/weather-ai/weather-ai-panel.svelte';
+
+import { getWeatherAiApiUrl } from '$lib/runtime-env';
+import { dataUrl } from '$lib/weather-ai/api';
+import {
+	CONES_MENTION,
+	CONES_PRODUCT_ID,
+	type PreviousCones,
+	keepPreviousCones,
+	previousConesNotice,
+	shortRunLabel
+} from '$lib/weather-ai/cones';
+import {
+	conesOffered,
+	forgetSessionCones,
+	refresh,
+	useWeatherAi
+} from '$lib/weather-ai/controller';
+import { displayedAfterCommit } from '$lib/weather-ai/displayed';
+import { pruneCache } from '$lib/weather-ai/loader';
+import {
+	type PlanInput,
+	planSignature,
+	preparePlan,
+	tooltipHtml
+} from '$lib/weather-ai/map-layers';
+
+import {
+	ATTRIBUTION,
+	INIT_TIME,
+	LICENSE,
+	RUN_ID,
+	SNAPSHOT_ID,
+	TRACKS_ID,
+	VALID_TIMES,
+	catalog,
+	conesDoc,
+	conesEntry,
+	data,
+	runs,
+	timeline,
+	trackPoint,
+	tracksDoc
+} from './weather-ai-fixtures';
+
+const BASE = getWeatherAiApiUrl();
+
+// Run suivant (06Z) et run lointain (+18 h), dérivés des fixtures du run 18/10 00Z.
+const NEXT = { runId: 'wn2-oper-20261018T060000Z-next', snapshotId: 'wn2-snap-next' };
+const NEXT_INIT = '2026-10-18T06:00:00Z';
+
+const kept = (over: Partial<PreviousCones> = {}): PreviousCones => ({
+	runId: RUN_ID,
+	snapshotId: SNAPSHOT_ID,
+	sha256: 'c'.repeat(64),
+	calibrationStatus: conesDoc().calibration_status,
+	attribution: ATTRIBUTION,
+	licenseNotice: LICENSE,
+	doc: conesDoc(),
+	...over
+});
+
+const nextRun = (initTime: string | undefined = NEXT_INIT, available = [] as never[]) => ({
+	runId: NEXT.runId,
+	initTime,
+	available,
+	conesAwaited: true
+});
+
+describe('keepPreviousCones : garde-fous', () => {
+	it('run immédiatement précédent, 6 h plus tôt, sans cônes pour le nouveau : gardés', () => {
+		expect(keepPreviousCones(kept(), RUN_ID, nextRun())).toEqual(kept());
+	});
+
+	it('pas le run affiché juste avant : refusés', () => {
+		expect(keepPreviousCones(kept(), 'wn2-oper-autre', nextRun())).toBeNull();
+		expect(keepPreviousCones(kept(), undefined, nextRun())).toBeNull();
+		expect(keepPreviousCones(null, RUN_ID, nextRun())).toBeNull();
+	});
+
+	it('au-delà de 12 h, amorce non postérieure ou inconnue : refusés', () => {
+		expect(keepPreviousCones(kept(), RUN_ID, nextRun('2026-10-18T12:00:00Z'))).not.toBeNull();
+		expect(keepPreviousCones(kept(), RUN_ID, nextRun('2026-10-18T18:00:00Z'))).toBeNull();
+		expect(keepPreviousCones(kept(), RUN_ID, nextRun(INIT_TIME))).toBeNull();
+		expect(keepPreviousCones(kept(), RUN_ID, nextRun('2026-10-17T18:00:00Z'))).toBeNull();
+		expect(keepPreviousCones(kept(), RUN_ID, { ...nextRun(), initTime: undefined })).toBeNull();
+	});
+
+	it('catalogue sans champ `cones` (retrait, pas attente) : pas de repli', () => {
+		expect(keepPreviousCones(kept(), RUN_ID, { ...nextRun(), conesAwaited: false })).toBeNull();
+		expect(keepPreviousCones(kept(), RUN_ID, { ...nextRun(), conesAwaited: undefined })).toBeNull();
+	});
+
+	it('le nouveau run annonce déjà ses cônes : pas de repli', () => {
+		const available = [{ productId: CONES_PRODUCT_ID }] as never[];
+		expect(keepPreviousCones(kept(), RUN_ID, nextRun(NEXT_INIT, available))).toBeNull();
+	});
+
+	it('document qui ne passe plus validateCones contre son run : refusé', () => {
+		expect(
+			keepPreviousCones(kept({ doc: conesDoc({ mention: 'autre' }) }), RUN_ID, nextRun())
+		).toBeNull();
+		expect(keepPreviousCones(kept({ snapshotId: 'autre' }), RUN_ID, nextRun())).toBeNull();
+		expect(keepPreviousCones(kept({ calibrationStatus: 'autre' }), RUN_ID, nextRun())).toBeNull();
+	});
+
+	it('mention : run des cônes nommé, jamais présentés comme ceux du run affiché', () => {
+		expect(shortRunLabel('2026-10-26T00:00:00Z')).toBe('26/10 00Z');
+		expect(previousConesNotice(kept())).toBe(
+			'Cônes du run 18/10 00Z : ceux du run affiché sont en cours de calcul.'
+		);
+	});
+});
+
+describe('rendu : cônes du run précédent distincts', () => {
+	const run = {
+		runId: NEXT.runId,
+		snapshotId: NEXT.snapshotId,
+		publishedAt: '',
+		initTime: NEXT_INIT,
+		available: [],
+		ignored: [],
+		loaded: {}
+	};
+	const input = (previous: PreviousCones | null): PlanInput => ({
+		run,
+		vt: NEXT_INIT,
+		layers: { tracks: false, cones: true },
+		cones: null,
+		previous,
+		dark: false
+	});
+
+	it('plan marqué `previousCones`, signature distincte des cônes du run', async () => {
+		const plan = await preparePlan(input(kept()));
+		expect(plan?.previousCones).toBe(true);
+		expect(plan?.cones?.features.length).toBeGreaterThan(0);
+		expect(planSignature(input(kept()))).not.toBe(planSignature(input(null)));
+		expect(await preparePlan(input(null))).toBeNull();
+	});
+
+	it('couche cônes désactivée : rien', async () => {
+		expect(
+			await preparePlan({ ...input(kept()), layers: { tracks: false, cones: false } })
+		).toBeNull();
+	});
+});
+
+describe('mentions : carte flottante et onglet', () => {
+	afterEach(() => {
+		weatherAiRun.set(undefined);
+		weatherAiDisplayed.set(null);
+		weatherAiCones.set(null);
+		weatherAiLayers.set({ tracks: false, cones: false });
+	});
+
+	const setup = () => {
+		weatherAiLayers.set({ tracks: true, cones: true });
+		weatherAiRun.set({
+			runId: NEXT.runId,
+			snapshotId: NEXT.snapshotId,
+			publishedAt: '',
+			initTime: NEXT_INIT,
+			available: [],
+			ignored: [],
+			loaded: {}
+		});
+		weatherAiCones.set({ runId: NEXT.runId, doc: null, previous: kept() });
+		weatherAiDisplayed.set({
+			runId: NEXT.runId,
+			validTime: VALID_TIMES[1],
+			initTime: NEXT_INIT,
+			demo: false,
+			cones: { doc: kept().doc, previous: kept() }
+		});
+	};
+
+	it('carte flottante : mention du run des cônes, mention et statut de calibration', () => {
+		setup();
+		const body = render(WeatherAiMapCard).body;
+		expect(body).toContain(previousConesNotice(kept()));
+		expect(body).toContain(CONES_MENTION);
+		expect(body).toContain(conesDoc().calibration_status);
+	});
+
+	it('onglet : cônes proposés et mention visible', () => {
+		setup();
+		expect(conesOffered(get(weatherAiRun))).toBe(true);
+		const body = render(WeatherAiPanel).body;
+		expect(body).toContain(previousConesNotice(kept()));
+		expect(body).toContain(CONES_MENTION);
+	});
+});
+
+describe('mentions : métadonnées du slot réellement affiché', () => {
+	afterEach(() => {
+		weatherAiRun.set(undefined);
+		weatherAiDisplayed.set(null);
+		weatherAiCones.set(null);
+		weatherAiLayers.set({ tracks: false, cones: false });
+	});
+
+	const run = {
+		runId: NEXT.runId,
+		snapshotId: NEXT.snapshotId,
+		publishedAt: '',
+		initTime: NEXT_INIT,
+		available: [],
+		ignored: [],
+		loaded: {}
+	};
+	const layers = { tracks: true, cones: true };
+	const docB = () => rerun(conesDoc({ calibration_status: 'statut-calibration-B' }));
+
+	it('slot B retardé ou abandonné (timeout) : cônes A et leurs métadonnées conservés', () => {
+		const shownA = displayedAfterCommit(
+			'shown',
+			{ run, vt: NEXT_INIT, layers, cones: null, previous: kept() },
+			null,
+			true
+		);
+		expect(shownA?.cones?.previous?.runId).toBe(RUN_ID);
+		const inputB = { run, vt: NEXT_INIT, layers, cones: docB(), previous: null };
+		for (const r of ['stale', 'timeout', 'unchanged'] as const) {
+			expect(displayedAfterCommit(r, inputB, shownA, true)).toBe(shownA);
+		}
+		const shownB = displayedAfterCommit('shown', inputB, shownA, true);
+		expect(shownB?.cones?.previous).toBeUndefined();
+		expect(shownB?.cones?.doc.calibration_status).toBe('statut-calibration-B');
+	});
+
+	it('cônes B validés mais slot A encore affiché : mention du run précédent, calibration A', () => {
+		weatherAiLayers.set(layers);
+		// Catalogue de B : cônes annoncés (validés), donc proposés dans l'onglet.
+		const available = [{ productId: CONES_PRODUCT_ID, spec: { kind: 'cones' } }] as never[];
+		weatherAiRun.set({ ...run, available });
+		// Store déjà sur B (validés), la carte affiche encore le slot A.
+		weatherAiCones.set({ runId: NEXT.runId, sha256: 'd'.repeat(64), doc: docB() });
+		weatherAiDisplayed.set(
+			displayedAfterCommit(
+				'shown',
+				{ run, vt: NEXT_INIT, layers, cones: null, previous: kept() },
+				null,
+				true
+			)
+		);
+		for (const C of [WeatherAiMapCard, WeatherAiPanel]) {
+			const body = render(C).body;
+			expect(body).toContain(previousConesNotice(kept()));
+			expect(body).toContain(conesDoc().calibration_status);
+			expect(body).not.toContain('statut-calibration-B');
+		}
+	});
+});
+
+describe('infobulle et onglet : cônes du slot affiché, pas de la sélection', () => {
+	afterEach(() => {
+		weatherAiRun.set(undefined);
+		weatherAiDisplayed.set(null);
+		weatherAiCones.set(null);
+		weatherAiLayers.set({ tracks: false, cones: false });
+	});
+
+	const layers = { tracks: true, cones: true };
+	const conesAvailable = [
+		{
+			productId: CONES_PRODUCT_ID,
+			spec: { kind: 'cones' },
+			attribution: 'attribution-cones-A',
+			licenseNotice: 'licence-cones-A'
+		}
+	] as never[];
+	const runA = {
+		runId: RUN_ID,
+		snapshotId: SNAPSHOT_ID,
+		publishedAt: '',
+		initTime: INIT_TIME,
+		available: conesAvailable,
+		ignored: [],
+		loaded: {}
+	};
+	const runB = { ...runA, runId: NEXT.runId, snapshotId: NEXT.snapshotId, initTime: NEXT_INIT };
+	// Centre du cône 01P à +12 h de l'amorce de A (00Z).
+	const centre = { storm: 'ecmwf-tf:2026:01P', time: '2026-10-18T12:00:00Z', members: 40 };
+
+	it('infobulle : A (00Z, cônes courants) affiché, B (06Z) sélectionné : +12 h, pas +6 h', () => {
+		weatherAiDisplayed.set(
+			displayedAfterCommit(
+				'shown',
+				{ run: runA, vt: VALID_TIMES[1], layers, cones: conesDoc(), previous: null },
+				null,
+				true
+			)
+		);
+		weatherAiRun.set({ ...runB, available: [] });
+		const html = tooltipHtml(centre, true);
+		expect(html).toContain('+12 h');
+		expect(html).not.toContain('+6 h');
+		// Trajectoires du slot affiché : même amorce (A).
+		expect(tooltipHtml({ ...centre, label: 'X', kind: 'declared' }, false)).toContain('+12 h');
+	});
+
+	it('infobulle : cônes précédents A sur le slot B : échéance depuis leur amorce, run nommé', () => {
+		weatherAiDisplayed.set(
+			displayedAfterCommit(
+				'shown',
+				{ run: runB, vt: VALID_TIMES[1], layers, cones: null, previous: kept() },
+				null,
+				true
+			)
+		);
+		const html = tooltipHtml(centre, true);
+		expect(html).toContain(`+12 h du run ${shortRunLabel(INIT_TIME)} (run précédent)`);
+	});
+
+	it('onglet : champ `cones` retiré, slot A (cônes précédents) encore visible : calibration gardée', () => {
+		weatherAiLayers.set(layers);
+		weatherAiDisplayed.set(
+			displayedAfterCommit(
+				'shown',
+				{ run: runB, vt: VALID_TIMES[1], layers, cones: null, previous: kept() },
+				null,
+				true
+			)
+		);
+		// Retrait : plus de cônes au catalogue de B, plus de repli dans le store.
+		weatherAiRun.set({ ...runB, available: [] });
+		weatherAiCones.set({ runId: NEXT.runId, doc: null });
+		expect(conesOffered(get(weatherAiRun))).toBe(false);
+		const body = render(WeatherAiPanel).body;
+		expect(body).toContain(previousConesNotice(kept()));
+		expect(body).toContain(CONES_MENTION);
+		expect(body).toContain(conesDoc().calibration_status);
+		expect(body).toContain("Cônes d'incertitude");
+	});
+
+	it('onglet et mentions : cônes courants retirés du catalogue, slot encore visible', () => {
+		weatherAiLayers.set(layers);
+		weatherAiDisplayed.set(
+			displayedAfterCommit(
+				'shown',
+				{ run: runA, vt: VALID_TIMES[1], layers, cones: conesDoc(), previous: null },
+				null,
+				true
+			)
+		);
+		weatherAiRun.set({ ...runA, available: [] });
+		weatherAiCones.set({ runId: RUN_ID, doc: null });
+		const panel = render(WeatherAiPanel).body;
+		expect(panel).toContain(CONES_MENTION);
+		expect(panel).toContain(conesDoc().calibration_status);
+		// Attribution et licence des cônes affichés, lues au commit.
+		const mentions = render(WeatherAiMentions).body;
+		expect(mentions).toContain('attribution-cones-A');
+		expect(mentions).toContain('licence-cones-A');
+	});
+
+	it('mentions : cônes annoncés par le catalogue mais pas encore affichés : pas leurs crédits', () => {
+		weatherAiRun.set(runA);
+		weatherAiDisplayed.set(
+			displayedAfterCommit(
+				'shown',
+				{ run: runA, vt: VALID_TIMES[1], layers: { cones: false } },
+				null,
+				true
+			)
+		);
+		expect(render(WeatherAiMentions).body).not.toContain('attribution-cones-A');
+	});
+});
+
+// Passe les documents des fixtures (run 18/10 00Z) sur le run suivant.
+const rerun = <T>(v: T): T =>
+	JSON.parse(
+		JSON.stringify(v)
+			.replaceAll(RUN_ID, NEXT.runId)
+			.replaceAll(SNAPSHOT_ID, NEXT.snapshotId)
+			.replaceAll(`"init_time":"${INIT_TIME}"`, `"init_time":"${NEXT_INIT}"`)
+	);
+
+function portal() {
+	const runRoutes = (): Record<string, unknown> => ({
+		[`${BASE}/runs`]: runs(),
+		[`${BASE}/products/${TRACKS_ID}/timeline`]: timeline(TRACKS_ID),
+		...Object.fromEntries(
+			VALID_TIMES.map((vt) => [
+				dataUrl(BASE, TRACKS_ID, vt),
+				data(tracksDoc(vt, [trackPoint({ valid_time: vt })]))
+			])
+		)
+	});
+	const routes: Record<string, unknown> = {
+		...runRoutes(),
+		[`${BASE}/products`]: catalog([TRACKS_ID], { cones: conesEntry() }),
+		[dataUrl(BASE, CONES_PRODUCT_ID, INIT_TIME)]: data(conesDoc())
+	};
+	vi.stubGlobal('fetch', async (url: string) =>
+		url in routes
+			? new Response(JSON.stringify(routes[url]), { status: 200 })
+			: new Response('{"title":"Not Found"}', { status: 404 })
+	);
+	return {
+		/** Le catalogue bascule sur le run suivant, sans cônes (job cone-members en cours). */
+		switchToNext() {
+			for (const k of Object.keys(routes)) delete routes[k];
+			Object.assign(routes, rerun(runRoutes()), {
+				[`${BASE}/products`]: rerun(catalog([TRACKS_ID], { cones: null }))
+			});
+		},
+		/** Le catalogue du run suivant n'a plus de champ `cones` : retrait, pas attente. */
+		withdrawNextCones() {
+			routes[`${BASE}/products`] = rerun(catalog([TRACKS_ID]));
+		},
+		/** Retour arrière : le catalogue resert le run initial, ses cônes en attente. */
+		backToFirst() {
+			for (const k of Object.keys(routes)) delete routes[k];
+			Object.assign(routes, runRoutes(), {
+				[`${BASE}/products`]: catalog([TRACKS_ID], { cones: null })
+			});
+		},
+		/** Les cônes du run suivant sont publiés. */
+		publishNextCones(doc = rerun(conesDoc())) {
+			routes[`${BASE}/products`] = rerun(
+				catalog([TRACKS_ID], {
+					cones: conesEntry({ valid_time: NEXT_INIT, sha256: 'd'.repeat(64) })
+				})
+			);
+			routes[dataUrl(BASE, CONES_PRODUCT_ID, NEXT_INIT)] = data(doc);
+		}
+	};
+}
+
+const until = async (cond: () => boolean, ms = 2000) => {
+	const t0 = Date.now();
+	while (!cond()) {
+		if (Date.now() - t0 > ms) throw new Error('délai dépassé');
+		await new Promise((r) => setTimeout(r, 5));
+	}
+};
+
+describe('contrôleur : bascule de run pendant le calcul des cônes', () => {
+	afterEach(() => {
+		vi.unstubAllGlobals();
+		weatherAiRun.set(undefined);
+		weatherAiCones.set(null);
+		weatherAiLayers.set({ tracks: false, cones: false });
+		forgetSessionCones();
+		pruneCache([]);
+	});
+
+	it('cônes du run précédent gardés, puis remplacés par ceux du run courant', async () => {
+		const p = portal();
+		weatherAiLayers.set({ tracks: true, cones: true });
+		const release = useWeatherAi();
+		try {
+			await until(() => get(weatherAiCones)?.doc?.run_id === RUN_ID);
+			p.switchToNext();
+			await refresh();
+			await until(() => get(weatherAiRun)?.runId === NEXT.runId);
+			const during = get(weatherAiCones);
+			expect(during?.runId).toBe(NEXT.runId);
+			expect(during?.doc).toBeNull();
+			expect(during?.previous?.runId).toBe(RUN_ID);
+			expect(conesOffered(get(weatherAiRun))).toBe(true);
+			// Les trajectoires sont bien celles du run courant.
+			expect(get(weatherAiRun)?.loaded[TRACKS_ID]).toBeDefined();
+
+			// Relevé sans changement : toujours gardés.
+			await refresh();
+			expect(get(weatherAiCones)?.previous?.runId).toBe(RUN_ID);
+
+			p.publishNextCones();
+			await refresh();
+			await until(() => !!get(weatherAiCones)?.doc);
+			expect(get(weatherAiCones)?.doc?.run_id).toBe(NEXT.runId);
+			expect(get(weatherAiCones)?.previous).toBeUndefined();
+		} finally {
+			release();
+		}
+	});
+
+	it('cônes du run courant refusés : ceux du run précédent restent, raison affichée', async () => {
+		const p = portal();
+		weatherAiLayers.set({ tracks: true, cones: true });
+		const release = useWeatherAi();
+		try {
+			await until(() => get(weatherAiCones)?.doc?.run_id === RUN_ID);
+			p.switchToNext();
+			await refresh();
+			await until(() => get(weatherAiRun)?.runId === NEXT.runId);
+			p.publishNextCones(rerun(conesDoc({ mention: 'autre' })));
+			await refresh();
+			await until(() => !!get(weatherAiCones)?.message);
+			expect(get(weatherAiCones)?.doc).toBeNull();
+			expect(get(weatherAiCones)?.previous?.runId).toBe(RUN_ID);
+		} finally {
+			release();
+		}
+	});
+
+	it('champ `cones` retiré du catalogue du run courant : le repli s’efface', async () => {
+		const p = portal();
+		weatherAiLayers.set({ tracks: true, cones: true });
+		const release = useWeatherAi();
+		try {
+			await until(() => get(weatherAiCones)?.doc?.run_id === RUN_ID);
+			p.switchToNext();
+			await refresh();
+			await until(() => get(weatherAiRun)?.runId === NEXT.runId);
+			expect(get(weatherAiCones)?.previous?.runId).toBe(RUN_ID);
+
+			p.withdrawNextCones();
+			await refresh();
+			expect(get(weatherAiRun)?.conesAwaited).toBe(false);
+			expect(get(weatherAiCones)).toBeNull();
+			expect(conesOffered(get(weatherAiRun))).toBe(false);
+
+			// Retour de l'attente explicite : la mémoire a été effacée, rien ne resurgit.
+			p.switchToNext();
+			await refresh();
+			expect(get(weatherAiCones)).toBeNull();
+		} finally {
+			release();
+		}
+	});
+
+	it('retour arrière vers un run plus ancien : les cônes retirés ne ressurgissent pas', async () => {
+		const p = portal();
+		weatherAiLayers.set({ tracks: true, cones: true });
+		const release = useWeatherAi();
+		try {
+			await until(() => get(weatherAiCones)?.doc?.run_id === RUN_ID);
+			p.switchToNext();
+			await refresh();
+			await until(() => get(weatherAiRun)?.runId === NEXT.runId);
+			expect(get(weatherAiCones)?.previous?.runId).toBe(RUN_ID);
+
+			// Le catalogue revient au run initial, dont les cônes ne sont plus servis.
+			p.backToFirst();
+			await refresh();
+			await until(() => get(weatherAiRun)?.runId === RUN_ID);
+			expect(get(weatherAiCones)).toBeNull();
+
+			// Puis repasse au run suivant (6 h plus tard, cônes en attente) : pas de repli.
+			p.switchToNext();
+			await refresh();
+			await until(() => get(weatherAiRun)?.runId === NEXT.runId);
+			expect(get(weatherAiCones)).toBeNull();
+			expect(conesOffered(get(weatherAiRun))).toBe(false);
+		} finally {
+			release();
+		}
+	});
+
+	it('couche cônes jamais chargée pendant le run précédent : rien à garder', async () => {
+		const p = portal();
+		weatherAiLayers.set({ tracks: true, cones: false });
+		const release = useWeatherAi();
+		try {
+			await until(() => get(weatherAiRun)?.runId === RUN_ID);
+			p.switchToNext();
+			await refresh();
+			await until(() => get(weatherAiRun)?.runId === NEXT.runId);
+			expect(get(weatherAiCones)).toBeNull();
+			expect(conesOffered(get(weatherAiRun))).toBe(false);
+		} finally {
+			release();
+		}
+	});
+});
