@@ -31,7 +31,6 @@ import {
 	HILLSHADE_LAYER
 } from '$lib/constants';
 import { DEPARTMENTS_LAYER_ID } from '$lib/departments-layer';
-import { type FrameLoadKind, createFrameTimer } from '$lib/frame-timing';
 import {
 	type OverlayLayerPlan,
 	OverlayStack,
@@ -56,7 +55,6 @@ import {
 } from '$lib/vector-styles';
 
 import { refreshPopup } from './popup';
-import { reportFrameLoad } from './rum';
 import { currentOmUrl, currentOmUrl2 } from './stores/om-url';
 import {
 	anomalyPhase,
@@ -390,18 +388,9 @@ const vectorGridValuesLayer = (): SlotLayer => ({
 
 // Logique dans `commit-group.ts` (testable sans carte) ; wrappers locaux pour
 // garder les points d'appel inchangés.
-// Temps d'affichage d'une échéance (RUM `om_frame_load`) : démarré quand la
-// couche raster principale est rechargée, arrêté au commit du groupe.
-const frameTimer = createFrameTimer(reportFrameLoad);
-const startFrameTimer = (kind: FrameLoadKind): void =>
-	frameTimer.start({ kind, domain: get(d), variable: get(displayedVariable) });
-
 const commitGroup = new CommitGroup<SlotManager>({
 	onSettled: () => loading.set(false),
-	onFlushed: () => {
-		frameTimer.commit();
-		refreshPopup();
-	}
+	onFlushed: () => refreshPopup()
 });
 
 /** Démarre un nouveau groupe : appeler AVANT les `update()` correspondants. */
@@ -558,7 +547,6 @@ export const createManagers = (): void => {
 		onReady: tryFlushGroup,
 		onCommit: () => slotEvents.dispatchEvent(new Event(SLOT_EVENT_COMMIT)),
 		onError: () => {
-			frameTimer.fail();
 			dropFromGroup(rasterManager!);
 			slotEvents.dispatchEvent(new Event(SLOT_EVENT_ERROR));
 		},
@@ -656,7 +644,6 @@ export const addOmFileLayers = (): void => {
 	for (const { manager } of overlayLoads) group.push(manager);
 
 	loading.set(true);
-	if (rasterManager) startFrameTimer('initial');
 	beginCommitGroup(group);
 	rasterManager?.update('om://' + omUrl);
 	// arrowManager AVANT vectorManager : insérées d'abord sous BEFORE_LAYER_VECTOR,
@@ -752,7 +739,6 @@ export const changeOMfileURL = (vectorOnly = false, rasterOnly = false): void =>
 	if (group.length === 0) return;
 
 	loading.set(true);
-	if (rasterUrl) startFrameTimer('change');
 	if (primaryCount > 0) {
 		// Les superpositions encore en vol mais non rechargées ici (URL inchangée)
 		// sont reportées dans le nouveau groupe : sinon leur commit différé serait
