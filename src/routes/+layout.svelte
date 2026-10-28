@@ -9,6 +9,7 @@
 
 	import { METADATA_REFRESH_INTERVAL, MILLISECONDS_PER_MINUTE } from '$lib/constants';
 	import { getInitialMetaData } from '$lib/metadata';
+	import { initRum } from '$lib/rum';
 
 	let { children } = $props();
 
@@ -18,6 +19,9 @@
 		// Dark mode forcé : écrase toute préférence claire persistée (mode-watcher@1.1.0
 		// n'a pas de prop « forced » ; defaultMode ne s'applique qu'au premier chargement).
 		setMode('dark');
+
+		// Fire-and-forget : sans token, ne charge rien ; une erreur du SDK ne doit pas casser l'app.
+		initRum().catch(() => {});
 
 		if (metaDataInterval) clearInterval(metaDataInterval);
 		metaDataInterval = setInterval(() => {

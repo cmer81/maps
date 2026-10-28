@@ -32,6 +32,7 @@
 		"@openmeteo/file-format-wasm": "^0.0.20",
 		"@openmeteo/file-reader": "^0.0.20",
 		"@openmeteo/weather-map-layer": "npm:@cm3r/weather-map-layer@0.3.0",
+		"@openobserve/browser-rum": "0.4.3",
 		"@sveltejs/adapter-static": "^3.0.8",
 		"@sveltejs/kit": "^2.59.0",
 		"@sveltejs/vite-plugin-svelte": "^7.1.2",
