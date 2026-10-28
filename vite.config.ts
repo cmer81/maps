@@ -35,10 +35,6 @@ const viteServerConfig = (): Plugin => ({
 
 export default ({ mode }: { mode: string }) => {
 	process.env = { ...process.env, ...loadEnv(mode, process.cwd()) };
-	// Version RUM (`src/lib/rum.ts`) : SHA court du commit fourni par Workers Builds,
-	// sinon la version du package.json (`$app/environment`). Vite expose aux
-	// `import.meta.env` les `VITE_*` présents dans `process.env`.
-	process.env.VITE_OO_RUM_VERSION ??= process.env.WORKERS_CI_COMMIT_SHA?.slice(0, 7) ?? '';
 
 	// Hôtes autorisés à atteindre le dev/preview server, EN PLUS de localhost
 	// (toujours permis par Vite). Par machine via .env.local — p. ex.

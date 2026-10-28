@@ -75,7 +75,6 @@
 	} from '$lib/metadata';
 	import { initNeighborPrefetch } from '$lib/neighbor-prefetch';
 	import { addPopup } from '$lib/popup';
-	import { trackMapErrors } from '$lib/rum';
 	import { requestPersistentStorage } from '$lib/storage-persistence';
 	import { formatISOWithoutTimezone } from '$lib/time-format';
 	import { findTimeStep } from '$lib/time-utils';
@@ -163,7 +162,6 @@
 		appliedTheme = get(basemapTheme);
 
 		setMapControlSettings();
-		trackMapErrors($map);
 
 		// update bounds when new tiles are requested, to trigger new data ranges loading if necessary
 		$map.on('dataloading', () => {

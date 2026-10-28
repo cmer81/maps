@@ -18,13 +18,6 @@ declare global {
 			FORECAST_API_URL?: string;
 			WEATHER_AI_API_URL?: string;
 			WEATHER_AI_CONES?: string;
-			OO_RUM_CLIENT_TOKEN?: string;
-			OO_RUM_SITE?: string;
-			OO_RUM_ORG?: string;
-			OO_RUM_APPLICATION_ID?: string;
-			OO_RUM_ENV?: string;
-			OO_RUM_SESSION_SAMPLE_RATE?: string;
-			OO_RUM_REPLAY_SAMPLE_RATE?: string;
 		};
 	}
 }
@@ -126,63 +119,4 @@ export function getWeatherAiConesMode(): WeatherAiConesMode {
 		if (fromUrl === 'fixture') return 'fixture';
 	}
 	return raw === 'fixture' ? 'fixture' : 'on';
-}
-
-/**
- * Real User Monitoring OpenObserve (`src/lib/rum.ts`). Sans client token, le RUM
- * reste inactif (dev, CI, forks). Le token RUM est un jeton d'ingestion seule,
- * prévu pour être exposé côté navigateur. Valeurs runtime (`window.__OM_CONFIG`,
- * Docker) prioritaires sur les `VITE_*` inlinés au build (Cloudflare Workers).
- */
-export interface RumConfig {
-	clientToken: string;
-	site: string;
-	organizationIdentifier: string;
-	applicationId: string;
-	service: string;
-	env: string;
-	version: string;
-	/** % des sessions suivies. */
-	sessionSampleRate: number;
-	/** % des sessions SUIVIES qui sont enregistrées (relatif à `sessionSampleRate`). */
-	sessionReplaySampleRate: number;
-}
-
-export function getRumConfig(): RumConfig {
-	const fromWindow = typeof window !== 'undefined' ? window.__OM_CONFIG : undefined;
-	const pick = (runtime: string | undefined, build: unknown, fallback = ''): string =>
-		runtime || (build as string | undefined) || fallback;
-	// Taux d'échantillonnage en % (0..100) ; valeur absente ou invalide → défaut.
-	const rate = (runtime: string | undefined, build: unknown, fallback: number): number => {
-		const raw = pick(runtime, build);
-		const value = raw === '' ? NaN : Number(raw);
-		return Number.isFinite(value) && value >= 0 && value <= 100 ? value : fallback;
-	};
-	return {
-		clientToken: pick(fromWindow?.OO_RUM_CLIENT_TOKEN, import.meta.env.VITE_OO_RUM_CLIENT_TOKEN),
-		site: pick(fromWindow?.OO_RUM_SITE, import.meta.env.VITE_OO_RUM_SITE, 'openobserve.cmer.fr'),
-		organizationIdentifier: pick(
-			fromWindow?.OO_RUM_ORG,
-			import.meta.env.VITE_OO_RUM_ORG,
-			'default'
-		),
-		applicationId: pick(
-			fromWindow?.OO_RUM_APPLICATION_ID,
-			import.meta.env.VITE_OO_RUM_APPLICATION_ID,
-			'infoclimat-maps'
-		),
-		service: 'infoclimat-maps',
-		env: pick(fromWindow?.OO_RUM_ENV, import.meta.env.VITE_OO_RUM_ENV, 'production'),
-		version: (import.meta.env.VITE_OO_RUM_VERSION as string | undefined) ?? '',
-		sessionSampleRate: rate(
-			fromWindow?.OO_RUM_SESSION_SAMPLE_RATE,
-			import.meta.env.VITE_OO_RUM_SESSION_SAMPLE_RATE,
-			10
-		),
-		sessionReplaySampleRate: rate(
-			fromWindow?.OO_RUM_REPLAY_SAMPLE_RATE,
-			import.meta.env.VITE_OO_RUM_REPLAY_SAMPLE_RATE,
-			10
-		)
-	};
 }

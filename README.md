@@ -105,7 +105,6 @@ Voir [`.claude/CLAUDE.md`](./.claude/CLAUDE.md) et les règles ciblées dans [`.
 - système de slots double-buffered pour les transitions de tuiles (`slot-manager.ts`)
 - cache persistant des blocs OMfile par générations du Cache API, éviction à coût constant (`generational-block-cache.ts`, remplace `BrowserBlockCache`)
 - pipeline playback / pré-rendu (`playback-renderer.ts`)
-- Real User Monitoring OpenObserve, inactif sans client token (`rum.ts`, `VITE_OO_RUM_*`)
 - synchronisation URL ↔ stores Svelte 5
 - sondages verticaux client-side (Skew-T + hodographe + indices convectifs) calculés depuis les OMfiles AROME niveaux de pression au point cliqué (`src/lib/sounding/`)
 - couches expérimentales Weather AI (cyclones) : produits découverts depuis le catalogue de l'API du portail, run chargé hors écran puis bascule atomique, rendu MapLibre dédié hors `om://` (`src/lib/weather-ai/`, onglet « Cyclones IA »). L'API est appelée en direct (le portail renvoie l'en-tête CORS) ; `VITE_WEATHER_AI_API_URL=/api/weather-ai` passe optionnellement par le proxy Vite en local ; `VITE_WEATHER_AI_CONES=on|off|fixture` pilote les cônes publics (`on` par défaut : affichés quand le champ `cones` du catalogue les annonce pour le run affiché ; `off` les retire ; `?weather_ai_cones=fixture` : démonstration hors API sur le run de référence archivé)

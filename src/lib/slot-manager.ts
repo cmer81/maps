@@ -89,7 +89,7 @@ export const OM_SLOT_RETRY: NonNullable<SlotManagerOptions['retry']> = {
 };
 
 /** Erreur de source définitive (fichier absent) : inutile de réessayer. */
-export const isMissingFileError = (error: unknown): boolean => {
+const isMissingFileError = (error: unknown): boolean => {
 	if ((error as { status?: number } | undefined)?.status === 404) return true;
 	const message = error instanceof Error ? error.message : String(error ?? '');
 	return /File not found|\b404\b/.test(message);
