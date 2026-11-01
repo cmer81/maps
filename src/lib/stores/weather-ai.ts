@@ -13,7 +13,7 @@ import { type LoadedRun, runValidTimes } from '$lib/weather-ai/loader';
 
 import { time } from './time';
 
-import type { ConesProduct } from '$lib/weather-ai/cones';
+import type { ConesProduct, PreviousCones } from '$lib/weather-ai/cones';
 import type { DisplayedState } from '$lib/weather-ai/displayed';
 
 /** Superpositions proposées (les clés `mslp`/`existence` d'anciennes versions sont ignorées). */
@@ -67,13 +67,19 @@ export interface WeatherAiStatus {
 }
 export const weatherAiStatus = writable<WeatherAiStatus>({ state: 'idle' });
 
-/** Cônes du run affiché (même `run_id`), ou la raison de leur absence. */
+/**
+ * Cônes du run affiché (même `run_id`), ou la raison de leur absence. Tant que
+ * le run affiché n'a pas les siens (`doc: null`), `previous` peut porter ceux,
+ * validés, du run affiché juste avant : présentés comme tels, jamais comme ceux
+ * du run affiché, et remplacés dès que les siens sont validés.
+ */
 export const weatherAiCones = writable<{
 	runId: string;
 	/** Empreinte du document annoncé par le catalogue : un remplacement le fait relire. */
 	sha256?: string;
 	doc: ConesProduct | null;
 	message?: string;
+	previous?: PreviousCones;
 } | null>(null);
 
 /**

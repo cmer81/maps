@@ -87,9 +87,9 @@ export function tracksDoc(
 	};
 }
 
-const ATTRIBUTION =
+export const ATTRIBUTION =
 	'WeatherNext Cyclones Mini (2023), Google DeepMind; ECMWF open data (CC BY 4.0), modified';
-const LICENSE = 'WeatherNext Cyclones Mini model weights are CC BY 4.0';
+export const LICENSE = 'WeatherNext Cyclones Mini model weights are CC BY 4.0';
 
 export function catalog(productIds: string[], over: Partial<Catalog> = {}): Catalog {
 	return {

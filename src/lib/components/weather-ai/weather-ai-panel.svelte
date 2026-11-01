@@ -22,7 +22,7 @@
 		watchWeatherAiVariables,
 		weatherAiFieldLabels
 	} from '$lib/weather-ai-domain';
-	import { CONES_MENTION } from '$lib/weather-ai/cones';
+	import { CONES_MENTION, previousConesNotice } from '$lib/weather-ai/cones';
 	import { conesOffered, useWeatherAi } from '$lib/weather-ai/controller';
 	import { cardSummary } from '$lib/weather-ai/displayed';
 	import { formatUtc } from '$lib/weather-ai/render';
@@ -57,6 +57,9 @@
 		cones: ConeIcon
 	};
 
+	// Cônes du slot réellement affiché : seule source des mentions et de la calibration.
+	const shownCones = $derived($weatherAiDisplayed?.cones);
+
 	// Superpositions issues du catalogue : seuls les produits annoncés et connus
 	// sont proposés. Les champs continus (WEATHER_AI_FIELDS) n'en sont pas : ce
 	// sont les variables du modèle « Weather AI (WeatherNext) » du sélecteur.
@@ -66,7 +69,9 @@
 		const items: { kind: WeatherAiOverlay; label: string }[] = run.available
 			.filter((p) => p.spec.kind === 'tracks')
 			.map(() => ({ kind: 'tracks', label: 'Cyclones, trajectoires et zones à surveiller' }));
-		if (conesOffered(run)) items.push({ kind: 'cones', label: "Cônes d'incertitude" });
+		// Cônes encore à l'écran (slot affiché) : bascule gardée pour pouvoir les masquer.
+		if (conesOffered(run, $weatherAiCones) || shownCones)
+			items.push({ kind: 'cones', label: "Cônes d'incertitude" });
 		return items;
 	});
 	const continuousFields = $derived(
@@ -265,20 +270,38 @@
 			</section>
 		{/if}
 
-		{#if $weatherAiLayers.cones && conesOffered($weatherAiRun)}
+		<!-- Section tant que des cônes sont affichés, même retirés du catalogue entre-temps. -->
+		{#if shownCones || ($weatherAiLayers.cones && conesOffered($weatherAiRun, $weatherAiCones))}
 			<section class="flex flex-col gap-1 px-1">
 				<h3 class="text-xs font-semibold text-white/80">Cônes d'incertitude</h3>
-				{#if $weatherAiCones?.doc}
+				<!-- Mention et calibration des cônes du slot AFFICHÉ (weatherAiDisplayed). -->
+				{#if shownCones && !shownCones.previous}
 					<p class="text-[11px] font-medium text-amber-100">{CONES_MENTION}</p>
 					<!-- Statut reçu du portail, affiché tel quel (validé : celui du catalogue). -->
 					<p class="text-[11px] text-white/55">
 						Statut de calibration : <span class="font-mono break-all"
-							>{$weatherAiCones.doc.calibration_status}</span
+							>{shownCones.doc.calibration_status}</span
 						>
 					</p>
 					<p class="text-[11px] text-white/55">
 						Zone claire : 90 % · zone soutenue : 68 %. Enveloppe coupée là où le cône est
 						indisponible ; hémisphère sud : pas de cône au-delà de +24 h.
+					</p>
+				{:else if shownCones?.previous}
+					<p class="text-[11px] font-medium text-sky-100" role="note">
+						{previousConesNotice(shownCones.previous)} Rendu atténué, contour en pointillés ; trajectoires
+						du run affiché.
+					</p>
+					{#if $weatherAiCones?.message && !$weatherAiCones.doc && $weatherAiCones.runId === $weatherAiDisplayed?.runId}
+						<p class="text-[11px] text-white/55">
+							Cônes du run affiché non retenus : {$weatherAiCones.message}.
+						</p>
+					{/if}
+					<p class="text-[11px] font-medium text-amber-100">{CONES_MENTION}</p>
+					<p class="text-[11px] text-white/55">
+						Statut de calibration (run des cônes) : <span class="font-mono break-all"
+							>{shownCones.previous.doc.calibration_status}</span
+						>
 					</p>
 				{:else if $weatherAiCones?.message}
 					<p class="text-[11px] text-white/55">Cônes non affichés : {$weatherAiCones.message}.</p>

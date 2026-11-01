@@ -429,6 +429,7 @@ describe('onglet Cyclones IA : statut de calibration affiché tel quel', () => {
 	afterEach(() => {
 		weatherAiRun.set(undefined);
 		weatherAiCones.set(null);
+		weatherAiDisplayed.set(null);
 		weatherAiLayers.set({ tracks: false, cones: false });
 	});
 
@@ -445,6 +446,13 @@ describe('onglet Cyclones IA : statut de calibration affiché tel quel', () => {
 		});
 		weatherAiLayers.set({ tracks: true, cones: true });
 		weatherAiCones.set({ runId: RUN_ID, sha256: 'c'.repeat(64), doc: conesDoc() });
+		weatherAiDisplayed.set({
+			runId: RUN_ID,
+			validTime: INIT_TIME,
+			initTime: INIT_TIME,
+			demo: false,
+			cones: { doc: conesDoc() }
+		});
 		const body = render(WeatherAiPanel).body;
 		expect(body).toContain(CONES_MENTION);
 		expect(body).toContain(conesDoc().calibration_status);
@@ -461,11 +469,13 @@ describe('carte flottante : mention et statut de calibration des cônes affiché
 	const show = (displayedRunId: string) => {
 		weatherAiLayers.set({ tracks: true, cones: true });
 		weatherAiCones.set({ runId: RUN_ID, sha256: 'c'.repeat(64), doc: conesDoc() });
+		// Le slot affiché ne porte les cônes que s'ils sont de son run (cf. preparePlan).
 		weatherAiDisplayed.set({
 			runId: displayedRunId,
 			validTime: INIT_TIME,
 			initTime: INIT_TIME,
-			demo: false
+			demo: false,
+			cones: displayedRunId === RUN_ID ? { doc: conesDoc() } : undefined
 		});
 		return render(WeatherAiMapCard).body;
 	};

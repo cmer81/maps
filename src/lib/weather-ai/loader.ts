@@ -57,6 +57,11 @@ export interface LoadedRun {
 	ignored: string[];
 	/** Produits chargés et validés, par `product_id`. */
 	loaded: Record<string, LoadedProduct>;
+	/**
+	 * Le catalogue annonce explicitement l'attente des cônes (`cones: null`, job
+	 * `cone-members` en cours). Un champ absent est un retrait, pas une attente.
+	 */
+	conesAwaited?: boolean;
 	/** Run de démonstration bundlé (mode `fixture`), jamais servi par l'API. */
 	demo?: true;
 }
@@ -264,7 +269,8 @@ export async function prepareRun(
 		initTime,
 		available: known,
 		ignored,
-		loaded
+		loaded,
+		conesAwaited: catalog.cones === null
 	};
 }
 
@@ -297,10 +303,16 @@ export function withCatalogCones(run: LoadedRun, catalog: Catalog): LoadedRun {
 	const next = sameSnapshot
 		? discoverProducts(catalog).known.find((p) => p.spec.kind === 'cones')
 		: undefined;
+	const conesAwaited = sameSnapshot && catalog.cones === null;
 	const prev = run.available.find((p) => p.spec.kind === 'cones');
-	if (prev?.sha256 === next?.sha256 && prev?.validTime === next?.validTime) return run;
+	if (
+		prev?.sha256 === next?.sha256 &&
+		prev?.validTime === next?.validTime &&
+		!!run.conesAwaited === conesAwaited
+	)
+		return run;
 	const others = run.available.filter((p) => p.spec.kind !== 'cones');
-	return { ...run, available: next ? [...others, next] : others };
+	return { ...run, available: next ? [...others, next] : others, conesAwaited };
 }
 
 export const fetchCatalog = (

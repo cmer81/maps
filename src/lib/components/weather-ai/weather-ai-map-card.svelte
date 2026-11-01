@@ -14,7 +14,7 @@
 		weatherAiTime
 	} from '$lib/stores/weather-ai';
 
-	import { CONES_MENTION } from '$lib/weather-ai/cones';
+	import { CONES_MENTION, previousConesNotice } from '$lib/weather-ai/cones';
 	import { useWeatherAi } from '$lib/weather-ai/controller';
 	import { cardSummary } from '$lib/weather-ai/displayed';
 	import { syncWeatherAiLayers } from '$lib/weather-ai/map-layers';
@@ -57,11 +57,11 @@
 		)
 	);
 	const outOfHorizon = $derived(summary.relation === 'before' || summary.relation === 'after');
-	const showCones = $derived(
-		$weatherAiLayers.cones &&
-			!!$weatherAiCones?.doc &&
-			$weatherAiCones.runId === $weatherAiDisplayed?.runId
-	);
+	// Mention et calibration des cônes du slot réellement affiché (jamais ceux
+	// d'un slot en chargement ou abandonné après un délai dépassé).
+	const shownCones = $derived($weatherAiDisplayed?.cones);
+	// Cônes du run précédent, gardés tant que ceux du run affiché sont en calcul.
+	const previousCones = $derived(shownCones?.previous);
 </script>
 
 {#if anyOn}
@@ -148,11 +148,26 @@
 			</p>
 		{/if}
 
-		{#if showCones}
+		{#if shownCones && !previousCones}
 			<p class="mt-1 text-[11px] leading-snug text-amber-100">{CONES_MENTION}</p>
 			<p class="text-[10px] leading-snug text-white/50">
 				Statut de calibration : <span class="font-mono break-all"
-					>{$weatherAiCones?.doc?.calibration_status}</span
+					>{shownCones.doc.calibration_status}</span
+				>
+			</p>
+		{/if}
+
+		{#if previousCones}
+			<p
+				class="mt-1 rounded bg-sky-400/15 px-2 py-1 text-[11px] leading-snug text-sky-100"
+				role="note"
+			>
+				{previousConesNotice(previousCones)} Contour en pointillés.
+			</p>
+			<p class="mt-1 text-[11px] leading-snug text-amber-100">{CONES_MENTION}</p>
+			<p class="text-[10px] leading-snug text-white/50">
+				Statut de calibration (run des cônes) : <span class="font-mono break-all"
+					>{previousCones.doc.calibration_status}</span
 				>
 			</p>
 		{/if}
