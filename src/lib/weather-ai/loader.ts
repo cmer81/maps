@@ -15,6 +15,7 @@ import {
 	runsUrl,
 	timelineUrl
 } from './api';
+import { type PreviousConesEntry, previousConesEntry, samePreviousEntry } from './cones';
 import { type GridProduct, type NormalizedGrid, mapValues, normalizeGrid } from './grid';
 import { type DiscoveredProduct, type ProductKind, discoverProducts } from './products';
 
@@ -62,6 +63,11 @@ export interface LoadedRun {
 	 * `cone-members` en cours). Un champ absent est un retrait, pas une attente.
 	 */
 	conesAwaited?: boolean;
+	/**
+	 * Cônes du run servi juste avant (`cones_previous`, seulement quand `cones`
+	 * est null) : de quoi amorcer le slot « précédent » au premier chargement.
+	 */
+	conesPrevious?: PreviousConesEntry;
 	/** Run de démonstration bundlé (mode `fixture`), jamais servi par l'API. */
 	demo?: true;
 }
@@ -270,7 +276,8 @@ export async function prepareRun(
 		available: known,
 		ignored,
 		loaded,
-		conesAwaited: catalog.cones === null
+		conesAwaited: catalog.cones === null,
+		conesPrevious: previousConesEntry(catalog)
 	};
 }
 
@@ -304,15 +311,17 @@ export function withCatalogCones(run: LoadedRun, catalog: Catalog): LoadedRun {
 		? discoverProducts(catalog).known.find((p) => p.spec.kind === 'cones')
 		: undefined;
 	const conesAwaited = sameSnapshot && catalog.cones === null;
+	const conesPrevious = sameSnapshot ? previousConesEntry(catalog) : undefined;
 	const prev = run.available.find((p) => p.spec.kind === 'cones');
 	if (
 		prev?.sha256 === next?.sha256 &&
 		prev?.validTime === next?.validTime &&
-		!!run.conesAwaited === conesAwaited
+		!!run.conesAwaited === conesAwaited &&
+		samePreviousEntry(run.conesPrevious, conesPrevious)
 	)
 		return run;
 	const others = run.available.filter((p) => p.spec.kind !== 'cones');
-	return { ...run, available: next ? [...others, next] : others, conesAwaited };
+	return { ...run, available: next ? [...others, next] : others, conesAwaited, conesPrevious };
 }
 
 export const fetchCatalog = (

@@ -80,6 +80,8 @@ export const weatherAiCones = writable<{
 	doc: ConesProduct | null;
 	message?: string;
 	previous?: PreviousCones;
+	/** Entrée `cones_previous` déjà lue pour ce run (`<run_id>#<sha256>`), réussite ou non. */
+	seededFrom?: string;
 } | null>(null);
 
 /**
