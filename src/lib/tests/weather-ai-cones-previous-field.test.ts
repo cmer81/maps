@@ -97,6 +97,38 @@ describe('previousConesEntry : champ additif et optionnel', () => {
 		expect(field({ product_id: TRACKS_ID })).toBeUndefined();
 	});
 
+	it('champ `cones` absent (retrait, pas une attente) : rien à amorcer', () => {
+		const withdrawn: Catalog = { ...nextCatalog({ cones_previous: previousField() }) };
+		delete (withdrawn as Partial<Catalog>).cones;
+		expect(withdrawn.cones).toBeUndefined();
+		expect(previousConesEntry(withdrawn)).toBeUndefined();
+	});
+
+	it('relevé du même run : snapshot, calibration, amorce ou crédits changés sont détectés', () => {
+		const run = {
+			runId: NEXT.runId,
+			snapshotId: NEXT.snapshotId,
+			publishedAt: '',
+			initTime: NEXT_INIT,
+			available: [],
+			ignored: [],
+			loaded: {},
+			conesAwaited: true,
+			conesPrevious: previousConesEntry(nextCatalog({ cones_previous: previousField() }))
+		};
+		expect(withCatalogCones(run, nextCatalog({ cones_previous: previousField() }))).toBe(run);
+		for (const over of [
+			{ snapshot_id: 'wn2-snap-autre' },
+			{ calibration_status: 'autre' },
+			{ init_time: '2026-10-17T23:00:00Z' },
+			{ attribution: 'Autre attribution' },
+			{ license_notice: 'Autre licence' }
+		] as Partial<ConesPreviousCatalogEntry>[]) {
+			const next = withCatalogCones(run, nextCatalog({ cones_previous: previousField(over) }));
+			expect(next, JSON.stringify(over)).not.toBe(run);
+		}
+	});
+
 	it('relevé du même run : l’apparition du champ est détectée', () => {
 		const run = {
 			runId: NEXT.runId,
@@ -171,6 +203,10 @@ function portal(conesPrevious: ConesPreviousCatalogEntry | null | undefined, ser
 	vi.stubGlobal('fetch', fetchMock);
 	return {
 		fetchMock,
+		/** `cones_previous` réécrit au catalogue, même run servi (cônes toujours en calcul). */
+		setPrevious(field: ConesPreviousCatalogEntry) {
+			routes[`${BASE}/products`] = nextCatalog({ cones_previous: field });
+		},
 		/** Les cônes du run servi sont publiés : `cones_previous` repasse à null. */
 		publishNextCones() {
 			delete routes[dataUrl(BASE, CONES_PRODUCT_ID, INIT_TIME)];
@@ -285,6 +321,52 @@ describe('contrôleur : premier chargement pendant le calcul des cônes', () => 
 			await until(() => !!get(weatherAiCones)?.doc);
 			expect(get(weatherAiCones)?.doc?.run_id).toBe(NEXT.runId);
 			expect(get(weatherAiCones)?.previous).toBeUndefined();
+		} finally {
+			release();
+		}
+	});
+
+	it('crédits de `cones_previous` changés : amorce relue, crédits à jour', async () => {
+		const p = portal(previousField());
+		const release = await start();
+		try {
+			await until(() => !!get(weatherAiCones)?.previous);
+			const reads = () =>
+				p.fetchMock.mock.calls.filter(([u]) => u === dataUrl(BASE, CONES_PRODUCT_ID, INIT_TIME))
+					.length;
+			const before = reads();
+			p.setPrevious(previousField({ attribution: 'Nouvelle attribution' }));
+			await refresh();
+			await until(() => get(weatherAiCones)?.previous?.attribution === 'Nouvelle attribution');
+			expect(reads()).toBe(before + 1);
+			const shown = displayedCones({
+				run: get(weatherAiRun)!,
+				layers: { cones: true },
+				cones: null,
+				previous: get(weatherAiCones)!.previous
+			});
+			expect(shown?.credits?.attribution).toBe('Nouvelle attribution');
+		} finally {
+			release();
+		}
+	});
+
+	it('valid_time de `cones_previous` changé, nouvelle URL en 404 : plus rien d’affiché', async () => {
+		const p = portal(previousField());
+		const release = await start();
+		try {
+			await until(() => !!get(weatherAiCones)?.previous);
+			const moved = '2026-10-18T01:00:00Z';
+			p.setPrevious(previousField({ valid_time: moved }));
+			await refresh();
+			await until(() => get(weatherAiRun)?.conesPrevious?.validTime === moved);
+			await until(() =>
+				p.fetchMock.mock.calls.some(([u]) => u === dataUrl(BASE, CONES_PRODUCT_ID, moved))
+			);
+			await settle();
+			expect(get(weatherAiCones)?.previous).toBeUndefined();
+			expect(get(weatherAiCones)?.seededFrom).toBeDefined();
+			expect(conesOffered(get(weatherAiRun))).toBe(false);
 		} finally {
 			release();
 		}

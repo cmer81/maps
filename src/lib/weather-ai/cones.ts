@@ -388,7 +388,7 @@ export const previousConesNotice = (prev: PreviousCones) =>
 
 /**
  * Entrée `cones_previous` du catalogue (chom-poc-data#270), retenue seulement si
- * `cones` est null, qu'elle porte les garde-fous du contrat (produit, expérimental,
+ * `cones` est explicitement null (absent = retrait), qu'elle porte les garde-fous du contrat (produit, expérimental,
  * mention exacte, statut de calibration, amorce) et qu'elle désigne un AUTRE run
  * que le run servi. Champ absent, `null` ou invalide : `undefined`, rien à amorcer.
  */
@@ -406,7 +406,8 @@ export interface PreviousConesEntry {
 
 export function previousConesEntry(catalog: Catalog): PreviousConesEntry | undefined {
 	const e = catalog.cones_previous;
-	if (!e || catalog.cones) return undefined;
+	// Seulement sur attente explicite (`cones: null`) : un champ `cones` absent est un retrait.
+	if (!e || catalog.cones !== null) return undefined;
 	if (e.product_id !== CONES_PRODUCT_ID || e.experimental !== true) return undefined;
 	if (typeof e.run_id !== 'string' || e.run_id === catalog.run_id) return undefined;
 	if (typeof e.snapshot_id !== 'string' || typeof e.valid_time !== 'string') return undefined;
@@ -424,9 +425,28 @@ export function previousConesEntry(catalog: Catalog): PreviousConesEntry | undef
 	};
 }
 
-/** Même entrée `cones_previous` (run et document). */
+/**
+ * Identité complète d'une entrée `cones_previous` : run, snapshot, document
+ * (`sha256`, `valid_time`, amorce), calibration et crédits. Tout changement de
+ * l'un d'eux revalide l'amorce (nouvelle lecture) et ses crédits affichés.
+ */
+export const previousEntryKey = (e?: PreviousConesEntry): string | undefined =>
+	e
+		? JSON.stringify([
+				e.runId,
+				e.snapshotId,
+				e.validTime,
+				e.initTime,
+				e.sha256 ?? null,
+				e.calibrationStatus,
+				e.attribution,
+				e.licenseNotice
+			])
+		: undefined;
+
+/** Même entrée `cones_previous` (identité complète, `previousEntryKey`). */
 export const samePreviousEntry = (a?: PreviousConesEntry, b?: PreviousConesEntry) =>
-	a?.runId === b?.runId && a?.sha256 === b?.sha256 && a?.validTime === b?.validTime;
+	previousEntryKey(a) === previousEntryKey(b);
 
 /**
  * Document des cônes annoncés par `cones_previous` : `GET /products/{cônes}/data`

@@ -21,6 +21,7 @@ import {
 	keepPreviousCones,
 	loadConesDocument,
 	loadPreviousConesDocument,
+	previousEntryKey,
 	seedPreviousCones,
 	validateCones
 } from './cones';
@@ -192,9 +193,12 @@ async function ensureEnabledLoaded(): Promise<void> {
 	void syncCones();
 }
 
-/** Identité de l'entrée `cones_previous` du run, pour ne la lire qu'une fois. */
-const seedKey = (run: LoadedRun) =>
-	run.conesPrevious ? `${run.conesPrevious.runId}#${run.conesPrevious.sha256 ?? ''}` : undefined;
+/**
+ * Identité complète de l'entrée `cones_previous` du run (run, snapshot,
+ * `valid_time`, amorce, document, calibration, crédits) : une seule lecture par
+ * entrée, et tout changement fait partir les cônes amorcés et relire la nouvelle.
+ */
+const seedKey = (run: LoadedRun) => previousEntryKey(run.conesPrevious);
 
 /**
  * Les cônes sont proposés si le flag le permet et que le catalogue les annonce
