@@ -20,6 +20,8 @@ import {
 	type PreviousCones,
 	keepPreviousCones,
 	loadConesDocument,
+	loadPreviousConesDocument,
+	seedPreviousCones,
 	validateCones
 } from './cones';
 import { loadDemoRun } from './demo';
@@ -112,9 +114,13 @@ export async function refresh(retry = 0): Promise<void> {
 				const withdrawn = !entry && !next.conesAwaited;
 				if (withdrawn) lastCones = null;
 				// Sinon, les cônes d'un run antérieur restent jusqu'à la validation de ceux du run.
+				// Ceux amorcés depuis `cones_previous` suivent ce champ : changé ou retiré, ils partent.
 				weatherAiCones.update((c) =>
-					!withdrawn && c?.previous && c.runId === next.runId
-						? { runId: c.runId, doc: null, previous: c.previous }
+					!withdrawn &&
+					c?.previous &&
+					c.runId === next.runId &&
+					(!c.previous.seeded || seedKey(next) === c.seededFrom)
+						? { runId: c.runId, doc: null, previous: c.previous, seededFrom: c.seededFrom }
 						: null
 				);
 			}
@@ -186,14 +192,21 @@ async function ensureEnabledLoaded(): Promise<void> {
 	void syncCones();
 }
 
+/** Identité de l'entrée `cones_previous` du run, pour ne la lire qu'une fois. */
+const seedKey = (run: LoadedRun) =>
+	run.conesPrevious ? `${run.conesPrevious.runId}#${run.conesPrevious.sha256 ?? ''}` : undefined;
+
 /**
  * Les cônes sont proposés si le flag le permet et que le catalogue les annonce
- * (ou en mode fixture), ou si ceux du run précédent sont gardés pour ce run.
+ * (ou en mode fixture), si ceux du run précédent sont gardés pour ce run, ou si
+ * `cones_previous` les annonce et n'a pas encore été lu.
  */
 export function conesOffered(run: LoadedRun | undefined, cones = get(weatherAiCones)): boolean {
 	const mode = getWeatherAiConesMode();
 	if (mode === 'off' || !run) return false;
 	if (cones?.previous && cones.runId === run.runId) return true;
+	// `cones_previous` annoncés et pas encore lus (une lecture refusée ne propose plus rien).
+	if (mode === 'on' && run.conesPrevious && cones?.seededFrom !== seedKey(run)) return true;
 	return mode === 'fixture' || run.available.some((p) => p.productId === CONES_PRODUCT_ID);
 }
 
@@ -210,6 +223,11 @@ async function syncCones(): Promise<void> {
 	const current = get(weatherAiCones);
 	// Cônes du run précédent gardés, et rien d'annoncé pour ce run : rien à lire.
 	if (!entry && current?.previous && current.runId === run.runId) return;
+	if (!entry) {
+		// Rien en mémoire : amorçage depuis `cones_previous` (premier chargement).
+		if (run.conesPrevious && getWeatherAiConesMode() === 'on') await seedCones(run);
+		return;
+	}
 	if (current?.runId === run.runId && current.sha256 === sha256) return;
 	conesCtl?.abort();
 	const ctl = new AbortController();
@@ -256,6 +274,42 @@ async function syncCones(): Promise<void> {
 			previous: previousFor(run.runId)
 		});
 	}
+}
+
+/**
+ * Premier chargement pendant le calcul des cônes du run affiché (`cones: null`) :
+ * lit le document annoncé par `cones_previous` et l'affiche dans le slot
+ * « précédent » (rendu atténué, mention du run), jamais comme les cônes du run.
+ * Un 404, une erreur ou une incohérence n'affichent rien, sans message : le run
+ * reste sans cônes comme avant. Une seule lecture par entrée (`seededFrom`).
+ */
+async function seedCones(run: LoadedRun): Promise<void> {
+	const entry = run.conesPrevious;
+	const key = seedKey(run);
+	if (!entry || !key) return;
+	const current = get(weatherAiCones);
+	if (current?.runId === run.runId && current.seededFrom === key) return;
+	conesCtl?.abort();
+	const ctl = new AbortController();
+	conesCtl = ctl;
+	let previous: PreviousCones | null = null;
+	try {
+		const doc = await loadPreviousConesDocument(entry, getWeatherAiApiUrl(), ctl.signal);
+		previous = seedPreviousCones(entry, doc, run);
+	} catch (err) {
+		if (isAbort(err)) return;
+		console.warn('[weather-ai] cônes précédents non chargés', err);
+	}
+	// Run, entrée, ou cônes du run publiés pendant la lecture : on n'applique pas.
+	const now = get(weatherAiRun);
+	if (now?.runId !== run.runId || seedKey(now) !== key) return;
+	if (now.available.some((p) => p.productId === CONES_PRODUCT_ID)) return;
+	weatherAiCones.set({
+		runId: run.runId,
+		doc: null,
+		seededFrom: key,
+		...(previous ? { previous } : {})
+	});
 }
 
 function previousFor(runId: string): PreviousCones | undefined {

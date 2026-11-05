@@ -30,6 +30,17 @@ export interface ConesCatalogEntry extends CatalogEntry {
 	mention: string;
 }
 
+/**
+ * Cônes du run servi juste avant (`cones_previous`, chom-poc-data#270,
+ * weather-ai#337) : même forme que `cones`, plus l'amorce de leur run. Non null
+ * seulement quand `cones` est null (cônes du run servi en calcul) et que ces
+ * cônes vérifiés sont d'une amorce strictement antérieure au run servi. Ce ne
+ * sont jamais les cônes du run servi : ils sont datés de leur `init_time`.
+ */
+export interface ConesPreviousCatalogEntry extends ConesCatalogEntry {
+	init_time: string;
+}
+
 export interface Catalog {
 	run_id: string;
 	run_date: string;
@@ -37,6 +48,8 @@ export interface Catalog {
 	experimental: boolean;
 	produits: CatalogEntry[];
 	cones?: ConesCatalogEntry | null;
+	/** Additif et optionnel : absent ou `null` sur un portail qui ne le sert pas. */
+	cones_previous?: ConesPreviousCatalogEntry | null;
 }
 
 export interface RunEntry {

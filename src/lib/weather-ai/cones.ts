@@ -8,7 +8,7 @@ import { convex, featureCollection, point, polygon, union } from '@turf/turf';
 
 import { getWeatherAiConesMode } from '$lib/runtime-env';
 
-import { type DataResponse, dataUrl, getJson } from './api';
+import { type Catalog, type DataResponse, dataUrl, getJson } from './api';
 import { unwrapLongitudes } from './tracks';
 
 import type { DiscoveredProduct } from './products';
@@ -334,6 +334,11 @@ export interface PreviousCones {
 	attribution: string;
 	licenseNotice: string;
 	doc: ConesProduct;
+	/**
+	 * Amorcés depuis `cones_previous` du catalogue (premier chargement), et non
+	 * depuis la mémoire de session : ils suivent ce champ et partent avec lui.
+	 */
+	seeded?: true;
 }
 
 /** Écart maximal entre l'amorce des cônes gardés et celle du run affiché. */
@@ -380,3 +385,99 @@ export function shortRunLabel(initTime: string): string {
 /** Mention imposée dès que des cônes d'un run antérieur sont affichés. */
 export const previousConesNotice = (prev: PreviousCones) =>
 	`Cônes du run ${shortRunLabel(prev.doc.init_time)} : ceux du run affiché sont en cours de calcul.`;
+
+/**
+ * Entrée `cones_previous` du catalogue (chom-poc-data#270), retenue seulement si
+ * `cones` est null, qu'elle porte les garde-fous du contrat (produit, expérimental,
+ * mention exacte, statut de calibration, amorce) et qu'elle désigne un AUTRE run
+ * que le run servi. Champ absent, `null` ou invalide : `undefined`, rien à amorcer.
+ */
+export interface PreviousConesEntry {
+	runId: string;
+	snapshotId: string;
+	/** `valid_time` du document (son amorce), à passer à `/data`. */
+	validTime: string;
+	initTime: string;
+	sha256?: string;
+	calibrationStatus: string;
+	attribution: string;
+	licenseNotice: string;
+}
+
+export function previousConesEntry(catalog: Catalog): PreviousConesEntry | undefined {
+	const e = catalog.cones_previous;
+	if (!e || catalog.cones) return undefined;
+	if (e.product_id !== CONES_PRODUCT_ID || e.experimental !== true) return undefined;
+	if (typeof e.run_id !== 'string' || e.run_id === catalog.run_id) return undefined;
+	if (typeof e.snapshot_id !== 'string' || typeof e.valid_time !== 'string') return undefined;
+	if (typeof e.init_time !== 'string' || Number.isNaN(Date.parse(e.init_time))) return undefined;
+	if (e.mention !== CONES_MENTION || typeof e.calibration_status !== 'string') return undefined;
+	return {
+		runId: e.run_id,
+		snapshotId: e.snapshot_id,
+		validTime: e.valid_time,
+		initTime: e.init_time,
+		sha256: e.sha256,
+		calibrationStatus: e.calibration_status,
+		attribution: e.attribution,
+		licenseNotice: e.license_notice
+	};
+}
+
+/** Même entrée `cones_previous` (run et document). */
+export const samePreviousEntry = (a?: PreviousConesEntry, b?: PreviousConesEntry) =>
+	a?.runId === b?.runId && a?.sha256 === b?.sha256 && a?.validTime === b?.validTime;
+
+/**
+ * Document des cônes annoncés par `cones_previous` : `GET /products/{cônes}/data`
+ * à leur `valid_time` (le portail sert ce document tant que `cones` est null).
+ * `null` sur 404 (portail qui ne le sert pas, ou cônes du run servi publiés
+ * entre-temps) ; toute autre erreur est levée. Non validé : voir `seedPreviousCones`.
+ */
+export async function loadPreviousConesDocument(
+	entry: PreviousConesEntry,
+	base: string,
+	signal?: AbortSignal,
+	fetchJson: <T>(url: string, signal?: AbortSignal) => Promise<T> = (url, s) => getJson(url, s)
+): Promise<ConesProduct | null> {
+	try {
+		const res = await fetchJson<DataResponse<ConesProduct>>(
+			dataUrl(base, CONES_PRODUCT_ID, entry.validTime),
+			signal
+		);
+		if (res?.experimental !== true) throw new Error('cônes précédents : réponse non expérimentale');
+		return res.product ?? null;
+	} catch (err) {
+		if ((err as { status?: number })?.status === 404) return null;
+		throw err;
+	}
+}
+
+/**
+ * Cônes à amorcer dans le slot « précédent » depuis `cones_previous`, ou `null`.
+ * Le document doit passer `validateCones` contre le run et le snapshot de
+ * `cones_previous` (jamais contre le run affiché), porter l'amorce annoncée, et
+ * cette amorce doit être strictement antérieure à celle du run affiché, au plus
+ * 12 h plus tôt (même borne que la mémoire de session, `PREVIOUS_CONES_MAX_AGE_MS`).
+ */
+export function seedPreviousCones(
+	entry: PreviousConesEntry,
+	doc: ConesProduct | null,
+	shown: { runId: string; initTime: string | undefined }
+): PreviousCones | null {
+	if (!doc || entry.runId === shown.runId) return null;
+	if (validateCones(doc, entry)) return null;
+	if (Date.parse(doc.init_time) !== Date.parse(entry.initTime)) return null;
+	const age = Date.parse(shown.initTime ?? '') - Date.parse(doc.init_time);
+	if (!(age > 0 && age <= PREVIOUS_CONES_MAX_AGE_MS)) return null;
+	return {
+		runId: entry.runId,
+		snapshotId: entry.snapshotId,
+		sha256: entry.sha256,
+		calibrationStatus: entry.calibrationStatus,
+		attribution: entry.attribution,
+		licenseNotice: entry.licenseNotice,
+		doc,
+		seeded: true
+	};
+}
