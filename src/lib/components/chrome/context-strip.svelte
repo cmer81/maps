@@ -3,12 +3,15 @@
 	import { mode } from 'mode-watcher';
 
 	import { customColorScales, omProtocolSettings } from '$lib/stores/om-protocol-settings';
+	import { skin } from '$lib/stores/skin';
 	import { getDisplayUnit, unitPreferences } from '$lib/stores/units';
 	import { domain, selectedVariable, variable } from '$lib/stores/variables';
 
 	import { WEATHER_AI_DOMAIN } from '$lib/constants';
 	import { translateVariableLabel } from '$lib/i18n/variables-fr';
 	import { weatherAiVariableNote } from '$lib/weather-ai-domain';
+
+	import RetroCartouche from './retro-cartouche.svelte';
 
 	const label = $derived($selectedVariable ? translateVariableLabel($selectedVariable.label) : '');
 	// Précision de la grandeur affichée (précipitation Weather AI : taux moyen sur 6 h).
@@ -29,7 +32,9 @@
 	const displayUnit = $derived(getDisplayUnit(colorScale.unit, $unitPreferences, $variable));
 </script>
 
-{#if label}
+{#if label && $skin === 'retro'}
+	<RetroCartouche {label} unit={displayUnit} {note} />
+{:else if label}
 	<!-- Bande de contexte : rappelle « qu'est-ce que je regarde ? » juste au-dessus
 	     de la carte, y compris sur mobile où le fil contextuel du header est masqué.
 	     Masquée si aucune variable sélectionnée. -->

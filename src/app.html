@@ -34,6 +34,15 @@
 		/>
 		<meta name="twitter:image" content="https://modeles.infoclimat.fr/og-image.png" />
 		<script src="%sveltekit.assets%/runtime-config.js"></script>
+		<script>
+			// Skin (prototype) : posé AVANT le bundle pour éviter un flash du skin par
+			// défaut (ssr=false). Le store persisté stocke du JSON ("\"retro\"").
+			try {
+				var s = new URLSearchParams(location.search).get('skin');
+				if (!s) s = JSON.parse(localStorage.getItem('skin') || '"modern"');
+				if (s === 'retro') document.documentElement.dataset.skin = 'retro';
+			} catch (e) {}
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

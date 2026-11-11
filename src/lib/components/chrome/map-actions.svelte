@@ -40,7 +40,7 @@
      déjà en place dans app-chrome.svelte pour la bande de contexte (`fixed
      top-11`). z-40 : même plan que la bande de contexte, au-dessus de la carte,
      sous le header et les Sheets/dialogs (z-100). -->
-<div class="fixed top-[82px] right-3 z-40 flex gap-1">
+<div class="fixed top-[82px] retro:top-[112px] right-3 z-40 flex gap-1">
 	<button
 		type="button"
 		onclick={copyLink}

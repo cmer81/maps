@@ -4,11 +4,13 @@
 	import MapIcon from '@lucide/svelte/icons/map';
 	import MoonIcon from '@lucide/svelte/icons/moon';
 	import MountainIcon from '@lucide/svelte/icons/mountain';
+	import PaletteIcon from '@lucide/svelte/icons/palette';
 
 	import { basemapTheme } from '$lib/stores/basemap-theme';
 	import { DEFAULT_SHOW_DEPARTMENTS, showDepartments } from '$lib/stores/departments';
 	import { DEFAULT_SHOW_LABELS, showLabels } from '$lib/stores/labels';
 	import { defaultPreferences, preferences } from '$lib/stores/preferences';
+	import { skin } from '$lib/stores/skin';
 	import { gridValues } from '$lib/stores/vector';
 
 	import ArrowsSettings from '$lib/components/settings/arrows-settings.svelte';
@@ -63,6 +65,12 @@
 	function toggleDark(next: boolean) {
 		basemapTheme.set(next ? 'dark' : 'light');
 	}
+
+	// Habillage du chrome (prototype « Rétro 2000 », cf. src/skins/retro.css).
+	const retroOn = $derived($skin === 'retro');
+	function toggleRetro(next: boolean) {
+		skin.set(next ? 'retro' : 'modern');
+	}
 </script>
 
 {#snippet group(title: string, hint: string, body: Snippet)}
@@ -103,6 +111,12 @@
 	</LayerToggle>
 {/snippet}
 
+{#snippet appearance()}
+	<LayerToggle label="Habillage rétro 2000" checked={retroOn} onCheckedChange={toggleRetro}>
+		{#snippet icon()}<PaletteIcon class="size-[18px]" aria-hidden="true" />{/snippet}
+	</LayerToggle>
+{/snippet}
+
 {#snippet interaction()}
 	<PopupSettings />
 {/snippet}
@@ -111,4 +125,5 @@
 	{@render group('Calque météo', 'Lecture du champ affiché', weather)}
 	{@render group('Fond de carte', 'Repères géographiques', basemap)}
 	{@render group('Interaction', 'Lecture de valeur au pointeur', interaction)}
+	{@render group('Habillage', 'Apparence de l’interface (prototype)', appearance)}
 </div>

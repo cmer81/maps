@@ -66,7 +66,7 @@
 
 {#if anyOn}
 	<div
-		class="bg-glass/90 fixed top-[82px] z-40 w-[min(340px,calc(100vw-24px))] rounded-xl border border-white/15 px-3 py-2 text-white shadow-lg glass-blur transition-[left] duration-200 motion-reduce:transition-none"
+		class="bg-glass/90 fixed top-[82px] retro:top-[112px] z-40 w-[min(340px,calc(100vw-24px))] rounded-xl border border-white/15 px-3 py-2 text-white shadow-lg glass-blur transition-[left] duration-200 motion-reduce:transition-none"
 		style="left: {(desktop.current ? $sidebarWidth : 0) + 12}px"
 		role="region"
 		aria-label="Superpositions expérimentales Weather AI"

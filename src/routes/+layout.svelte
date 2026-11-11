@@ -3,6 +3,7 @@
 
 	import { ModeWatcher, setMode } from 'mode-watcher';
 
+	import { isSkin, skin } from '$lib/stores/skin';
 	import { now } from '$lib/stores/time';
 
 	import { Toaster } from '$lib/components/ui/sonner';
@@ -19,6 +20,10 @@
 		// n'a pas de prop « forced » ; defaultMode ne s'applique qu'au premier chargement).
 		setMode('dark');
 
+		// Prototype : `?skin=retro|modern` applique (et mémorise) l'habillage.
+		const skinParam = new URLSearchParams(location.search).get('skin');
+		if (isSkin(skinParam)) skin.set(skinParam);
+
 		if (metaDataInterval) clearInterval(metaDataInterval);
 		metaDataInterval = setInterval(() => {
 			getInitialMetaData();
@@ -28,6 +33,12 @@
 		updateNowInterval = setInterval(() => {
 			$now = new Date();
 		}, MILLISECONDS_PER_MINUTE);
+	});
+
+	// Habillage : attribut `data-skin` sur <html> (cf. src/skins/retro.css). Indépendant
+	// de mode-watcher — `.dark` reste posée (palettes raster `&dark=true` inchangées).
+	$effect(() => {
+		document.documentElement.dataset.skin = $skin;
 	});
 
 	onDestroy(() => {
