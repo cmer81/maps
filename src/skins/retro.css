@@ -1,0 +1,216 @@
+/* =============================================================================
+   Skin « Rétro 2000 » — PROTOTYPE
+   Cf. docs/superpowers/specs/2026-11-11-skin-retro-design.md (§ 8).
+
+   Principe : la classe `.dark` reste posée (couleurs raster inchangées). Le skin
+   redéfinit les variables CSS sous `:root[data-skin='retro']` (spécificité 0,2,0 >
+   `.dark`). Astuce clé : Tailwind v4 compile `text-white/70` en
+   `color-mix(in oklab, var(--color-white) 70%, transparent)` → redéfinir
+   `--color-white` transforme tout le « blanc du chrome » en encre bleu nuit, sans
+   toucher aux ~360 classes. Les zones qui doivent rester blanches (barres de titre)
+   remettent `--color-white: #fff` localement.
+   Règles hors @layer → elles priment sur les utilitaires Tailwind.
+   ============================================================================= */
+
+:root[data-skin='retro'] {
+	color-scheme: light;
+	color: #000;
+	background-color: #efefef;
+
+	/* Encre & accent */
+	--color-white: #0b1f4d;
+	--color-sky-200: #1d4f91;
+	--color-sky-300: #1d4f91;
+	--color-sky-400: #3b679e;
+	--color-sky-500: #3b679e;
+	--color-sky-600: #2d5689;
+	--ic-sky: #99bbff;
+
+	/* Tokens shadcn (clairs) */
+	--glass: rgb(255 255 255);
+	--background: #efefef;
+	--foreground: #000;
+	--card: #fff;
+	--card-foreground: #000;
+	--popover: #fff;
+	--popover-foreground: #000;
+	--primary: #3b679e;
+	--primary-foreground: #fff;
+	--secondary: #eef4fb;
+	--secondary-foreground: #000;
+	--muted: #eef4fb;
+	--muted-foreground: #555;
+	--accent: #d6e6f7;
+	--accent-foreground: #000;
+	--border: #99bbff;
+	--input: #7f9db9;
+	--ring: #3b679e;
+	--radius: 0px;
+
+	/* Typo dense façon années 2000 (pile système : Verdana n'est pas redistribuable) */
+	--font-sans: Verdana, Tahoma, Geneva, 'DejaVu Sans', sans-serif;
+	--text-sm: 12px;
+	--text-xs: 11px;
+
+	/* Barre de titre de section */
+	--retro-title-bg: linear-gradient(180deg, #4a7ab4 0%, #2d5689 100%);
+	--retro-title-border: #99bbff;
+}
+
+:root[data-skin='retro'] body {
+	font-family: var(--font-sans);
+}
+
+/* --- Formes : angles droits, pas de verre, ombres sèches ------------------ */
+
+:root[data-skin='retro']
+	:is(
+		.rounded,
+		.rounded-sm,
+		.rounded-md,
+		.rounded-lg,
+		.rounded-xl,
+		.rounded-t-lg,
+		.rounded-b-lg,
+		.max-md\:rounded-xl
+	) {
+	border-radius: 0;
+}
+
+:root[data-skin='retro'] .glass-blur::before {
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
+}
+
+:root[data-skin='retro'] [class*='backdrop-blur'] {
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
+}
+
+:root[data-skin='retro'] :is(.shadow-md, .shadow-lg, .shadow-xl) {
+	box-shadow: 1px 1px 0 rgb(0 0 0 / 0.25);
+}
+
+/* --- Header : bandeau dégradé, texte blanc -------------------------------- */
+
+:root[data-skin='retro'] .ic-brand-bar {
+	--color-white: #fff;
+	background-image: var(--retro-title-bg);
+	box-shadow:
+		inset 0 1px 0 rgb(255 255 255 / 0.25),
+		inset 0 -1px 0 var(--retro-title-border);
+	font-weight: 700;
+}
+
+/* --- Sidebar : rail bleu pâle, panneau blanc, en-tête en barre de titre ---- */
+
+:root[data-skin='retro'] aside[aria-label='Réglages carte'] {
+	border-right: 1px solid #7f9db9;
+}
+
+:root[data-skin='retro'] aside[aria-label='Réglages carte'] > nav {
+	background: #dce9f6;
+	border-right-color: #99bbff;
+}
+
+:root[data-skin='retro'] #sidebar-panel > header {
+	--color-white: #fff;
+	background-image: var(--retro-title-bg);
+	border-bottom: 1px solid var(--retro-title-border);
+	color: #fff;
+	padding-top: 6px;
+	padding-bottom: 6px;
+}
+
+:root[data-skin='retro'] #sidebar-panel > header h2 {
+	font-size: 12px;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+}
+
+:root[data-skin='retro'] #sidebar-panel > header h2::after {
+	content: ' »';
+}
+
+/* --- Boutons : crème, liseré, relief 1 px --------------------------------- */
+
+:root[data-skin='retro'] .retro-button {
+	background: #fafaf2;
+	border: 1px solid #c8c8b8;
+	box-shadow:
+		inset 1px 1px 0 #fff,
+		inset -1px -1px 0 #e9e9dc;
+	color: #333;
+	font-weight: 700;
+}
+
+/* --- Scrollbars / focus ---------------------------------------------------- */
+
+:root[data-skin='retro'] .scrollbar-thin {
+	scrollbar-color: #7f9db9 #eef4fb;
+}
+
+:root[data-skin='retro'] .scrollbar-thin::-webkit-scrollbar-thumb {
+	border-radius: 0;
+	background-color: #7f9db9;
+}
+
+/* --- Contrôles MapLibre : carrés blancs ------------------------------------ */
+
+:root[data-skin='retro'] .maplibregl-ctrl.maplibregl-ctrl-group {
+	background-color: #fff;
+	border: 1px solid #7f9db9;
+	border-radius: 0;
+	box-shadow: 1px 1px 0 rgb(0 0 0 / 0.2);
+}
+
+:root[data-skin='retro'] .maplibregl-ctrl.maplibregl-ctrl-group:hover {
+	background-color: #eef4fb;
+}
+
+:root[data-skin='retro'] .maplibregl-ctrl.maplibregl-ctrl-group .maplibregl-ctrl-icon,
+:root[data-skin='retro'] .maplibregl-ctrl-attrib-button {
+	filter: none;
+}
+
+:root[data-skin='retro'] .maplibregl-ctrl.maplibregl-ctrl-attrib {
+	background-color: rgb(255 255 255 / 0.85);
+	backdrop-filter: none;
+	color: #000;
+}
+
+:root[data-skin='retro'] .maplibregl-ctrl.maplibregl-ctrl-attrib a {
+	color: #1d4f91;
+}
+
+:root[data-skin='retro'] .popup-wrapper {
+	background: rgb(255 255 255 / 0.9);
+	border: 1px solid #7f9db9;
+	border-radius: 0;
+	color: #000;
+}
+
+/* --- Correctifs du « blanc → encre » ---------------------------------------- */
+
+/* Pouce des interrupteurs : reste blanc (sinon encre sur encre une fois coché). */
+:root[data-skin='retro'] [data-slot='switch-thumb'] {
+	background-color: #fff;
+	box-shadow: 0 0 0 1px #7f9db9;
+}
+
+/* Bouton « Avancé » du header (verre → blanc en rétro, texte blanc → invisible) :
+   bouton crème à relief façon années 2000. */
+:root[data-skin='retro'] .ic-brand-bar button.bg-glass\/85 {
+	background: #fafaf2;
+	border: 1px solid #c8c8b8;
+	box-shadow:
+		inset 1px 1px 0 #fff,
+		inset -1px -1px 0 #e9e9dc;
+	color: #333;
+}
+
+/* Surfaces « verre » (bg-glass/75…95, sans flou en rétro) : opaques, sinon la carte
+   transparaît sous le texte. */
+:root[data-skin='retro'] [class*='bg-glass'] {
+	background-color: #fff;
+}

@@ -6,12 +6,15 @@
 @plugin '@tailwindcss/typography';
 
 @import 'tw-animate-css';
+@import './skins/retro.css';
 
 /* =============================================================================
    Custom Variants
    ============================================================================= */
 
 @custom-variant dark (&:is(.dark *));
+/* Skin « Rétro 2000 » (prototype) : `retro:top-[112px]`… — cf. src/skins/retro.css */
+@custom-variant retro (&:where([data-skin='retro'] *));
 
 /* =============================================================================
    Custom Utilities

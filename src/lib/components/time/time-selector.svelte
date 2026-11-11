@@ -9,12 +9,14 @@
 
 	import { timeSelectorActions } from '$lib/stores/keyboard';
 	import { bottomChromeHeight, desktop, loading, sidebarWidth } from '$lib/stores/preferences';
+	import { skin } from '$lib/stores/skin';
 	import { metaJson, modelRunLocked } from '$lib/stores/time';
 	import { inProgress, latest, modelRun, now, time } from '$lib/stores/time';
 	import { selectedDomain } from '$lib/stores/variables';
 
 	import PlaybackButton from '$lib/components/time/playback-button.svelte';
 	import PrefetchButton from '$lib/components/time/prefetch-button.svelte';
+	import RetroTimeGrid from '$lib/components/time/retro-time-grid.svelte';
 	import * as Select from '$lib/components/ui/select';
 
 	import {
@@ -808,6 +810,11 @@
 		? ` max-width: min(75vw, calc(100vw - ${$sidebarWidth}px - 2rem));`
 		: ''}"
 >
+	{#if $skin === 'retro' && desktop.current}
+		<!-- Prototype : échéancier en grille (skin rétro). Dans le flux du wrapper →
+		     bottomChromeHeight (ResizeObserver) le compte automatiquement. -->
+		<RetroTimeGrid />
+	{/if}
 	<div
 		class="duration-500 select-none opacity-100 translate-y-0 {disabled
 			? 'pointer-events-none'
